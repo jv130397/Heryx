@@ -124,16 +124,16 @@ class LanguageManager(QObject):
         )
         if app is not None:
             app.installTranslator(self.translator)
-        self.settings.setValue("ui/language", language)
+        QSettings().setValue("ui/language", language)
         if emit:
             self.languageChanged.emit(language)
 
     @property
     def is_first_run(self) -> bool:
-        return not self.settings.value("ui/language_selected", False, bool)
+        return not QSettings().value("ui/language_selected", False, bool)
 
     def complete_first_run(self) -> None:
-        self.settings.setValue("ui/language_selected", True)
+        QSettings().setValue("ui/language_selected", True)
 
 
 language_manager = LanguageManager()

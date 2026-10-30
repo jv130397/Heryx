@@ -1,0 +1,26 @@
+[
+  {
+    "individuals": 10,
+    "controller_load_ms": 0.224,
+    "qml_start_ms": 118.357,
+    "median_selection_ms": 0.3881,
+    "root_objects": 1,
+    "process_peak_rss_kib": 123168
+  },
+  {
+    "individuals": 30,
+    "controller_load_ms": 0.236,
+    "qml_start_ms": 29.212,
+    "median_selection_ms": 0.5204,
+    "root_objects": 1,
+    "process_peak_rss_kib": 124320
+  },
+  {
+    "individuals": 100,
+    "controller_load_ms": 0.206,
+    "qml_start_ms": 38.499,
+    "median_selection_ms": 0.8506,
+    "root_objects": 1,
+    "process_peak_rss_kib": 129748
+  }
+]
