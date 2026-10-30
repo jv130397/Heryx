@@ -1,6 +1,13 @@
 from pathlib import Path
 
-from rarepedigree.domain import FamilyService, GenderIdentity, Individual, PedigreeProject
+from rarepedigree.domain import (
+    FamilyService,
+    GenderIdentity,
+    Individual,
+    KinshipEngine,
+    PedigreeProject,
+    SiblingKind,
+)
 from rarepedigree.persistence import JsonProjectRepository
 
 
@@ -30,3 +37,14 @@ def test_multigenerational_project_reopens_intact(tmp_path: Path) -> None:
     assert restored == project
     assert len(restored.individuals) == 5
     assert len(restored.parentages) == 4
+
+
+def test_repository_preserves_declared_kinship(tmp_path: Path) -> None:
+    proband = Individual(label="P")
+    project = PedigreeProject(individuals=[proband])
+    project = KinshipEngine().plan_sibling(project, proband.id, SiblingKind.UNRESOLVED).apply()
+    path = tmp_path / "kinship.rps.json"
+    repository = JsonProjectRepository()
+    repository.save(project, path)
+    loaded = repository.load(path)
+    assert loaded.declared_kinships == project.declared_kinships

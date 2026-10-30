@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFormLayout,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QPushButton,
     QTextEdit,
@@ -24,6 +25,7 @@ from rarepedigree.domain import (
     Individual,
     ObservationStatus,
     PedigreeProject,
+    SiblingKind,
 )
 from rarepedigree.ui.i18n import language_manager, tr
 
@@ -158,6 +160,60 @@ class EditIndividualDialog(QDialog):
             "proband": self.proband.isChecked(),
             "consultand": self.consultand.isChecked(),
         }
+
+
+class AddSiblingDialog(QDialog):
+    """Small first-step assistant that makes shared parentage explicit."""
+
+    def __init__(self, reference: Individual, parent=None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("Adicionar irmão ou irmã"))
+        self.setMinimumWidth(540)
+        self.form = QFormLayout(self)
+        self.name = QLineEdit()
+        self.name.setPlaceholderText(tr("Identificador exibido"))
+        self.kind = QComboBox()
+        for text, value in (
+            ("Mesmo pai e mesma mãe", SiblingKind.FULL),
+            ("Somente o pai", SiblingKind.PATERNAL_HALF),
+            ("Somente a mãe", SiblingKind.MATERNAL_HALF),
+            ("Parentalidade ainda não esclarecida", SiblingKind.UNRESOLVED),
+            ("Vínculo adotivo", SiblingKind.ADOPTIVE),
+            ("Vínculo social", SiblingKind.SOCIAL),
+        ):
+            self.kind.addItem(tr(text), value)
+        self.preview = QLabel()
+        self.preview.setWordWrap(True)
+        self.preview.setProperty("card", True)
+        self.form.addRow(tr("Pessoa de referência"), QLabel(reference.label))
+        self.form.addRow(tr("Identificador"), self.name)
+        self.form.addRow(tr("Vínculo parental"), self.kind)
+        self.form.addRow(tr("Prévia"), self.preview)
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
+        )
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        self.form.addRow(self.buttons)
+        self.kind.currentIndexChanged.connect(self._update_preview)
+        self._update_preview()
+
+    def _update_preview(self) -> None:
+        messages = {
+            SiblingKind.FULL: "Os dois genitores biológicos serão reutilizados.",
+            SiblingKind.PATERNAL_HALF: "O pai será compartilhado; a mãe será diferente.",
+            SiblingKind.MATERNAL_HALF: "A mãe será compartilhada; o pai será diferente.",
+            SiblingKind.UNRESOLVED: "Nenhum genitor será presumido.",
+            SiblingKind.ADOPTIVE: "O vínculo não será usado como ancestralidade genética.",
+            SiblingKind.SOCIAL: "O vínculo não será usado como ancestralidade genética.",
+        }
+        self.preview.setText(tr(messages[self.sibling_kind()]))
+
+    def sibling_kind(self) -> SiblingKind:
+        return self.kind.currentData()
+
+    def sibling_label(self) -> str | None:
+        return self.name.text().strip() or None
 
 
 class NewProjectDialog(QDialog):

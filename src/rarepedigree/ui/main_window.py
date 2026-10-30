@@ -42,11 +42,13 @@ from rarepedigree.domain import (
     FamilyService,
     GenderIdentity,
     Individual,
+    KinshipEngine,
     LayoutPosition,
     ParentageKind,
     PedigreeProject,
     Relationship,
     RelationshipKind,
+    SiblingKind,
     TwinZygosity,
 )
 from rarepedigree.layout import PedigreeLayoutEngine
@@ -62,7 +64,7 @@ from rarepedigree.ui.components import (
     ToolRailButton,
     ZoomControl,
 )
-from rarepedigree.ui.dialogs import EditIndividualDialog, NewProjectDialog
+from rarepedigree.ui.dialogs import AddSiblingDialog, EditIndividualDialog, NewProjectDialog
 from rarepedigree.ui.i18n import language_manager, tr
 from rarepedigree.ui.icons import icon
 from rarepedigree.ui.preferences import PreferencesDialog
@@ -81,6 +83,7 @@ class MainWindow(QMainWindow):
         self.undo_stack = QUndoStack(self)
         self.undo_stack.indexChanged.connect(self._undo_index_changed)
         self.layout_engine = PedigreeLayoutEngine()
+        self.kinship_engine = KinshipEngine()
         self.settings = QSettings()
         self.setStyleSheet(SCIENTIFIC_WORKSPACE_STYLESHEET)
         language_manager.languageChanged.connect(self.retranslate_ui)
@@ -412,9 +415,7 @@ class MainWindow(QMainWindow):
     def _set_interaction_mode(self, mode: str) -> None:
         self.scene.set_interaction_mode(mode)
         self.view.setDragMode(
-            PedigreeView.DragMode.NoDrag
-            if mode == "move"
-            else PedigreeView.DragMode.RubberBandDrag
+            PedigreeView.DragMode.NoDrag if mode == "move" else PedigreeView.DragMode.RubberBandDrag
         )
         cursor = Qt.CursorShape.OpenHandCursor if mode == "move" else Qt.CursorShape.ArrowCursor
         self.view.viewport().setCursor(cursor)
@@ -528,7 +529,18 @@ class MainWindow(QMainWindow):
                 )
                 label = "Adicionar filho adotivo"
             elif action == "sibling":
-                after, _ = FamilyService.add_sibling(before, item.person.id)
+                kind = SiblingKind.FULL
+                sibling_label = None
+                if self.isVisible():
+                    dialog = AddSiblingDialog(item.person, self)
+                    if dialog.exec() != dialog.DialogCode.Accepted:
+                        return
+                    kind = dialog.sibling_kind()
+                    sibling_label = dialog.sibling_label()
+                plan = self.kinship_engine.plan_sibling(
+                    before, item.person.id, kind, label=sibling_label
+                )
+                after = plan.apply()
                 label = "Adicionar irmão"
             elif action == "delete":
                 after = FamilyService.delete_individual(before, item.person.id)
@@ -569,14 +581,17 @@ class MainWindow(QMainWindow):
 
     def _available_context_actions(self, item: IndividualItem) -> set[str]:
         parent_ids = {
-            edge.parent_id
-            for edge in self.project.parentages
-            if edge.child_id == item.person.id
+            edge.parent_id for edge in self.project.parentages if edge.child_id == item.person.id
         }
         parents = [person for person in self.project.individuals if person.id in parent_ids]
         actions = {
-            "partner", "child", "adopted_child", "sibling",
-            "edit_dialog", "edit", "delete",
+            "partner",
+            "child",
+            "adopted_child",
+            "sibling",
+            "edit_dialog",
+            "edit",
+            "delete",
         }
         if len(parents) < 2:
             if not any(parent.gender_identity == GenderIdentity.MAN for parent in parents):

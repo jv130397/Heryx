@@ -1,7 +1,18 @@
 """Clinical domain types and invariants; must not depend on GUI or persistence."""
 
 from rarepedigree.domain.family_service import FamilyService
+from rarepedigree.domain.kinship import (
+    KinshipEngine,
+    KinshipIssue,
+    KinshipPlan,
+    KinshipSeverity,
+    KinshipValidator,
+    SiblingKind,
+)
 from rarepedigree.domain.models import (
+    DeclaredKinship,
+    DeclaredKinshipKind,
+    EvidenceStatus,
     Family,
     GenderIdentity,
     Individual,
@@ -17,11 +28,19 @@ from rarepedigree.domain.models import (
 from rarepedigree.domain.states import EvidenceState, ObservationStatus
 
 __all__ = [
+    "DeclaredKinship",
+    "DeclaredKinshipKind",
     "EvidenceState",
+    "EvidenceStatus",
     "Family",
     "FamilyService",
     "GenderIdentity",
     "Individual",
+    "KinshipEngine",
+    "KinshipIssue",
+    "KinshipPlan",
+    "KinshipSeverity",
+    "KinshipValidator",
     "LayoutPosition",
     "ObservationStatus",
     "Parentage",
@@ -29,6 +48,7 @@ __all__ = [
     "PedigreeProject",
     "Relationship",
     "RelationshipKind",
+    "SiblingKind",
     "TwinGroup",
     "TwinZygosity",
 ]

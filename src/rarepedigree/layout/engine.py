@@ -67,9 +67,10 @@ class PedigreeLayoutEngine:
                 return sum(people[person_id].layout.x for person_id in unit) / len(unit)
 
             units.sort(key=lambda unit: (desired_center(unit), str(unit[0])))
-            total_width = sum(
-                (len(unit) - 1) * self.HORIZONTAL_SPACING for unit in units
-            ) + max(0, len(units) - 1) * self.FAMILY_GAP
+            total_width = (
+                sum((len(unit) - 1) * self.HORIZONTAL_SPACING for unit in units)
+                + max(0, len(units) - 1) * self.FAMILY_GAP
+            )
             cursor = -total_width / 2
             provisional: dict[UUID, float] = {}
             unit_centers: list[float] = []
@@ -99,13 +100,27 @@ class PedigreeLayoutEngine:
 
     @staticmethod
     def _family_units(project: PedigreeProject, members: list[UUID]) -> list[list[UUID]]:
-        """Return partnership components so unrelated couples never look like one union."""
+        """Return reproductive-family components without inventing partnerships.
+
+        Co-parents must remain visually close even when no affective/conjugal
+        relationship is known. Their parentage edges provide layout adjacency,
+        but remain scientifically distinct from ``Relationship`` records.
+        """
         member_set = set(members)
         neighbours: dict[UUID, set[UUID]] = {person_id: set() for person_id in members}
         for relation in project.relationships:
             if relation.member_a in member_set and relation.member_b in member_set:
                 neighbours[relation.member_a].add(relation.member_b)
                 neighbours[relation.member_b].add(relation.member_a)
+        parents_by_child: dict[UUID, list[UUID]] = defaultdict(list)
+        for edge in project.parentages:
+            if edge.parent_id in member_set:
+                parents_by_child[edge.child_id].append(edge.parent_id)
+        for parent_ids in parents_by_child.values():
+            for index, first in enumerate(parent_ids):
+                for second in parent_ids[index + 1 :]:
+                    neighbours[first].add(second)
+                    neighbours[second].add(first)
         people = {person.id: person for person in project.individuals}
         gender_rank = {"man": 0, "unknown": 1, "gender_diverse": 1, "woman": 2}
         remaining = set(members)

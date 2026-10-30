@@ -156,6 +156,11 @@ class FamilyService:
             for group in data["twin_groups"]
             if len([item for item in group["member_ids"] if item != person_id]) >= 2
         ]
+        data["declared_kinships"] = [
+            assertion
+            for assertion in data["declared_kinships"]
+            if person_id not in {assertion["member_a"], assertion["member_b"]}
+        ]
         data["individuals"] = [
             person for person in data["individuals"] if person["id"] != person_id
         ]

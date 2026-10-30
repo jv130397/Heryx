@@ -37,6 +37,23 @@ class ParentageKind(StrEnum):
     UNKNOWN = "unknown"
 
 
+class EvidenceStatus(StrEnum):
+    """How a fact entered the pedigree; orthogonal to its scientific kind."""
+
+    CONFIRMED = "confirmed"
+    DERIVED = "derived"
+    PROVISIONAL = "provisional"
+    UNKNOWN = "unknown"
+
+
+class DeclaredKinshipKind(StrEnum):
+    """Relations that cannot always be reduced to known parentage yet."""
+
+    SIBLING_UNRESOLVED = "sibling_unresolved"
+    ADOPTIVE_SIBLING = "adoptive_sibling"
+    SOCIAL_SIBLING = "social_sibling"
+
+
 class TwinZygosity(StrEnum):
     MONOZYGOTIC = "monozygotic"
     DIZYGOTIC = "dizygotic"
@@ -64,6 +81,8 @@ class Individual(BaseModel):
     proband: bool = False
     consultand: bool = False
     placeholder: bool = False
+    unknown_reason: str | None = Field(default=None, max_length=200)
+    provenance: str | None = Field(default=None, max_length=200)
     layout: LayoutPosition = Field(default_factory=LayoutPosition)
 
 
@@ -87,6 +106,8 @@ class Parentage(BaseModel):
     parent_id: UUID
     child_id: UUID
     kind: ParentageKind = ParentageKind.BIOLOGICAL
+    evidence_status: EvidenceStatus = EvidenceStatus.CONFIRMED
+    provenance: str | None = Field(default=None, max_length=200)
 
     @model_validator(mode="after")
     def parent_and_child_must_differ(self) -> Parentage:
@@ -99,6 +120,23 @@ class TwinGroup(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     member_ids: list[UUID] = Field(min_length=2)
     zygosity: TwinZygosity = TwinZygosity.UNKNOWN
+
+
+class DeclaredKinship(BaseModel):
+    """Explicit kinship assertion retained until its graph path is known."""
+
+    id: UUID = Field(default_factory=uuid4)
+    member_a: UUID
+    member_b: UUID
+    kind: DeclaredKinshipKind
+    evidence_status: EvidenceStatus = EvidenceStatus.CONFIRMED
+    provenance: str | None = Field(default=None, max_length=200)
+
+    @model_validator(mode="after")
+    def members_must_be_distinct(self) -> DeclaredKinship:
+        if self.member_a == self.member_b:
+            raise ValueError("a kinship assertion requires two distinct individuals")
+        return self
 
 
 class Family(BaseModel):
@@ -123,6 +161,7 @@ class PedigreeProject(BaseModel):
     relationships: list[Relationship] = Field(default_factory=list)
     parentages: list[Parentage] = Field(default_factory=list)
     twin_groups: list[TwinGroup] = Field(default_factory=list)
+    declared_kinships: list[DeclaredKinship] = Field(default_factory=list)
     family: Family = Field(default_factory=Family)
 
     @model_validator(mode="after")
@@ -146,6 +185,9 @@ class PedigreeProject(BaseModel):
                 raise ValueError("twin group contains duplicate members")
             if any(member_id not in individual_ids for member_id in group.member_ids):
                 raise ValueError("twin group refers to an individual absent from the project")
+        for assertion in self.declared_kinships:
+            if assertion.member_a not in individual_ids or assertion.member_b not in individual_ids:
+                raise ValueError("declared kinship refers to an individual absent from the project")
         return self
 
     def _validate_parentage_cycles(self) -> None:

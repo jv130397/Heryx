@@ -4,9 +4,12 @@ from rarepedigree.domain import (
     FamilyService,
     GenderIdentity,
     Individual,
+    KinshipEngine,
+    Parentage,
     ParentageKind,
     PedigreeProject,
     Relationship,
+    SiblingKind,
 )
 from rarepedigree.layout import PedigreeLayoutEngine
 
@@ -90,3 +93,36 @@ def test_new_sibling_shares_generation_without_collision() -> None:
     generations = PedigreeLayoutEngine().generations(project)
     assert generations[sibling_id] == generations[person.id]
     _assert_no_position_collisions(project)
+
+
+def test_multiple_parental_nuclei_keep_every_person_in_the_correct_generation() -> None:
+    proband = Individual(label="P")
+    project = PedigreeProject(individuals=[proband])
+    project, _ = FamilyService.add_parents(project, proband.id)
+    engine = KinshipEngine()
+    paternal = engine.plan_sibling(project, proband.id, SiblingKind.PATERNAL_HALF)
+    project = paternal.apply()
+    paternal_sibling = paternal.created_ids[0]
+    second = engine.plan_sibling(project, proband.id, SiblingKind.PATERNAL_HALF)
+    project = second.apply()
+    second_sibling = second.created_ids[0]
+    generations = PedigreeLayoutEngine().generations(project)
+    assert generations[proband.id] == generations[paternal_sibling] == generations[second_sibling]
+    _assert_no_position_collisions(project)
+
+
+def test_coparents_are_grouped_for_layout_without_creating_a_partnership() -> None:
+    first = Individual(label="F")
+    second = Individual(label="M")
+    child = Individual(label="C")
+    project = PedigreeProject(
+        individuals=[first, second, child],
+        parentages=[
+            Parentage(parent_id=first.id, child_id=child.id),
+            Parentage(parent_id=second.id, child_id=child.id),
+        ],
+    )
+    positions = PedigreeLayoutEngine().compute(project, preserve_locked=False)
+    assert project.relationships == []
+    assert abs(positions[first.id][0] - positions[second.id][0]) == 130
+    assert positions[child.id][1] > positions[first.id][1]
