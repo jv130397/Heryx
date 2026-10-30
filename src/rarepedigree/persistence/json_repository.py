@@ -7,6 +7,7 @@ import tempfile
 from pathlib import Path
 
 from rarepedigree.domain import PedigreeProject
+from rarepedigree.persistence.migrations import migrate_project
 
 MAX_PROJECT_BYTES = 20 * 1024 * 1024
 
@@ -17,7 +18,10 @@ class JsonProjectRepository:
     def load(self, path: Path) -> PedigreeProject:
         if path.stat().st_size > MAX_PROJECT_BYTES:
             raise ValueError("project exceeds the 20 MiB safety limit")
-        return PedigreeProject.model_validate_json(path.read_text(encoding="utf-8"))
+        import json
+
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        return PedigreeProject.model_validate(migrate_project(raw))
 
     def save(self, project: PedigreeProject, path: Path) -> None:
         path = path.resolve()
@@ -37,4 +41,3 @@ class JsonProjectRepository:
             os.replace(temporary_path, path)
         finally:
             temporary_path.unlink(missing_ok=True)
-

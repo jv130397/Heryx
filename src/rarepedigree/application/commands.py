@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import Any
 
 from PySide6.QtCore import QPointF
@@ -107,3 +108,24 @@ class UpdateIndividualCommand(QUndoCommand):
     def undo(self) -> None:
         self._apply(self.old_values)
 
+
+class ReplaceProjectCommand(QUndoCommand):
+    """Undo a validated graph mutation as one atomic user action."""
+
+    def __init__(
+        self,
+        label: str,
+        before: PedigreeProject,
+        after: PedigreeProject,
+        apply_project: Callable[[PedigreeProject], None],
+    ) -> None:
+        super().__init__(label)
+        self.before = before.model_copy(deep=True)
+        self.after = after.model_copy(deep=True)
+        self.apply_project = apply_project
+
+    def redo(self) -> None:
+        self.apply_project(self.after.model_copy(deep=True))
+
+    def undo(self) -> None:
+        self.apply_project(self.before.model_copy(deep=True))

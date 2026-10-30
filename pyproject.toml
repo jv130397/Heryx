@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rarepedigree-studio"
-version = "0.1.0.dev0"
+version = "0.2.0.dev0"
 description = "Offline-first scientific desktop software for human pedigree documentation"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
@@ -39,4 +39,3 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "RUF"]
-

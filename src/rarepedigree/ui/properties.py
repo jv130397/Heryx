@@ -9,8 +9,11 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFormLayout,
+    QLabel,
     QLineEdit,
     QPushButton,
+    QTabWidget,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -42,17 +45,30 @@ class PropertiesPanel(QWidget):
         self.deceased_check = QCheckBox("Falecido")
         self.proband_check = QCheckBox("Proband")
         self.consultand_check = QCheckBox("Consultand")
+        self.lock_layout_check = QCheckBox("Preservar posição no auto-layout")
         self.apply_button = QPushButton("Aplicar")
         self.apply_button.clicked.connect(self._apply)
 
-        layout = QFormLayout(self)
-        layout.addRow("Identificador exibido", self.label_edit)
-        layout.addRow("Símbolo/gênero", self.gender_combo)
-        layout.addRow("Estado fenotípico", self.phenotype_combo)
-        layout.addRow(self.deceased_check)
-        layout.addRow(self.proband_check)
-        layout.addRow(self.consultand_check)
-        layout.addRow(self.apply_button)
+        tabs = QTabWidget()
+        identity = QWidget()
+        form = QFormLayout(identity)
+        form.addRow("Identificador exibido", self.label_edit)
+        form.addRow("Símbolo/gênero", self.gender_combo)
+        form.addRow("Estado fenotípico", self.phenotype_combo)
+        form.addRow(self.deceased_check)
+        form.addRow(self.proband_check)
+        form.addRow(self.consultand_check)
+        form.addRow(self.lock_layout_check)
+        form.addRow(self.apply_button)
+        tabs.addTab(identity, "Identificação")
+        relations = QLabel("Relações familiares são editadas pelo canvas e menu contextual.")
+        relations.setWordWrap(True)
+        tabs.addTab(relations, "Relações")
+        clinical = QLabel("Campos HPO e variantes reservados para a Fase 5.")
+        clinical.setWordWrap(True)
+        tabs.addTab(clinical, "Clínica")
+        root = QVBoxLayout(self)
+        root.addWidget(tabs)
         self.setEnabled(False)
 
     def set_item(self, item: IndividualItem | None) -> None:
@@ -67,6 +83,7 @@ class PropertiesPanel(QWidget):
         self.deceased_check.setChecked(person.deceased)
         self.proband_check.setChecked(person.proband)
         self.consultand_check.setChecked(person.consultand)
+        self.lock_layout_check.setChecked(person.layout.locked)
 
     @staticmethod
     def _select_data(combo: QComboBox, value: object) -> None:
@@ -86,6 +103,8 @@ class PropertiesPanel(QWidget):
                 "deceased": self.deceased_check.isChecked(),
                 "proband": self.proband_check.isChecked(),
                 "consultand": self.consultand_check.isChecked(),
+                "layout": self._item.person.layout.model_copy(
+                    update={"locked": self.lock_layout_check.isChecked()}
+                ),
             },
         )
-
