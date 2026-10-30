@@ -1,6 +1,6 @@
 """Reusable presentation components for the Scientific Workspace."""
 
-from PySide6.QtCore import QEvent, QEasingCurve, QPropertyAnimation, QRect, Qt, QTimer, Signal
+from PySide6.QtCore import QEasingCurve, QEvent, QPropertyAnimation, QRect, Qt, QTimer, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QFrame,

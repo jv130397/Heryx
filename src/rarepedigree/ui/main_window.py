@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 from PySide6.QtCore import QPointF, QSettings, QSize, Qt
 from PySide6.QtGui import (
@@ -515,17 +516,16 @@ class MainWindow(QMainWindow):
                 label = "Adicionar parceiro"
             elif action == "child":
                 selected = self.scene.selected_people()
-                partner_id = (
-                    selected[1].person.id
-                    if len(selected) == 2 and selected[0].person.id == item.person.id
-                    else selected[0].person.id
-                    if len(selected) == 2 and selected[1].person.id == item.person.id
-                    else None
-                )
+                partner_id = self._partner_for_new_child(item.person.id, selected)
                 after, _ = FamilyService.add_child(before, item.person.id, partner_id)
                 label = "Adicionar filho"
             elif action == "adopted_child":
-                after, _ = FamilyService.add_child(before, item.person.id, kind=ParentageKind.LEGAL)
+                after, _ = FamilyService.add_child(
+                    before,
+                    item.person.id,
+                    self._partner_for_new_child(item.person.id, self.scene.selected_people()),
+                    kind=ParentageKind.LEGAL,
+                )
                 label = "Adicionar filho adotivo"
             elif action == "sibling":
                 after, _ = FamilyService.add_sibling(before, item.person.id)
@@ -545,6 +545,27 @@ class MainWindow(QMainWindow):
         self.message_status.setText(tr(label))
         self.toast.show_message(tr(label))
         self.fit_pedigree()
+
+    def _partner_for_new_child(
+        self, person_id: UUID, selected: list[IndividualItem]
+    ) -> UUID | None:
+        selected_partner = next(
+            (entry.person.id for entry in selected if entry.person.id != person_id), None
+        )
+        partners = [
+            relation.member_b if relation.member_a == person_id else relation.member_a
+            for relation in self.project.relationships
+            if person_id in {relation.member_a, relation.member_b}
+        ]
+        if selected_partner is not None:
+            if selected_partner not in partners:
+                raise ValueError("o segundo indivíduo selecionado não é parceiro registrado")
+            return selected_partner
+        if len(partners) == 1:
+            return partners[0]
+        if len(partners) > 1:
+            raise ValueError("selecione também qual parceiro é o outro genitor")
+        return None
 
     def _available_context_actions(self, item: IndividualItem) -> set[str]:
         parent_ids = {

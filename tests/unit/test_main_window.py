@@ -109,6 +109,70 @@ def test_new_parents_are_above_proband_without_overlap(qtbot) -> None:
     assert partner_item.pos().x() != proband_item.pos().x()
 
 
+@pytest.mark.parametrize("action", ["child", "adopted_child"])
+def test_new_child_uses_single_recorded_partner_as_second_parent(qtbot, action) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    proband = window.add_person(GenderIdentity.MAN)
+    window._context_action(window.scene.person_items[proband.id], "partner")
+    relation = window.project.relationships[0]
+    partner_id = relation.member_b if relation.member_a == proband.id else relation.member_a
+    window._context_action(window.scene.person_items[proband.id], action)
+    child_ids = {
+        edge.child_id for edge in window.project.parentages if edge.parent_id == proband.id
+    }
+    assert len(child_ids) == 1
+    child_id = next(iter(child_ids))
+    parent_ids = {
+        edge.parent_id for edge in window.project.parentages if edge.child_id == child_id
+    }
+    assert parent_ids == {proband.id, partner_id}
+
+
+def test_two_grandparent_couples_form_separate_family_units(qtbot) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    proband = window.add_person(GenderIdentity.UNKNOWN)
+    window._context_action(window.scene.person_items[proband.id], "parents")
+    parent_ids = [
+        edge.parent_id for edge in window.project.parentages if edge.child_id == proband.id
+    ]
+    for parent_id in parent_ids:
+        window._context_action(window.scene.person_items[parent_id], "parents")
+
+    generations = window.layout_engine.generations(window.project)
+    grandparent_relations = [
+        relation
+        for relation in window.project.relationships
+        if generations[relation.member_a] == generations[relation.member_b] == 0
+    ]
+    assert len(grandparent_relations) == 2
+    intervals = []
+    for relation in grandparent_relations:
+        x_values = sorted(
+            (
+                window.scene.person_items[relation.member_a].pos().x(),
+                window.scene.person_items[relation.member_b].pos().x(),
+            )
+        )
+        assert x_values[1] - x_values[0] == window.layout_engine.HORIZONTAL_SPACING
+        intervals.append(x_values)
+    intervals.sort()
+    assert intervals[1][0] - intervals[0][1] >= window.layout_engine.FAMILY_GAP
+    positions = [item.pos() for item in window.scene.person_items.values()]
+    assert len({(point.x(), point.y()) for point in positions}) == len(positions)
+
+
+def test_multiple_partners_require_explicit_coparent_selection(qtbot) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    proband = window.add_person(GenderIdentity.MAN)
+    window._context_action(window.scene.person_items[proband.id], "partner")
+    window._context_action(window.scene.person_items[proband.id], "partner")
+    with pytest.raises(ValueError, match="selecione também qual parceiro"):
+        window._partner_for_new_child(proband.id, [])
+
+
 def test_context_actions_filter_existing_parents(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
