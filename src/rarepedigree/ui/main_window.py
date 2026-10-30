@@ -6,7 +6,15 @@ from pathlib import Path
 from typing import Any
 
 from PySide6.QtCore import QPointF, QSettings, QSize, Qt
-from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QPainter, QUndoStack
+from PySide6.QtGui import (
+    QAction,
+    QActionGroup,
+    QCloseEvent,
+    QFont,
+    QKeySequence,
+    QPainter,
+    QUndoStack,
+)
 from PySide6.QtWidgets import (
     QDockWidget,
     QFileDialog,
@@ -73,6 +81,7 @@ class MainWindow(QMainWindow):
         self.scene = PedigreeScene()
         self.scene.on_person_moved = self._on_person_moved
         self.scene.on_context_action = self._context_action
+        self.scene.context_actions = self._available_context_actions
         self.scene.selectionChanged.connect(self._selection_changed)
         self.view = PedigreeView(self.scene)
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -148,12 +157,21 @@ class MainWindow(QMainWindow):
         self.auto_layout_action = QAction("Organização automática", self, shortcut="Ctrl+L")
         self.fit_action = QAction("Ajustar à tela", self, shortcut="Ctrl+0")
         self.preferences_action = QAction("Preferências…", self)
+        self.move_action = QAction("Mover", self)
+        self.move_action.setCheckable(True)
         self.twins_mz_action = QAction("Marcar selecionados como gêmeos monozigóticos", self)
         self.twins_dz_action = QAction("Marcar selecionados como gêmeos dizigóticos", self)
         self.zoom_in_action = QAction("Ampliar", self, shortcut=QKeySequence.StandardKey.ZoomIn)
         self.zoom_out_action = QAction("Reduzir", self, shortcut=QKeySequence.StandardKey.ZoomOut)
         self.edit_action = QAction("Editar indivíduo", self, shortcut="Ctrl+I")
         self.language_action = QAction("PT", self)
+        self.select_action = QAction("Selecionar", self)
+        self.select_action.setCheckable(True)
+        self.select_action.setChecked(True)
+        self.tool_mode_group = QActionGroup(self)
+        self.tool_mode_group.setExclusive(True)
+        self.tool_mode_group.addAction(self.select_action)
+        self.tool_mode_group.addAction(self.move_action)
 
         action_icons = {
             self.new_action: "new",
@@ -170,6 +188,7 @@ class MainWindow(QMainWindow):
             self.fit_action: "fit",
             self.zoom_in_action: "zoom_in",
             self.edit_action: "person",
+            self.move_action: "move",
         }
         for action, name in action_icons.items():
             action.setIcon(icon(name))
@@ -221,6 +240,8 @@ class MainWindow(QMainWindow):
         )
         self.edit_action.triggered.connect(lambda: self._context_for_selected("edit_dialog"))
         self.language_action.triggered.connect(self.toggle_language)
+        self.select_action.triggered.connect(lambda: self._set_interaction_mode("select"))
+        self.move_action.triggered.connect(lambda: self._set_interaction_mode("move"))
 
     def _create_menus(self) -> None:
         self.file_menu = self.menuBar().addMenu("Arquivo")
@@ -303,10 +324,14 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(7, 10, 7, 10)
         layout.setSpacing(5)
-        self.select_action = QAction("Selecionar", self)
-        self.select_action.setCheckable(True)
-        self.select_action.setChecked(True)
+        self.rail_buttons: list[QToolButton] = []
+        self.rail_expanded = True
+        self.collapse_action = QAction("«", self)
+        self.collapse_action.triggered.connect(self.toggle_tool_rail)
+        self.collapse_button = ToolRailButton(self.collapse_action, "fit", expanded=True)
+        layout.addWidget(self.collapse_button)
         select_button = ToolRailButton(self.select_action, "select", expanded=True)
+        self.rail_buttons.append(select_button)
         layout.addWidget(select_button)
         self.person_button = QToolButton()
         person_button = self.person_button
@@ -350,12 +375,43 @@ class MainWindow(QMainWindow):
         family_button.setToolTip("Adicionar familiar")
         family_button.setAccessibleName("Adicionar familiar")
         layout.addWidget(family_button)
-        layout.addWidget(ToolRailButton(self.relationship_action, "link", expanded=True))
-        layout.addWidget(ToolRailButton(self.auto_layout_action, "layout", expanded=True))
+        self.rail_buttons.extend([person_button, family_button])
+        for action, icon_name in [
+            (self.relationship_action, "link"),
+            (self.move_action, "move"),
+            (self.auto_layout_action, "layout"),
+        ]:
+            button = ToolRailButton(action, icon_name, expanded=True)
+            self.rail_buttons.append(button)
+            layout.addWidget(button)
         layout.addStretch()
-        layout.addWidget(ToolRailButton(self.fit_action, "fit", expanded=True))
-        layout.addWidget(ToolRailButton(self.delete_action, "delete", expanded=True))
+        for action, icon_name in [(self.fit_action, "fit"), (self.delete_action, "delete")]:
+            button = ToolRailButton(action, icon_name, expanded=True)
+            self.rail_buttons.append(button)
+            layout.addWidget(button)
         return panel
+
+    def toggle_tool_rail(self) -> None:
+        self.rail_expanded = not self.rail_expanded
+        self.tool_rail.setFixedWidth(210 if self.rail_expanded else 60)
+        style = (
+            Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+            if self.rail_expanded
+            else Qt.ToolButtonStyle.ToolButtonIconOnly
+        )
+        for button in self.rail_buttons:
+            button.setToolButtonStyle(style)
+        self.collapse_action.setText("«" if self.rail_expanded else "»")
+
+    def _set_interaction_mode(self, mode: str) -> None:
+        self.scene.set_interaction_mode(mode)
+        self.view.setDragMode(
+            PedigreeView.DragMode.NoDrag
+            if mode == "move"
+            else PedigreeView.DragMode.RubberBandDrag
+        )
+        cursor = Qt.CursorShape.OpenHandCursor if mode == "move" else Qt.CursorShape.ArrowCursor
+        self.view.viewport().setCursor(cursor)
 
     def _create_statusbar(self) -> None:
         self.count_status = QLabel()
@@ -484,6 +540,26 @@ class MainWindow(QMainWindow):
         self.message_status.setText(tr(label))
         self.toast.show_message(tr(label))
         self.fit_pedigree()
+
+    def _available_context_actions(self, item: IndividualItem) -> set[str]:
+        parent_ids = {
+            edge.parent_id
+            for edge in self.project.parentages
+            if edge.child_id == item.person.id
+        }
+        parents = [person for person in self.project.individuals if person.id in parent_ids]
+        actions = {
+            "partner", "child", "adopted_child", "sibling",
+            "edit_dialog", "edit", "delete",
+        }
+        if len(parents) < 2:
+            if not any(parent.gender_identity == GenderIdentity.MAN for parent in parents):
+                actions.add("father")
+            if not any(parent.gender_identity == GenderIdentity.WOMAN for parent in parents):
+                actions.add("mother")
+        if not parents:
+            actions.add("unknown_parents")
+        return actions
 
     def auto_layout(self, push_undo: bool = True) -> None:
         before = self.project.model_copy(deep=True)
@@ -664,6 +740,17 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def apply_preferences(self) -> None:
+        font_size = self.settings.value("ui/font_size", 14, int)
+        scale = self.settings.value("ui/scale", 100, int) / 100
+        effective_size = max(10, round(font_size * scale))
+        self.setStyleSheet(
+            SCIENTIFIC_WORKSPACE_STYLESHEET + f"\n* {{ font-size: {effective_size}px; }}"
+        )
+        font = QFont(self.font())
+        font.setPixelSize(effective_size)
+        self.setFont(font)
+        self.properties_dock.setMinimumWidth(round(330 * scale))
+        self.tool_rail.setFixedWidth(round((210 if self.rail_expanded else 60) * scale))
         self.view.grid_enabled = self.settings.value("pedigree/grid", True, bool)
         self.scene.apply_render_style(PedigreeRenderStyle.from_settings(self.settings))
         self.view.viewport().update()
@@ -677,27 +764,40 @@ class MainWindow(QMainWindow):
             self.new_action: "Novo",
             self.open_action: "Abrir…",
             self.save_action: "Salvar",
+            self.save_as_action: "Salvar como…",
+            self.quit_action: "Sair",
             self.undo_action: "Desfazer",
             self.redo_action: "Refazer",
+            self.add_man_action: "Adicionar homem/menino",
+            self.add_woman_action: "Adicionar mulher/menina",
+            self.add_unspecified_action: "Adicionar gênero não especificado",
             self.auto_layout_action: "Organização automática",
             self.export_action: "Exportar figura…",
             self.preferences_action: "Preferências…",
             self.delete_action: "Excluir",
             self.select_action: "Selecionar",
+            self.move_action: "Mover",
             self.edit_action: "Editar indivíduo",
             self.relationship_action: "Relacionamento",
+            self.consanguinity_action: "Relação consanguínea",
+            self.separation_action: "Relação separada",
+            self.divorce_action: "Relação divorciada",
+            self.add_parents_action: "Adicionar pais",
+            self.add_partner_action: "Adicionar parceiro",
+            self.add_child_action: "Adicionar filho",
+            self.add_sibling_action: "Adicionar irmão",
             self.fit_action: "Ajustar à tela",
+            self.zoom_in_action: "Ampliar",
+            self.zoom_out_action: "Reduzir",
         }
         for action, source in mapping.items():
             action.setText(tr(source))
             action.setToolTip(tr(source))
         self.language_action.setText("EN" if language_manager.language == "en" else "PT")
-        self.file_menu.setTitle("File" if language_manager.language == "en" else "Arquivo")
-        self.edit_menu.setTitle("Edit" if language_manager.language == "en" else "Editar")
-        self.pedigree_menu.setTitle(
-            "Pedigree" if language_manager.language == "en" else "Heredograma"
-        )
-        self.view_menu.setTitle("View" if language_manager.language == "en" else "Exibir")
+        self.file_menu.setTitle(tr("Arquivo"))
+        self.edit_menu.setTitle(tr("Editar"))
+        self.pedigree_menu.setTitle(tr("Heredograma"))
+        self.view_menu.setTitle(tr("Exibir"))
         self.person_button.setText(tr("Adicionar indivíduo"))
         self.family_button.setText(tr("Adicionar familiar"))
         self.empty_state.retranslate_ui()

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QLineF, QPointF, QRectF, Qt
+from PySide6.QtCore import QCoreApplication, QLineF, QPointF, QRectF, Qt
 from PySide6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QPolygonF
 from PySide6.QtWidgets import (
     QGraphicsItem,
@@ -42,17 +42,18 @@ class IndividualItem(QGraphicsObject):
         person: Individual,
         on_moved: Callable[[IndividualItem, QPointF, QPointF], None] | None = None,
         on_context_action: Callable[[IndividualItem, str], None] | None = None,
+        context_actions: Callable[[IndividualItem], set[str]] | None = None,
         render_style: PedigreeRenderStyle | None = None,
     ) -> None:
         super().__init__()
         self.person = person
         self._on_moved = on_moved
         self._on_context_action = on_context_action
+        self._context_actions = context_actions
         self._drag_start = QPointF()
         self.render_style = render_style or PedigreeRenderStyle()
         self.setFlags(
-            QGraphicsItem.GraphicsItemFlag.ItemIsMovable
-            | QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
+            QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
             | QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges
         )
         self.setPos(person.layout.x, person.layout.y)
@@ -159,23 +160,36 @@ class IndividualItem(QGraphicsObject):
     def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:
         if self._on_context_action is None:
             return super().contextMenuEvent(event)
-        menu = QMenu()
-        actions = {
-            menu.addAction("□  Adicionar pai"): "father",
-            menu.addAction("○  Adicionar mãe"): "mother",
-            menu.addAction("Adicionar pais desconhecidos"): "unknown_parents",
-            menu.addAction("◇  Adicionar parceiro"): "partner",
-            menu.addAction("○  Adicionar filho"): "child",
-            menu.addAction("Adicionar filho adotivo"): "adopted_child",
-            menu.addAction("□  Adicionar irmão"): "sibling",
-        }
-        menu.addSeparator()
-        actions[menu.addAction("✎  Editar indivíduo")] = "edit_dialog"
-        actions[menu.addAction("Abrir propriedades")] = "edit"
-        actions[menu.addAction("⌫  Excluir indivíduo")] = "delete"
+        menu, actions = self.build_context_menu()
         selected = menu.exec(event.screenPos())
         if selected in actions:
             self._on_context_action(self, actions[selected])
+
+    def build_context_menu(self) -> tuple[QMenu, dict]:
+        """Build the same semantically filtered menu used by the real popup event."""
+        allowed = self._context_actions(self) if self._context_actions else {
+            "father", "mother", "unknown_parents", "partner", "child",
+            "adopted_child", "sibling", "edit_dialog", "edit", "delete",
+        }
+        menu = QMenu()
+        actions = {}
+        entries = [
+            ("□  Adicionar pai", "father"), ("○  Adicionar mãe", "mother"),
+            ("Adicionar pais desconhecidos", "unknown_parents"),
+            ("◇  Adicionar parceiro", "partner"), ("○  Adicionar filho", "child"),
+            ("Adicionar filho adotivo", "adopted_child"),
+            ("□  Adicionar irmão", "sibling"),
+        ]
+        for label, key in entries:
+            if key in allowed:
+                actions[menu.addAction(QCoreApplication.translate("RarePedigree", label))] = key
+        menu.addSeparator()
+        for label, key in [("✎  Editar indivíduo", "edit_dialog"),
+                           ("Abrir propriedades", "edit"),
+                           ("⌫  Excluir indivíduo", "delete")]:
+            if key in allowed:
+                actions[menu.addAction(QCoreApplication.translate("RarePedigree", label))] = key
+        return menu, actions
 
 
 class RelationshipItem(QGraphicsLineItem):

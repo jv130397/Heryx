@@ -7,7 +7,7 @@ from uuid import UUID
 
 from PySide6.QtCore import QCoreApplication, QPointF, QRectF
 from PySide6.QtGui import QColor, QFont
-from PySide6.QtWidgets import QGraphicsScene, QGraphicsSimpleTextItem
+from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsSimpleTextItem
 
 from rarepedigree.domain import Individual, ParentageKind, PedigreeProject, Relationship
 from rarepedigree.layout import PedigreeLayoutEngine
@@ -34,6 +34,8 @@ class PedigreeScene(QGraphicsScene):
         self.render_style = PedigreeRenderStyle.from_settings()
         self.on_person_moved: Callable[[IndividualItem, QPointF, QPointF], None] | None = None
         self.on_context_action: Callable[[IndividualItem, str], None] | None = None
+        self.context_actions: Callable[[IndividualItem], set[str]] | None = None
+        self.interaction_mode = "select"
 
     def load_project(self, project: PedigreeProject) -> None:
         self.clear()
@@ -96,7 +98,12 @@ class PedigreeScene(QGraphicsScene):
             + category
         )
         legend.setBrush(QColor("#344b5a"))
-        legend.setPos(bounds.left(), bounds.bottom() + 45)
+        positions = {
+            "top": (bounds.left(), bounds.top() - 45),
+            "right": (bounds.right() + 45, bounds.top()),
+            "bottom": (bounds.left(), bounds.bottom() + 45),
+        }
+        legend.setPos(*positions.get(self.render_style.legend_position, positions["bottom"]))
         self.addItem(legend)
         self.legend_item = legend
         legend.setVisible(self.render_style.show_legend)
@@ -119,10 +126,21 @@ class PedigreeScene(QGraphicsScene):
             self.twin_items[group.id] = item
 
     def add_person(self, person: Individual) -> IndividualItem:
-        item = IndividualItem(person, self._person_moved, self.on_context_action, self.render_style)
+        item = IndividualItem(
+            person, self._person_moved, self.on_context_action,
+            self.context_actions, self.render_style,
+        )
+        item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, self.interaction_mode == "move")
         self.addItem(item)
         self.person_items[person.id] = item
         return item
+
+    def set_interaction_mode(self, mode: str) -> None:
+        if mode not in {"select", "move"}:
+            raise ValueError(f"Unknown interaction mode: {mode}")
+        self.interaction_mode = mode
+        for item in self.person_items.values():
+            item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, mode == "move")
 
     def apply_render_style(self, style: PedigreeRenderStyle) -> None:
         selected_ids = {item.person.id for item in self.selected_people()}

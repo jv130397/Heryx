@@ -98,3 +98,23 @@ def test_preferences_persist_colors_and_legend(qtbot) -> None:
     settings = QSettings()
     assert settings.value("pedigree/man_color") == "#112233"
     assert settings.value("pedigree/show_legend", True, bool) is False
+
+
+def test_preferences_palette_preview_and_legend_position(qtbot) -> None:
+    dialog = PreferencesDialog()
+    qtbot.addWidget(dialog)
+    dialog.palette.setCurrentIndex(dialog.palette.findData("colorblind"))
+    dialog.legend_position.setCurrentIndex(dialog.legend_position.findData("right"))
+    assert dialog.man_color.color == "#0072B2"
+    assert dialog.preview.colors[0] == "#0072B2"
+    dialog._save()
+    assert QSettings().value("pedigree/legend_position") == "right"
+
+
+def test_open_preferences_dialog_retranslates_without_restart(qtbot) -> None:
+    dialog = PreferencesDialog()
+    qtbot.addWidget(dialog)
+    language_manager.set_language("en")
+    assert dialog.tabs.tabText(0) == "Appearance"
+    assert dialog.buttons.button(dialog.buttons.StandardButton.Save).text() == "Save"
+    language_manager.set_language("pt_BR")

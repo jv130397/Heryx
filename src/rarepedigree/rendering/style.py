@@ -15,6 +15,7 @@ class PedigreeRenderStyle:
     woman_color: str = "#F472B6"
     unspecified_color: str = "#94A3B8"
     show_legend: bool = True
+    legend_position: str = "bottom"
     identifier_size: int = 10
 
     @classmethod
@@ -27,6 +28,7 @@ class PedigreeRenderStyle:
             woman_color=settings.value("pedigree/woman_color", "#F472B6", str),
             unspecified_color=settings.value("pedigree/unspecified_color", "#94A3B8", str),
             show_legend=settings.value("pedigree/show_legend", True, bool),
+            legend_position=settings.value("pedigree/legend_position", "bottom", str),
             identifier_size=settings.value("pedigree/identifier_size", 10, int),
         )
 

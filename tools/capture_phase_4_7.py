@@ -2,9 +2,8 @@
 
 from pathlib import Path
 
-from PySide6.QtCore import QPoint, QSettings, Qt
-from PySide6.QtGui import QImage, QPainter
-from PySide6.QtWidgets import QApplication, QMenu, QTabWidget
+from PySide6.QtCore import QSettings
+from PySide6.QtWidgets import QApplication, QTabWidget
 
 from rarepedigree.domain import GenderIdentity, ObservationStatus
 from rarepedigree.rendering.exporters import ExportOptions, export_png
@@ -71,28 +70,14 @@ def main() -> None:
     save(editor, "05_edit_individual.png")
     editor.close()
 
-    menu = QMenu(window)
-    for title in (
-        "□  Adicionar pai",
-        "○  Adicionar mãe",
-        "◇  Adicionar parceiro",
-        "○  Adicionar filho",
-        "□  Adicionar irmão",
-        "✎  Editar indivíduo",
-        "⌫  Excluir indivíduo",
-    ):
-        menu.addAction(title)
-    menu.ensurePolished()
-    menu.resize(menu.sizeHint())
-    base = window.grab()
-    popup = menu.grab()
-    combined = QImage(base.size(), QImage.Format.Format_ARGB32)
-    combined.fill(Qt.GlobalColor.transparent)
-    painter = QPainter(combined)
-    painter.drawPixmap(0, 0, base)
-    painter.drawPixmap(QPoint(720, 260), popup)
-    painter.end()
-    combined.save(str(OUTPUT / "06_context_menu.png"))
+    item = window.scene.person_items[root.id]
+    menu, _ = item.build_context_menu()
+    popup_position = window.mapToGlobal(window.rect().center())
+    menu.popup(popup_position)
+    QApplication.processEvents()
+    screen = window.screen()
+    screen.grabWindow(0).save(str(OUTPUT / "06_context_menu.png"))
+    menu.close()
 
     preferences = PreferencesDialog(window)
     tabs = preferences.findChild(QTabWidget)

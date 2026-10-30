@@ -75,6 +75,7 @@ class EditIndividualDialog(QDialog):
         root = QHBoxLayout(self)
         form_widget = QWidget()
         form = QFormLayout(form_widget)
+        self.form = form
         self.label_edit = QLineEdit(person.label)
         self.symbol_group = QButtonGroup(self)
         symbol_row = QWidget()
@@ -109,12 +110,12 @@ class EditIndividualDialog(QDialog):
         form.addRow(self.deceased)
         form.addRow(self.proband)
         form.addRow(self.consultand)
-        buttons = QDialogButtonBox(
+        self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
         )
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        form.addRow(buttons)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        form.addRow(self.buttons)
         self.preview = SymbolPreview()
         root.addWidget(form_widget, 2)
         root.addWidget(self.preview, 1)
@@ -122,6 +123,23 @@ class EditIndividualDialog(QDialog):
         self.phenotype.currentIndexChanged.connect(self._update_preview)
         self.deceased.toggled.connect(self._update_preview)
         self._update_preview()
+        language_manager.languageChanged.connect(self.retranslate_ui)
+        self.retranslate_ui()
+
+    def retranslate_ui(self, _language=None) -> None:
+        self.setWindowTitle(tr("Editar indivíduo"))
+        for widget, text in (
+            (self.label_edit, "Identificador exibido"),
+            (self.phenotype, "Estado fenotípico"),
+        ):
+            label = self.form.labelForField(widget)
+            if label is not None:
+                label.setText(tr(text))
+        self.deceased.setText(tr("Falecido"))
+        for index, text in enumerate(("Desconhecido", "Afetado", "Não afetado")):
+            self.phenotype.setItemText(index, tr(text))
+        self.buttons.button(QDialogButtonBox.StandardButton.Save).setText(tr("Salvar"))
+        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(tr("Cancelar"))
 
     def _update_preview(self) -> None:
         checked = self.symbol_group.checkedButton()
@@ -159,19 +177,36 @@ class NewProjectDialog(QDialog):
         self.representation.addItem("Científica monocromática", "scientific")
         self.representation.addItem("Contornos por categoria", "category_colors")
         self.synthetic = QCheckBox("Iniciar com exemplo sintético (sem dados reais)")
-        buttons = QDialogButtonBox(
+        self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
         )
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        form = QFormLayout(self)
-        form.addRow("Nome do projeto", self.name)
-        form.addRow("Identificador familiar", self.family_id)
-        form.addRow("Descrição opcional", self.description)
-        form.addRow("Idioma", self.language)
-        form.addRow("Representação", self.representation)
-        form.addRow(self.synthetic)
-        form.addRow(buttons)
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        self.form = QFormLayout(self)
+        self.form.addRow("Nome do projeto", self.name)
+        self.form.addRow("Identificador familiar", self.family_id)
+        self.form.addRow("Descrição opcional", self.description)
+        self.form.addRow("Idioma", self.language)
+        self.form.addRow("Representação", self.representation)
+        self.form.addRow(self.synthetic)
+        self.form.addRow(self.buttons)
+        language_manager.languageChanged.connect(self.retranslate_ui)
+        self.retranslate_ui()
+
+    def retranslate_ui(self, _language=None) -> None:
+        self.setWindowTitle(tr("Novo projeto"))
+        for widget, text in (
+            (self.name, "Nome do projeto"),
+            (self.family_id, "Identificador familiar"),
+            (self.description, "Descrição opcional"),
+            (self.language, "Idioma"),
+            (self.representation, "Representação"),
+        ):
+            label = self.form.labelForField(widget)
+            if label is not None:
+                label.setText(tr(text))
+        self.buttons.button(QDialogButtonBox.StandardButton.Save).setText(tr("Salvar"))
+        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(tr("Cancelar"))
 
     def create_project(self) -> PedigreeProject:
         project = PedigreeProject(

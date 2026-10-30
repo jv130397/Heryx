@@ -1,4 +1,6 @@
-"""Qt-backed application translation catalog and language persistence."""
+"""Qt Linguist-backed application translation and language persistence."""
+
+from pathlib import Path
 
 from PySide6.QtCore import QCoreApplication, QObject, QSettings, QTranslator, Signal
 
@@ -106,7 +108,7 @@ class LanguageManager(QObject):
         super().__init__()
         self.settings = QSettings()
         self.language = self.settings.value("ui/language", "pt_BR", str)
-        self.translator: CatalogTranslator | None = None
+        self.translator: QTranslator | None = None
         self.set_language(self.language, emit=False)
 
     def set_language(self, language: str, emit: bool = True) -> None:
@@ -115,7 +117,11 @@ class LanguageManager(QObject):
         if app is not None and self.translator is not None:
             app.removeTranslator(self.translator)
         self.language = language
-        self.translator = CatalogTranslator(language)
+        translator = QTranslator()
+        qm_path = Path(__file__).parents[1] / "translations" / f"rarepedigree_{language}.qm"
+        self.translator = (
+            translator if translator.load(str(qm_path)) else CatalogTranslator(language)
+        )
         if app is not None:
             app.installTranslator(self.translator)
         self.settings.setValue("ui/language", language)
