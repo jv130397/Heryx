@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rarepedigree-studio"
+version = "0.1.0.dev0"
+description = "Offline-first scientific desktop software for human pedigree documentation"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "License pending" }
+authors = [{ name = "RarePedigree Studio contributors" }]
+dependencies = [
+  "platformdirs>=4.3,<5",
+  "pydantic>=2.10,<3",
+  "PySide6>=6.8,<6.11",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<10",
+  "pytest-qt>=4.4,<5",
+  "ruff>=0.9,<1",
+]
+
+[project.scripts]
+rarepedigree-studio = "rarepedigree.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rarepedigree"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "RUF"]
+
