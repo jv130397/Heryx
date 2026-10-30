@@ -213,6 +213,7 @@ class KinshipEngine:
         create_missing_parents: bool = True,
     ) -> KinshipPlan:
         """Plan a sibling without mutating ``project`` or inventing partnerships."""
+        kind = SiblingKind(kind)
         source = self._person(project, person_id)
         after = project.model_copy(deep=True)
         sibling = Individual(label=label or self._next_label(after))

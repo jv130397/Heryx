@@ -210,7 +210,7 @@ class AddSiblingDialog(QDialog):
         self.preview.setText(tr(messages[self.sibling_kind()]))
 
     def sibling_kind(self) -> SiblingKind:
-        return self.kind.currentData()
+        return SiblingKind(self.kind.currentData())
 
     def sibling_label(self) -> str | None:
         return self.name.text().strip() or None

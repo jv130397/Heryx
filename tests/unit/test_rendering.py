@@ -5,6 +5,7 @@ from rarepedigree.domain import (
     GenderIdentity,
     Individual,
     LayoutPosition,
+    Parentage,
     PedigreeProject,
     Relationship,
     RelationshipKind,
@@ -46,6 +47,32 @@ def test_parentage_connectors_and_generation_labels(qapp) -> None:
     scene.load_project(project)
     assert child.id in scene.parentage_items
     assert len(scene.generation_items) == 2
+
+
+def test_independent_grandparent_nuclei_use_distinct_routing_lanes(qapp) -> None:
+    del qapp
+    grandparents = [
+        Individual(label=f"G{index}", layout=LayoutPosition(x=index * 130, y=0))
+        for index in range(4)
+    ]
+    parents = [
+        Individual(label="P1", layout=LayoutPosition(x=65, y=180)),
+        Individual(label="P2", layout=LayoutPosition(x=325, y=180)),
+    ]
+    project = PedigreeProject(
+        individuals=[*grandparents, *parents],
+        parentages=[
+            Parentage(parent_id=grandparents[0].id, child_id=parents[0].id),
+            Parentage(parent_id=grandparents[1].id, child_id=parents[0].id),
+            Parentage(parent_id=grandparents[2].id, child_id=parents[1].id),
+            Parentage(parent_id=grandparents[3].id, child_id=parents[1].id),
+        ],
+    )
+    scene = PedigreeScene()
+    scene.load_project(project)
+    first_path = scene.parentage_items[parents[0].id].path()
+    second_path = scene.parentage_items[parents[1].id].path()
+    assert first_path.elementAt(1).y != second_path.elementAt(1).y
 
 
 def test_consanguineous_partnership_reaches_the_graphics_scene(qapp) -> None:

@@ -114,10 +114,30 @@ class PedigreeScene(QGraphicsScene):
     def _add_parentage_connectors(self, project: PedigreeProject) -> None:
         twin_member_ids = {member for group in project.twin_groups for member in group.member_ids}
         child_ids = {edge.child_id for edge in project.parentages} - twin_member_ids
-        for child_id in child_ids:
+        parent_sets = {
+            child_id: frozenset(
+                edge.parent_id for edge in project.parentages if edge.child_id == child_id
+            )
+            for child_id in child_ids
+        }
+        unique_parent_sets = sorted(
+            set(parent_sets.values()), key=lambda ids: sorted(map(str, ids))
+        )
+        # Independent parental nuclei need distinct horizontal routing lanes.
+        # Children of the same parents deliberately share a lane (sibship convention).
+        lane_offsets = {
+            parent_ids: (index // 2 + 1) * 14.0 * (1 if index % 2 == 0 else -1)
+            for index, parent_ids in enumerate(unique_parent_sets)
+        }
+        for child_id in sorted(child_ids, key=str):
             edges = [edge for edge in project.parentages if edge.child_id == child_id]
             parents = [self.person_items[edge.parent_id] for edge in edges]
-            item = ParentageConnectorItem(edges, parents, self.person_items[child_id])
+            item = ParentageConnectorItem(
+                edges,
+                parents,
+                self.person_items[child_id],
+                routing_offset=lane_offsets[parent_sets[child_id]],
+            )
             self.addItem(item)
             self.parentage_items[child_id] = item
         for group in project.twin_groups:
@@ -130,8 +150,11 @@ class PedigreeScene(QGraphicsScene):
 
     def add_person(self, person: Individual) -> IndividualItem:
         item = IndividualItem(
-            person, self._person_moved, self.on_context_action,
-            self.context_actions, self.render_style,
+            person,
+            self._person_moved,
+            self.on_context_action,
+            self.context_actions,
+            self.render_style,
         )
         item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, self.interaction_mode == "move")
         self.addItem(item)

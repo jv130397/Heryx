@@ -1,9 +1,10 @@
 import pytest
 from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QDockWidget, QGraphicsItem, QGraphicsView
+from PySide6.QtWidgets import QDockWidget, QGraphicsItem, QGraphicsView, QMessageBox
 
 from rarepedigree.domain import GenderIdentity
 from rarepedigree.ui import MainWindow
+from rarepedigree.ui.dialogs import AddSiblingDialog
 
 
 def test_add_person_supports_undo_and_redo(qtbot) -> None:
@@ -33,6 +34,32 @@ def test_contextual_parents_are_atomic_and_undoable(qtbot) -> None:
     assert len(window.project.individuals) == 1
     window.undo_stack.redo()
     assert len(window.project.individuals) == 3
+
+
+def test_visible_sibling_assistant_adds_full_sibling(qtbot, monkeypatch) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    proband = window.add_person(GenderIdentity.UNKNOWN)
+    window._context_action(window.scene.person_items[proband.id], "parents")
+    warnings = []
+    with monkeypatch.context() as patch:
+        patch.setattr(window, "isVisible", lambda: True)
+        patch.setattr(
+            AddSiblingDialog,
+            "exec",
+            lambda self: AddSiblingDialog.DialogCode.Accepted,
+        )
+        patch.setattr(
+            QMessageBox,
+            "warning",
+            lambda *args: warnings.append(args),
+        )
+        window._context_action(window.scene.person_items[proband.id], "sibling")
+    children_by_parent = {}
+    for edge in window.project.parentages:
+        children_by_parent.setdefault(edge.parent_id, set()).add(edge.child_id)
+    assert warnings == []
+    assert any(len(children) == 2 for children in children_by_parent.values())
 
 
 def test_contextual_delete_removes_edges_and_is_undoable(qtbot) -> None:
@@ -123,9 +150,7 @@ def test_new_child_uses_single_recorded_partner_as_second_parent(qtbot, action) 
     }
     assert len(child_ids) == 1
     child_id = next(iter(child_ids))
-    parent_ids = {
-        edge.parent_id for edge in window.project.parentages if edge.child_id == child_id
-    }
+    parent_ids = {edge.parent_id for edge in window.project.parentages if edge.child_id == child_id}
     assert parent_ids == {proband.id, partner_id}
 
 

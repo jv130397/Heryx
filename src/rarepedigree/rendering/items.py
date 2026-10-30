@@ -167,16 +167,30 @@ class IndividualItem(QGraphicsObject):
 
     def build_context_menu(self) -> tuple[QMenu, dict]:
         """Build the same semantically filtered menu used by the real popup event."""
-        allowed = self._context_actions(self) if self._context_actions else {
-            "father", "mother", "unknown_parents", "partner", "child",
-            "adopted_child", "sibling", "edit_dialog", "edit", "delete",
-        }
+        allowed = (
+            self._context_actions(self)
+            if self._context_actions
+            else {
+                "father",
+                "mother",
+                "unknown_parents",
+                "partner",
+                "child",
+                "adopted_child",
+                "sibling",
+                "edit_dialog",
+                "edit",
+                "delete",
+            }
+        )
         menu = QMenu()
         actions = {}
         entries = [
-            ("□  Adicionar pai", "father"), ("○  Adicionar mãe", "mother"),
+            ("□  Adicionar pai", "father"),
+            ("○  Adicionar mãe", "mother"),
             ("Adicionar pais desconhecidos", "unknown_parents"),
-            ("◇  Adicionar parceiro", "partner"), ("○  Adicionar filho", "child"),
+            ("◇  Adicionar parceiro", "partner"),
+            ("○  Adicionar filho", "child"),
             ("Adicionar filho adotivo", "adopted_child"),
             ("□  Adicionar irmão", "sibling"),
         ]
@@ -184,9 +198,11 @@ class IndividualItem(QGraphicsObject):
             if key in allowed:
                 actions[menu.addAction(QCoreApplication.translate("RarePedigree", label))] = key
         menu.addSeparator()
-        for label, key in [("✎  Editar indivíduo", "edit_dialog"),
-                           ("Abrir propriedades", "edit"),
-                           ("⌫  Excluir indivíduo", "delete")]:
+        for label, key in [
+            ("✎  Editar indivíduo", "edit_dialog"),
+            ("Abrir propriedades", "edit"),
+            ("⌫  Excluir indivíduo", "delete"),
+        ]:
             if key in allowed:
                 actions[menu.addAction(QCoreApplication.translate("RarePedigree", label))] = key
         return menu, actions
@@ -254,11 +270,13 @@ class ParentageConnectorItem(QGraphicsPathItem):
         edges: list[Parentage],
         parents: list[IndividualItem],
         child: IndividualItem,
+        routing_offset: float = 0.0,
     ) -> None:
         super().__init__()
         self.edges = edges
         self.parents = parents
         self.child = child
+        self.routing_offset = routing_offset
         pen = QPen(QColor("#303740"), 2)
         if any(edge.kind != ParentageKind.BIOLOGICAL for edge in edges):
             pen.setStyle(Qt.PenStyle.DashLine)
@@ -273,7 +291,7 @@ class ParentageConnectorItem(QGraphicsPathItem):
         parent_y = max(item.pos().y() for item in self.parents) + SYMBOL_SIZE / 2
         child_x = self.child.pos().x()
         child_y = self.child.pos().y() - SYMBOL_SIZE / 2
-        junction_y = parent_y + max(35.0, (child_y - parent_y) * 0.5)
+        junction_y = parent_y + max(35.0, (child_y - parent_y) * 0.5) + self.routing_offset
         path = QPainterPath(QPointF(parent_x, parent_y))
         path.lineTo(parent_x, junction_y)
         path.lineTo(child_x, junction_y)
