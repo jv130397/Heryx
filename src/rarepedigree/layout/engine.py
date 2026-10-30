@@ -46,57 +46,129 @@ class PedigreeLayoutEngine:
         levels: dict[int, list[UUID]] = defaultdict(list)
         for person in project.individuals:
             levels[generations[person.id]].append(person.id)
-        positions: dict[UUID, tuple[float, float]] = {}
         people = {person.id: person for person in project.individuals}
-        parent_order = defaultdict(list)
+        parents: dict[UUID, list[UUID]] = defaultdict(list)
+        children: dict[UUID, list[UUID]] = defaultdict(list)
         for edge in project.parentages:
-            parent_order[edge.child_id].append(edge.parent_id)
-        for level in sorted(levels):
-            members = levels[level]
-            units = self._family_units(project, members)
+            parents[edge.child_id].append(edge.parent_id)
+            children[edge.parent_id].append(edge.child_id)
 
-            def desired_center(unit: list[UUID]) -> float:
-                parent_positions = [
-                    positions[parent][0]
-                    for person_id in unit
-                    for parent in parent_order[person_id]
-                    if parent in positions
+        units_by_level = {
+            level: self._family_units(project, members) for level, members in levels.items()
+        }
+        for units in units_by_level.values():
+            units.sort(
+                key=lambda unit: (
+                    sum(people[person_id].layout.x for person_id in unit) / len(unit),
+                    min(people[person_id].label for person_id in unit),
+                )
+            )
+
+        def ranks() -> dict[UUID, float]:
+            result: dict[UUID, float] = {}
+            for level in sorted(units_by_level):
+                cursor = 0.0
+                for unit in units_by_level[level]:
+                    for offset, person_id in enumerate(unit):
+                        result[person_id] = cursor + offset
+                    cursor += len(unit) + 1.0
+            return result
+
+        # Alternating barycentric sweeps are the standard layered-graph step
+        # that prevents ancestry branches from being ordered by UUID/addition
+        # order. Partnership components remain indivisible during each sweep.
+        for _ in range(8):
+            current = ranks()
+            for level in sorted(units_by_level)[1:]:
+                previous_order = {
+                    id(unit): index for index, unit in enumerate(units_by_level[level])
+                }
+                units_by_level[level].sort(
+                    key=lambda unit: self._barycenter_key(
+                        unit, parents, current, previous_order[id(unit)]
+                    )
+                )
+            current = ranks()
+            for level in sorted(units_by_level, reverse=True)[1:]:
+                previous_order = {
+                    id(unit): index for index, unit in enumerate(units_by_level[level])
+                }
+                units_by_level[level].sort(
+                    key=lambda unit: self._barycenter_key(
+                        unit, children, current, previous_order[id(unit)]
+                    )
+                )
+
+        # If one member of a partnership belongs to a sibship, keep that
+        # member on the side facing their siblings. Otherwise the partner can
+        # be placed between siblings and appear to be their biological sibling.
+        biological_parent_sets = {
+            person_id: frozenset(parents[person_id]) for person_id in generations
+        }
+        for units in units_by_level.values():
+            unit_index = {
+                person_id: index for index, unit in enumerate(units) for person_id in unit
+            }
+            for index, unit in enumerate(units):
+                anchors = [person_id for person_id in unit if biological_parent_sets[person_id]]
+                if len(anchors) != 1:
+                    continue
+                anchor = anchors[0]
+                sibling_indices = [
+                    unit_index[other]
+                    for other, parent_set in biological_parent_sets.items()
+                    if other not in unit
+                    and parent_set == biological_parent_sets[anchor]
+                    and other in unit_index
                 ]
-                if parent_positions:
-                    return sum(parent_positions) / len(parent_positions)
-                return sum(people[person_id].layout.x for person_id in unit) / len(unit)
+                if not sibling_indices:
+                    continue
+                partners = [person_id for person_id in unit if person_id != anchor]
+                unit[:] = (
+                    [*partners, anchor]
+                    if sum(sibling_indices) / len(sibling_indices) > index
+                    else [anchor, *partners]
+                )
 
-            units.sort(key=lambda unit: (desired_center(unit), str(unit[0])))
+        positions: dict[UUID, tuple[float, float]] = {}
+        for level in sorted(units_by_level):
+            units = units_by_level[level]
             total_width = (
                 sum((len(unit) - 1) * self.HORIZONTAL_SPACING for unit in units)
                 + max(0, len(units) - 1) * self.FAMILY_GAP
             )
             cursor = -total_width / 2
             provisional: dict[UUID, float] = {}
-            unit_centers: list[float] = []
             for unit in units:
                 unit_width = (len(unit) - 1) * self.HORIZONTAL_SPACING
-                unit_centers.append(cursor + unit_width / 2)
                 for index, person_id in enumerate(unit):
                     provisional[person_id] = cursor + index * self.HORIZONTAL_SPACING
                 cursor += unit_width + self.FAMILY_GAP
-            desired = [desired_center(unit) for unit in units if any(parent_order[p] for p in unit)]
-            actual = [
-                center
-                for center, unit in zip(unit_centers, units, strict=True)
-                if any(parent_order[p] for p in unit)
-            ]
-            shift = (sum(desired) / len(desired) - sum(actual) / len(actual)) if desired else 0.0
-            for person_id in members:
+            for person_id in levels[level]:
                 person = people[person_id]
                 if preserve_locked and person.layout.locked:
                     positions[person_id] = (person.layout.x, person.layout.y)
                 else:
                     positions[person_id] = (
-                        provisional[person_id] + shift,
+                        provisional[person_id],
                         level * self.VERTICAL_SPACING,
                     )
         return positions
+
+    @staticmethod
+    def _barycenter_key(
+        unit: list[UUID],
+        neighbours: dict[UUID, list[UUID]],
+        ranks: dict[UUID, float],
+        fallback: int,
+    ) -> tuple[float, int]:
+        connected = [
+            ranks[other] for person_id in unit for other in neighbours[person_id] if other in ranks
+        ]
+        return (
+            sum(connected) / len(connected) if connected else float(fallback),
+            fallback,
+        )
 
     @staticmethod
     def _family_units(project: PedigreeProject, members: list[UUID]) -> list[list[UUID]]:

@@ -114,32 +114,20 @@ class PedigreeScene(QGraphicsScene):
     def _add_parentage_connectors(self, project: PedigreeProject) -> None:
         twin_member_ids = {member for group in project.twin_groups for member in group.member_ids}
         child_ids = {edge.child_id for edge in project.parentages} - twin_member_ids
-        parent_sets = {
-            child_id: frozenset(
+        children_by_parents: dict[frozenset[UUID], list[UUID]] = {}
+        for child_id in child_ids:
+            parent_ids = frozenset(
                 edge.parent_id for edge in project.parentages if edge.child_id == child_id
             )
-            for child_id in child_ids
-        }
-        unique_parent_sets = sorted(
-            set(parent_sets.values()), key=lambda ids: sorted(map(str, ids))
-        )
-        # Independent parental nuclei need distinct horizontal routing lanes.
-        # Children of the same parents deliberately share a lane (sibship convention).
-        lane_offsets = {
-            parent_ids: (index // 2 + 1) * 14.0 * (1 if index % 2 == 0 else -1)
-            for index, parent_ids in enumerate(unique_parent_sets)
-        }
-        for child_id in sorted(child_ids, key=str):
-            edges = [edge for edge in project.parentages if edge.child_id == child_id]
-            parents = [self.person_items[edge.parent_id] for edge in edges]
-            item = ParentageConnectorItem(
-                edges,
-                parents,
-                self.person_items[child_id],
-                routing_offset=lane_offsets[parent_sets[child_id]],
-            )
+            children_by_parents.setdefault(parent_ids, []).append(child_id)
+        for parent_ids, grouped_children in children_by_parents.items():
+            edges = [edge for edge in project.parentages if edge.child_id in grouped_children]
+            parents = [self.person_items[parent_id] for parent_id in parent_ids]
+            children = [self.person_items[child_id] for child_id in grouped_children]
+            item = ParentageConnectorItem(edges, parents, children)
             self.addItem(item)
-            self.parentage_items[child_id] = item
+            for child_id in grouped_children:
+                self.parentage_items[child_id] = item
         for group in project.twin_groups:
             edges = [edge for edge in project.parentages if edge.child_id == group.member_ids[0]]
             parents = [self.person_items[edge.parent_id] for edge in edges]

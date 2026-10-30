@@ -263,20 +263,18 @@ class RelationshipItem(QGraphicsLineItem):
 
 
 class ParentageConnectorItem(QGraphicsPathItem):
-    """Elbow connector from one or more explicit parents to a child."""
+    """Scientific sibship connector for one explicit parental nucleus."""
 
     def __init__(
         self,
         edges: list[Parentage],
         parents: list[IndividualItem],
-        child: IndividualItem,
-        routing_offset: float = 0.0,
+        children: list[IndividualItem],
     ) -> None:
         super().__init__()
         self.edges = edges
         self.parents = parents
-        self.child = child
-        self.routing_offset = routing_offset
+        self.children = children
         pen = QPen(QColor("#303740"), 2)
         if any(edge.kind != ParentageKind.BIOLOGICAL for edge in edges):
             pen.setStyle(Qt.PenStyle.DashLine)
@@ -289,13 +287,19 @@ class ParentageConnectorItem(QGraphicsPathItem):
             return
         parent_x = sum(item.pos().x() for item in self.parents) / len(self.parents)
         parent_y = max(item.pos().y() for item in self.parents) + SYMBOL_SIZE / 2
-        child_x = self.child.pos().x()
-        child_y = self.child.pos().y() - SYMBOL_SIZE / 2
-        junction_y = parent_y + max(35.0, (child_y - parent_y) * 0.5) + self.routing_offset
+        child_y = min(child.pos().y() for child in self.children) - SYMBOL_SIZE / 2
+        junction_y = parent_y + max(35.0, (child_y - parent_y) * 0.5)
         path = QPainterPath(QPointF(parent_x, parent_y))
         path.lineTo(parent_x, junction_y)
-        path.lineTo(child_x, junction_y)
-        path.lineTo(child_x, child_y)
+        child_xs = [child.pos().x() for child in self.children]
+        if len(child_xs) == 1:
+            path.lineTo(child_xs[0], junction_y)
+        else:
+            path.moveTo(min(child_xs), junction_y)
+            path.lineTo(max(child_xs), junction_y)
+        for child in self.children:
+            path.moveTo(child.pos().x(), junction_y)
+            path.lineTo(child.pos().x(), child.pos().y() - SYMBOL_SIZE / 2)
         self.setPath(path)
 
 

@@ -49,7 +49,7 @@ def test_parentage_connectors_and_generation_labels(qapp) -> None:
     assert len(scene.generation_items) == 2
 
 
-def test_independent_grandparent_nuclei_use_distinct_routing_lanes(qapp) -> None:
+def test_independent_grandparent_nuclei_use_distinct_connectors(qapp) -> None:
     del qapp
     grandparents = [
         Individual(label=f"G{index}", layout=LayoutPosition(x=index * 130, y=0))
@@ -70,9 +70,31 @@ def test_independent_grandparent_nuclei_use_distinct_routing_lanes(qapp) -> None
     )
     scene = PedigreeScene()
     scene.load_project(project)
-    first_path = scene.parentage_items[parents[0].id].path()
-    second_path = scene.parentage_items[parents[1].id].path()
-    assert first_path.elementAt(1).y != second_path.elementAt(1).y
+    first_item = scene.parentage_items[parents[0].id]
+    second_item = scene.parentage_items[parents[1].id]
+    assert first_item is not second_item
+    assert not first_item.path().boundingRect().intersects(second_item.path().boundingRect())
+
+
+def test_full_siblings_share_one_scientific_sibship_connector(qapp) -> None:
+    del qapp
+    first = Individual(layout=LayoutPosition(x=-65, y=180))
+    second = Individual(layout=LayoutPosition(x=65, y=180))
+    parents = [
+        Individual(layout=LayoutPosition(x=-65, y=0)),
+        Individual(layout=LayoutPosition(x=65, y=0)),
+    ]
+    project = PedigreeProject(
+        individuals=[*parents, first, second],
+        parentages=[
+            Parentage(parent_id=parent.id, child_id=child.id)
+            for parent in parents
+            for child in (first, second)
+        ],
+    )
+    scene = PedigreeScene()
+    scene.load_project(project)
+    assert scene.parentage_items[first.id] is scene.parentage_items[second.id]
 
 
 def test_consanguineous_partnership_reaches_the_graphics_scene(qapp) -> None:

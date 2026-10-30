@@ -126,3 +126,25 @@ def test_coparents_are_grouped_for_layout_without_creating_a_partnership() -> No
     assert project.relationships == []
     assert abs(positions[first.id][0] - positions[second.id][0]) == 130
     assert positions[child.id][1] > positions[first.id][1]
+
+
+def test_partner_is_not_placed_between_full_siblings() -> None:
+    parent_a = Individual(label="I-1")
+    parent_b = Individual(label="I-2")
+    first = Individual(label="II-1")
+    sibling = Individual(label="II-2")
+    partner = Individual(label="II-3")
+    project = PedigreeProject(
+        individuals=[parent_a, parent_b, first, sibling, partner],
+        parentages=[
+            Parentage(parent_id=parent.id, child_id=child.id)
+            for parent in (parent_a, parent_b)
+            for child in (first, sibling)
+        ],
+        relationships=[Relationship(member_a=first.id, member_b=partner.id)],
+    )
+    positions = PedigreeLayoutEngine().compute(project, preserve_locked=False)
+    focal_x = positions[first.id][0]
+    sibling_x = positions[sibling.id][0]
+    partner_x = positions[partner.id][0]
+    assert min(partner_x, sibling_x) < focal_x < max(partner_x, sibling_x)
