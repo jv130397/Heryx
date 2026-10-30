@@ -53,7 +53,7 @@ QScrollBar { background: transparent; width: 9px; height: 9px; }
 QScrollBar::handle { background: #94A3B8; border-radius: 4px; min-height: 28px; }
 QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
 QFrame#tool-rail { background: #151E30; border: 1px solid #2B3750; border-radius: 10px; }
-QFrame#properties-drawer { background: #151E30; border-left: 1px solid #30415F; }
+QFrame#properties-drawer { background: #151E30; border: 1px solid #30415F; border-radius: 12px; }
 QFrame#empty-state { background: rgba(255,255,255,235); border: 1px solid #CBD5E1; border-radius: 12px; }
 QFrame#empty-state QLabel { color: #475569; }
 QLabel#empty-title { color: #0F172A; font-size: 18px; font-weight: 700; }

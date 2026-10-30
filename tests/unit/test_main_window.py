@@ -1,6 +1,6 @@
 import pytest
 from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QGraphicsItem, QGraphicsView
+from PySide6.QtWidgets import QDockWidget, QGraphicsItem, QGraphicsView
 
 from rarepedigree.domain import GenderIdentity
 from rarepedigree.ui import MainWindow
@@ -187,7 +187,7 @@ def test_context_actions_filter_existing_parents(qtbot) -> None:
     assert "mother" in actions
 
 
-@pytest.mark.parametrize(("scale", "expected"), [(100, 370), (125, 462), (150, 555)])
+@pytest.mark.parametrize(("scale", "expected"), [(100, 390), (125, 488), (150, 585)])
 def test_ui_scale_changes_workspace_geometry(qtbot, scale, expected) -> None:
     settings = QSettings()
     settings.setValue("ui/scale", scale)
@@ -198,3 +198,21 @@ def test_ui_scale_changes_workspace_geometry(qtbot, scale, expected) -> None:
     assert window.font().pixelSize() == round(14 * scale / 100)
     assert window.devicePixelRatioF() > 0
     settings.setValue("ui/scale", 100)
+
+
+def test_properties_use_only_floating_slide_over_without_dock(qtbot) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window.resize(1366, 768)
+    window.show()
+    window.add_person(GenderIdentity.MAN)
+    qtbot.waitUntil(
+        lambda: window.properties_drawer.geometry().right() < window.central_shell.width()
+    )
+    geometry = window.properties_drawer.geometry()
+    assert window.findChildren(QDockWidget) == []
+    assert geometry.top() == window.properties_drawer.MARGIN
+    assert geometry.right() < window.central_shell.width()
+    assert geometry.bottom() < window.central_shell.height()
+    window.undo_stack.setClean()
+    window.close()

@@ -1,9 +1,10 @@
 """Reusable presentation components for the Scientific Workspace."""
 
 from PySide6.QtCore import QEasingCurve, QEvent, QPropertyAnimation, QRect, Qt, QTimer, Signal
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import (
     QFrame,
+    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
     QMenu,
@@ -22,8 +23,6 @@ class ToolRailButton(QToolButton):
         self, action: QAction, icon_name: str, parent=None, expanded: bool = False
     ) -> None:
         super().__init__(parent)
-        if parent is not None:
-            parent.installEventFilter(self)
         self.setDefaultAction(action)
         self.setIcon(icon(icon_name))
         self.setToolButtonStyle(
@@ -151,12 +150,20 @@ class SlidingPanel(QFrame):
     """Overlay drawer that does not permanently consume canvas width."""
 
     closeRequested = Signal()
+    MARGIN = 18
 
     def __init__(self, content: QWidget, parent=None) -> None:
         super().__init__(parent)
+        if parent is not None:
+            parent.installEventFilter(self)
         self.setObjectName("properties-drawer")
         self.setMinimumWidth(330)
-        self.setFixedWidth(370)
+        self.setFixedWidth(390)
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(28)
+        shadow.setOffset(-5, 6)
+        shadow.setColor(QColor(3, 8, 20, 145))
+        self.setGraphicsEffect(shadow)
         self._open = False
         self.animation = QPropertyAnimation(self, b"geometry", self)
         self.animation.setDuration(180)
@@ -187,8 +194,19 @@ class SlidingPanel(QFrame):
         self.show()
         self.raise_()
         parent_rect = self.parentWidget().rect()
-        start = QRect(parent_rect.width(), 0, self.width(), parent_rect.height())
-        end = QRect(parent_rect.width() - self.width(), 0, self.width(), parent_rect.height())
+        panel_height = max(240, parent_rect.height() - self.MARGIN * 2)
+        start = QRect(
+            parent_rect.width() + self.MARGIN,
+            self.MARGIN,
+            self.width(),
+            panel_height,
+        )
+        end = QRect(
+            parent_rect.width() - self.width() - self.MARGIN,
+            self.MARGIN,
+            self.width(),
+            panel_height,
+        )
         self.animation.stop()
         self.animation.setStartValue(self.geometry() if was_visible else start)
         self.animation.setEndValue(end)
@@ -202,7 +220,12 @@ class SlidingPanel(QFrame):
         self.animation.stop()
         self.animation.setStartValue(self.geometry())
         self.animation.setEndValue(
-            QRect(parent_rect.width(), 0, self.width(), parent_rect.height())
+            QRect(
+                parent_rect.width() + self.MARGIN,
+                self.MARGIN,
+                self.width(),
+                max(240, parent_rect.height() - self.MARGIN * 2),
+            )
         )
         self.animation.start()
         self.closeRequested.emit()
@@ -215,8 +238,17 @@ class SlidingPanel(QFrame):
         if self.parentWidget() is None:
             return
         parent_rect = self.parentWidget().rect()
-        x = parent_rect.width() - self.width() if self._open else parent_rect.width()
-        self.setGeometry(x, 0, self.width(), parent_rect.height())
+        x = (
+            parent_rect.width() - self.width() - self.MARGIN
+            if self._open
+            else parent_rect.width() + self.MARGIN
+        )
+        self.setGeometry(
+            x,
+            self.MARGIN,
+            self.width(),
+            max(240, parent_rect.height() - self.MARGIN * 2),
+        )
 
     def eventFilter(self, watched, event) -> bool:
         if watched is self.parentWidget() and event.type() == QEvent.Type.Resize:

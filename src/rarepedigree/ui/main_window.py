@@ -779,7 +779,7 @@ class MainWindow(QMainWindow):
         font = QFont(self.font())
         font.setPixelSize(effective_size)
         self.setFont(font)
-        drawer_width = round(370 * scale)
+        drawer_width = round(390 * scale)
         self.properties_drawer.setMinimumWidth(round(330 * scale))
         self.properties_drawer.setFixedWidth(drawer_width)
         self.properties_drawer.sync_geometry()
