@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from uuid import UUID
 
-from PySide6.QtCore import QPointF, QRectF
+from PySide6.QtCore import QCoreApplication, QPointF, QRectF
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsSimpleTextItem
 
@@ -17,6 +17,7 @@ from rarepedigree.rendering.items import (
     RelationshipItem,
     TwinConnectorItem,
 )
+from rarepedigree.rendering.style import PedigreeRenderStyle
 
 
 class PedigreeScene(QGraphicsScene):
@@ -30,6 +31,7 @@ class PedigreeScene(QGraphicsScene):
         self.generation_items: list[QGraphicsSimpleTextItem] = []
         self.legend_item: QGraphicsSimpleTextItem | None = None
         self.project = PedigreeProject()
+        self.render_style = PedigreeRenderStyle.from_settings()
         self.on_person_moved: Callable[[IndividualItem, QPointF, QPointF], None] | None = None
         self.on_context_action: Callable[[IndividualItem, str], None] | None = None
 
@@ -75,14 +77,29 @@ class PedigreeScene(QGraphicsScene):
 
     def _add_legend(self) -> None:
         bounds = self.itemsBoundingRect()
+
+        def translate(text: str) -> str:
+            return QCoreApplication.translate("RarePedigree", text)
+
+        category = (
+            "  |  " + translate("contorno azul/rosa/cinza = categoria de representação")
+            if self.render_style.category_colors and not self.render_style.monochrome
+            else "  |  " + translate("modo científico monocromático")
+        )
         legend = QGraphicsSimpleTextItem(
-            "Legenda: preenchido = afetado  |  ? = estado desconhecido  |  "
-            "/ = falecido  |  P = proband  |  C = consultand"
+            translate("Legenda: preenchido = afetado")
+            + "  |  ? = "
+            + translate("estado desconhecido")
+            + "  |  / = "
+            + translate("falecido")
+            + "  |  P = proband  |  C = consultand"
+            + category
         )
         legend.setBrush(QColor("#344b5a"))
         legend.setPos(bounds.left(), bounds.bottom() + 45)
         self.addItem(legend)
         self.legend_item = legend
+        legend.setVisible(self.render_style.show_legend)
 
     def _add_parentage_connectors(self, project: PedigreeProject) -> None:
         twin_member_ids = {member for group in project.twin_groups for member in group.member_ids}
@@ -102,10 +119,18 @@ class PedigreeScene(QGraphicsScene):
             self.twin_items[group.id] = item
 
     def add_person(self, person: Individual) -> IndividualItem:
-        item = IndividualItem(person, self._person_moved, self.on_context_action)
+        item = IndividualItem(person, self._person_moved, self.on_context_action, self.render_style)
         self.addItem(item)
         self.person_items[person.id] = item
         return item
+
+    def apply_render_style(self, style: PedigreeRenderStyle) -> None:
+        selected_ids = {item.person.id for item in self.selected_people()}
+        self.render_style = style
+        self.load_project(self.project)
+        for person_id in selected_ids:
+            if person_id in self.person_items:
+                self.person_items[person_id].setSelected(True)
 
     def remove_person(self, person_id: UUID) -> None:
         item = self.person_items.pop(person_id)

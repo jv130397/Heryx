@@ -1,4 +1,4 @@
-# RarePedigree Scientific Workspace — Design System
+# RarePedigree Scientific Workspace — Midnight Genomics
 
 ## Objetivo
 
@@ -20,15 +20,18 @@ leitura clínica e operação por teclado.
 
 | Papel | Valor |
 |---|---|
-| Fundo | `#0B1220` |
-| Painel | `#172338` |
-| Superfície | `#1E293B` |
-| Destaque | `#22D3EE` |
+| Fundo | `#0A0F1C` |
+| Barra superior | `#10192B` |
+| Painel | `#151E30` |
+| Superfície | `#202D45` |
+| Azul principal | `#3B82F6` |
+| Violeta | `#8B5CF6` |
+| Seleção | `#22D3EE` |
 | Texto | `#F8FAFC` |
-| Texto secundário | `#94A3B8` |
-| Canvas | `#F8FAFC` |
-| Borda | `#334155` |
-| Perigo | `#FB7185` |
+| Texto secundário | `#A8B6CC` |
+| Canvas | `#F7F9FD` |
+| Borda | `#2B3750` |
+| Perigo | `#F43F5E` |
 
 A pilha tipográfica é Inter, Noto Sans, Segoe UI e sans-serif do sistema. Controles usam
 raio de 5–7 px, foco ciano de 2 px e alvos principais de pelo menos 42 px.
@@ -44,6 +47,16 @@ raio de 5–7 px, foco ciano de 2 px e alvos principais de pelo menos 42 px.
 - `PedigreeView`: grade não exportável, zoom limitado e pan com botão central.
 
 Os SVGs são próprios e definidos em `ui/icons.py`. QSS e cores ficam em `ui/theme.py`.
+
+## Internacionalização e representação
+
+`ui/i18n.py` centraliza o catálogo PT-BR/EN em um `QTranslator` instalado na aplicação.
+Preferências e onboarding persistem somente idioma e opções visuais via `QSettings`.
+
+As cores configuráveis são contornos de categoria e nunca substituem o preenchimento de
+fenótipo. Afetados permanecem preenchidos, desconhecidos conservam `?`, falecidos conservam a
+barra diagonal e o modo científico força contornos monocromáticos. A exportação possui escolha
+de cor/monocromático independente do tema da interface.
 
 ## Hierarquia da janela
 

@@ -18,6 +18,14 @@ class PedigreeView(QGraphicsView):
         self.setAccessibleName("Canvas do heredograma")
         self._middle_panning = False
         self.grid_enabled = True
+        self.floating_control = None
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        if self.floating_control is not None:
+            control = self.floating_control
+            control.adjustSize()
+            control.move(self.viewport().width() - control.width() - 18, 18)
 
     @property
     def zoom_percent(self) -> int:
@@ -37,12 +45,10 @@ class PedigreeView(QGraphicsView):
         left = int(rect.left()) - (int(rect.left()) % step)
         top = int(rect.top()) - (int(rect.top()) % step)
         lines = [
-            QLineF(x, rect.top(), x, rect.bottom())
-            for x in range(left, int(rect.right()), step)
+            QLineF(x, rect.top(), x, rect.bottom()) for x in range(left, int(rect.right()), step)
         ]
         lines += [
-            QLineF(rect.left(), y, rect.right(), y)
-            for y in range(top, int(rect.bottom()), step)
+            QLineF(rect.left(), y, rect.right(), y) for y in range(top, int(rect.bottom()), step)
         ]
         painter.setPen(QPen(QColor("#E5EAF0"), 0))
         painter.drawLines(lines)

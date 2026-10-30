@@ -24,9 +24,9 @@ def family_window() -> tuple[MainWindow, object]:
     window._context_action(window.scene.person_items[root.id], "parents")
     window._context_action(window.scene.person_items[root.id], "partner")
     partner = next(
-        person for person in window.project.individuals if person.id not in {
-            root.id, *(edge.parent_id for edge in window.project.parentages)
-        }
+        person
+        for person in window.project.individuals
+        if person.id not in {root.id, *(edge.parent_id for edge in window.project.parentages)}
     )
     window.scene.clearSelection()
     window.scene.person_items[root.id].setSelected(True)
@@ -62,8 +62,12 @@ def main() -> None:
 
     menu = QMenu(window)
     for title in (
-        "Adicionar pais", "Adicionar parceiro", "Adicionar filho",
-        "Adicionar irmão", "Editar propriedades", "Excluir indivíduo",
+        "Adicionar pais",
+        "Adicionar parceiro",
+        "Adicionar filho",
+        "Adicionar irmão",
+        "Editar propriedades",
+        "Excluir indivíduo",
     ):
         menu.addAction(title)
     menu.ensurePolished()

@@ -22,8 +22,7 @@ def test_contextual_family_builds_three_generations_and_preserves_integrity() ->
         parents
     )
     assert any(
-        edge.child_id == child_id and edge.parent_id == root.id
-        for edge in project.parentages
+        edge.child_id == child_id and edge.parent_id == root.id for edge in project.parentages
     )
 
 

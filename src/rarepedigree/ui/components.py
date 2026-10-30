@@ -1,6 +1,6 @@
 """Reusable presentation components for the Scientific Workspace."""
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QFrame,
@@ -13,16 +13,25 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from rarepedigree.ui.i18n import tr
 from rarepedigree.ui.icons import icon
 
 
 class ToolRailButton(QToolButton):
-    def __init__(self, action: QAction, icon_name: str, parent=None) -> None:
+    def __init__(
+        self, action: QAction, icon_name: str, parent=None, expanded: bool = False
+    ) -> None:
         super().__init__(parent)
         self.setDefaultAction(action)
         self.setIcon(icon(icon_name))
-        self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-        self.setFixedSize(44, 44)
+        self.setToolButtonStyle(
+            Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+            if expanded
+            else Qt.ToolButtonStyle.ToolButtonIconOnly
+        )
+        self.setFixedHeight(46)
+        if not expanded:
+            self.setFixedWidth(44)
         self.setAccessibleName(action.text().replace("…", ""))
         self.setToolTip(f"{action.text()} ({action.shortcut().toString()})".rstrip(" ()"))
         self.setProperty("railButton", True)
@@ -48,19 +57,27 @@ class EmptyState(QFrame):
         mark = QLabel("◇")
         mark.setObjectName("empty-mark")
         mark.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title = QLabel("Comece um novo heredograma")
-        title.setObjectName("empty-title")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        message = QLabel("Adicione o primeiro indivíduo para iniciar a construção familiar.")
-        message.setWordWrap(True)
-        message.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        button = QPushButton("Adicionar primeiro indivíduo")
-        button.setObjectName("primary-button")
-        button.clicked.connect(self.addRequested)
+        self.title = QLabel()
+        self.title.setObjectName("empty-title")
+        self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.message = QLabel()
+        self.message.setWordWrap(True)
+        self.message.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.button = QPushButton()
+        self.button.setObjectName("primary-button")
+        self.button.clicked.connect(self.addRequested)
         layout.addWidget(mark)
-        layout.addWidget(title)
-        layout.addWidget(message)
-        layout.addWidget(button, alignment=Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.title)
+        layout.addWidget(self.message)
+        layout.addWidget(self.button, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.retranslate_ui()
+
+    def retranslate_ui(self) -> None:
+        self.title.setText(tr("Comece um novo heredograma"))
+        self.message.setText(
+            tr("Adicione o primeiro indivíduo para iniciar a construção familiar.")
+        )
+        self.button.setText(tr("Adicionar primeiro indivíduo"))
 
 
 class ZoomControl(QWidget):
@@ -101,3 +118,28 @@ class FamilyMenu(QMenu):
         super().__init__(parent)
         self.setAccessibleName("Adicionar familiar")
         self.addActions(actions)
+
+
+class Toast(QFrame):
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setObjectName("toast")
+        layout = QHBoxLayout(self)
+        self.icon = QLabel("✓")
+        self.message = QLabel()
+        layout.addWidget(self.icon)
+        layout.addWidget(self.message)
+        self.hide()
+
+    def show_message(self, message: str, level: str = "success") -> None:
+        self.icon.setText({"success": "✓", "warning": "!", "error": "x"}[level])
+        self.setProperty("level", level)
+        self.style().unpolish(self)
+        self.style().polish(self)
+        self.message.setText(message)
+        self.adjustSize()
+        if self.parentWidget() is not None:
+            self.move(18, self.parentWidget().height() - self.height() - 18)
+        self.show()
+        self.raise_()
+        QTimer.singleShot(3200, self.hide)

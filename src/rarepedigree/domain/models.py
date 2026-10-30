@@ -114,6 +114,9 @@ class PedigreeProject(BaseModel):
     schema_version: str = "0.2.0"
     project_id: UUID = Field(default_factory=uuid4)
     title: str = Field(default="Heredograma sem título", max_length=200)
+    description: str = Field(default="", max_length=1000)
+    project_language: str = Field(default="pt_BR", max_length=10)
+    representation: str = Field(default="scientific", max_length=30)
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     individuals: list[Individual] = Field(default_factory=list)

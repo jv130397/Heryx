@@ -1,8 +1,8 @@
 # RarePedigree Studio
 
-Aplicativo científico para criação e análise responsável de heredogramas. A **Fase 4.6**
-refina a RarePedigree Scientific Workspace com toolbar compacta, rail de ferramentas, estado
-vazio funcional, propriedades contextuais e design system próprio.
+Aplicativo científico para criação e análise responsável de heredogramas. A **Fase 4.7**
+introduz Midnight Genomics, internacionalização PT-BR/EN, cores de representação seguras,
+modo científico, editor flutuante, assistente de projeto e preferências avançadas.
 
 Leia primeiro:
 
@@ -18,6 +18,7 @@ Leia primeiro:
 - `specifications/PHASE_4_5_REPORT.md`
 - `specifications/UI_DESIGN_SYSTEM.md`
 - `specifications/PHASE_4_6_REPORT.md`
+- `specifications/PHASE_4_7_REPORT.md`
 
 Os PDFs originais permanecem em `Artigos/`. `literature/` contém cópias organizadas e material aberto obtido durante a auditoria. Nenhum arquivo contém dados reais de pacientes.
 
@@ -31,5 +32,5 @@ ruff check .
 rarepedigree-studio
 ```
 
-**Estado:** Fase 4.6 validada. Consulte as limitações antes de usar; o software ainda não deve
+**Estado:** Fase 4.7 validada. Consulte as limitações antes de usar; o software ainda não deve
 ser empregado como ferramenta diagnóstica ou em produção clínica.

@@ -18,6 +18,20 @@ from rarepedigree.domain.models import (
 
 class FamilyService:
     @staticmethod
+    def add_parent(
+        project: PedigreeProject, child_id: UUID, gender: GenderIdentity
+    ) -> tuple[PedigreeProject, UUID]:
+        updated = project.model_copy(deep=True)
+        _person(updated, child_id)
+        existing = [edge for edge in updated.parentages if edge.child_id == child_id]
+        if len(existing) >= 2:
+            raise ValueError("the selected individual already has two recorded parents")
+        parent = Individual(label=_next_label(updated), gender_identity=gender)
+        updated.individuals.append(parent)
+        updated.parentages.append(Parentage(parent_id=parent.id, child_id=child_id))
+        return _validated(updated), parent.id
+
+    @staticmethod
     def set_twins(
         project: PedigreeProject, member_ids: list[UUID], zygosity: TwinZygosity
     ) -> PedigreeProject:
@@ -73,9 +87,7 @@ class FamilyService:
         updated.individuals.append(child)
         updated.parentages.append(Parentage(parent_id=parent_id, child_id=child.id, kind=kind))
         if partner_id is not None:
-            updated.parentages.append(
-                Parentage(parent_id=partner_id, child_id=child.id, kind=kind)
-            )
+            updated.parentages.append(Parentage(parent_id=partner_id, child_id=child.id, kind=kind))
         return _validated(updated), child.id
 
     @staticmethod

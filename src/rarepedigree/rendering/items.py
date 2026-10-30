@@ -29,6 +29,7 @@ from rarepedigree.domain import (
     TwinGroup,
     TwinZygosity,
 )
+from rarepedigree.rendering.style import PedigreeRenderStyle
 
 SYMBOL_SIZE = 48.0
 
@@ -41,12 +42,14 @@ class IndividualItem(QGraphicsObject):
         person: Individual,
         on_moved: Callable[[IndividualItem, QPointF, QPointF], None] | None = None,
         on_context_action: Callable[[IndividualItem, str], None] | None = None,
+        render_style: PedigreeRenderStyle | None = None,
     ) -> None:
         super().__init__()
         self.person = person
         self._on_moved = on_moved
         self._on_context_action = on_context_action
         self._drag_start = QPointF()
+        self.render_style = render_style or PedigreeRenderStyle()
         self.setFlags(
             QGraphicsItem.GraphicsItemFlag.ItemIsMovable
             | QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
@@ -82,7 +85,8 @@ class IndividualItem(QGraphicsObject):
         del option, widget
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         selected = self.isSelected()
-        pen = QPen(QColor("#1769aa") if selected else QColor("#20262e"), 2.5 if selected else 2)
+        normal_color = self.render_style.category_color(self.person.gender_identity)
+        pen = QPen(QColor("#22D3EE") if selected else QColor(normal_color), 4 if selected else 3)
         if self.person.placeholder:
             pen.setStyle(Qt.PenStyle.DashLine)
         painter.setPen(pen)
@@ -128,7 +132,7 @@ class IndividualItem(QGraphicsObject):
         painter.setPen(QColor("#20262e"))
         font = painter.font()
         font.setBold(False)
-        font.setPointSize(9)
+        font.setPointSize(self.render_style.identifier_size)
         painter.setFont(font)
         painter.drawText(QRectF(-34, 29, 68, 20), Qt.AlignmentFlag.AlignCenter, self.person.label)
 
@@ -141,6 +145,13 @@ class IndividualItem(QGraphicsObject):
         if self._on_moved is not None and self.pos() != self._drag_start:
             self._on_moved(self, self._drag_start, self.pos())
 
+    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+        if self._on_context_action is not None:
+            self._on_context_action(self, "edit_dialog")
+            event.accept()
+            return
+        super().mouseDoubleClickEvent(event)
+
     def refresh(self) -> None:
         self.setToolTip(self.person.label)
         self.update()
@@ -150,16 +161,18 @@ class IndividualItem(QGraphicsObject):
             return super().contextMenuEvent(event)
         menu = QMenu()
         actions = {
-            menu.addAction("Adicionar pais"): "parents",
+            menu.addAction("□  Adicionar pai"): "father",
+            menu.addAction("○  Adicionar mãe"): "mother",
             menu.addAction("Adicionar pais desconhecidos"): "unknown_parents",
-            menu.addAction("Adicionar parceiro"): "partner",
-            menu.addAction("Adicionar filho"): "child",
+            menu.addAction("◇  Adicionar parceiro"): "partner",
+            menu.addAction("○  Adicionar filho"): "child",
             menu.addAction("Adicionar filho adotivo"): "adopted_child",
-            menu.addAction("Adicionar irmão"): "sibling",
+            menu.addAction("□  Adicionar irmão"): "sibling",
         }
         menu.addSeparator()
-        actions[menu.addAction("Editar propriedades")] = "edit"
-        actions[menu.addAction("Excluir indivíduo")] = "delete"
+        actions[menu.addAction("✎  Editar indivíduo")] = "edit_dialog"
+        actions[menu.addAction("Abrir propriedades")] = "edit"
+        actions[menu.addAction("⌫  Excluir indivíduo")] = "delete"
         selected = menu.exec(event.screenPos())
         if selected in actions:
             self._on_context_action(self, actions[selected])

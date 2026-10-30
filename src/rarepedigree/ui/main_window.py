@@ -44,7 +44,10 @@ from rarepedigree.layout import PedigreeLayoutEngine
 from rarepedigree.persistence import JsonProjectRepository
 from rarepedigree.rendering import IndividualItem, PedigreeScene, PedigreeView
 from rarepedigree.rendering.exporters import ExportOptions, export_pdf, export_png, export_svg
-from rarepedigree.ui.components import EmptyState, FamilyMenu, ToolRailButton, ZoomControl
+from rarepedigree.rendering.style import PedigreeRenderStyle
+from rarepedigree.ui.components import EmptyState, FamilyMenu, Toast, ToolRailButton, ZoomControl
+from rarepedigree.ui.dialogs import EditIndividualDialog, NewProjectDialog
+from rarepedigree.ui.i18n import language_manager, tr
 from rarepedigree.ui.icons import icon
 from rarepedigree.ui.preferences import PreferencesDialog
 from rarepedigree.ui.properties import PropertiesPanel
@@ -64,6 +67,7 @@ class MainWindow(QMainWindow):
         self.layout_engine = PedigreeLayoutEngine()
         self.settings = QSettings()
         self.setStyleSheet(SCIENTIFIC_WORKSPACE_STYLESHEET)
+        language_manager.languageChanged.connect(self.retranslate_ui)
         self._create_actions()
 
         self.scene = PedigreeScene()
@@ -74,9 +78,7 @@ class MainWindow(QMainWindow):
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.view.setDragMode(PedigreeView.DragMode.RubberBandDrag)
         self.empty_state = EmptyState()
-        self.empty_state.addRequested.connect(
-            lambda: self.add_person(GenderIdentity.UNKNOWN)
-        )
+        self.empty_state.addRequested.connect(lambda: self.add_person(GenderIdentity.UNKNOWN))
         self.empty_overlay = QWidget()
         empty_layout = QVBoxLayout(self.empty_overlay)
         empty_layout.setContentsMargins(24, 24, 24, 24)
@@ -90,6 +92,7 @@ class MainWindow(QMainWindow):
         self.canvas_stack.setContentsMargins(0, 0, 0, 0)
         self.canvas_stack.addWidget(self.view)
         self.canvas_stack.addWidget(self.empty_overlay)
+        self.toast = Toast(canvas)
         self.central_shell = QWidget()
         self.central_layout = QHBoxLayout(self.central_shell)
         self.central_layout.setContentsMargins(0, 0, 0, 0)
@@ -100,8 +103,11 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.central_shell)
 
         self.properties = PropertiesPanel(self._apply_properties)
+        self.properties.editRequested.connect(lambda: self._context_for_selected("edit_dialog"))
         dock = QDockWidget("Propriedades do indivíduo", self)
+        self.properties_dock = dock
         dock.setObjectName("individual-properties")
+        dock.setMinimumWidth(330)
         dock.setWidget(self.properties)
         self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
 
@@ -111,6 +117,8 @@ class MainWindow(QMainWindow):
         self._update_title()
         self.resize(1440, 900)
         self._update_workspace_state()
+        self.apply_preferences()
+        self.retranslate_ui()
 
     def _create_actions(self) -> None:
         self.new_action = QAction("Novo", self, shortcut=QKeySequence.StandardKey.New)
@@ -144,14 +152,24 @@ class MainWindow(QMainWindow):
         self.twins_dz_action = QAction("Marcar selecionados como gêmeos dizigóticos", self)
         self.zoom_in_action = QAction("Ampliar", self, shortcut=QKeySequence.StandardKey.ZoomIn)
         self.zoom_out_action = QAction("Reduzir", self, shortcut=QKeySequence.StandardKey.ZoomOut)
+        self.edit_action = QAction("Editar indivíduo", self, shortcut="Ctrl+I")
+        self.language_action = QAction("PT", self)
 
         action_icons = {
-            self.new_action: "new", self.open_action: "open", self.save_action: "save",
-            self.undo_action: "undo", self.redo_action: "redo",
-            self.auto_layout_action: "layout", self.export_action: "export",
-            self.preferences_action: "settings", self.add_unspecified_action: "person",
-            self.relationship_action: "link", self.delete_action: "delete",
-            self.fit_action: "fit", self.zoom_in_action: "zoom_in",
+            self.new_action: "new",
+            self.open_action: "open",
+            self.save_action: "save",
+            self.undo_action: "undo",
+            self.redo_action: "redo",
+            self.auto_layout_action: "layout",
+            self.export_action: "export",
+            self.preferences_action: "settings",
+            self.add_unspecified_action: "person",
+            self.relationship_action: "link",
+            self.delete_action: "delete",
+            self.fit_action: "fit",
+            self.zoom_in_action: "zoom_in",
+            self.edit_action: "person",
         }
         for action, name in action_icons.items():
             action.setIcon(icon(name))
@@ -188,7 +206,7 @@ class MainWindow(QMainWindow):
         self.delete_action.triggered.connect(lambda: self._context_for_selected("delete"))
         self.auto_layout_action.triggered.connect(self.auto_layout)
         self.fit_action.triggered.connect(self.fit_pedigree)
-        self.preferences_action.triggered.connect(lambda: PreferencesDialog(self).exec())
+        self.preferences_action.triggered.connect(self.open_preferences)
         self.twins_mz_action.triggered.connect(
             lambda: self._set_selected_twins(TwinZygosity.MONOZYGOTIC)
         )
@@ -201,10 +219,12 @@ class MainWindow(QMainWindow):
         self.zoom_out_action.triggered.connect(
             lambda: self.view.set_zoom(self.view.zoom_percent - 20)
         )
+        self.edit_action.triggered.connect(lambda: self._context_for_selected("edit_dialog"))
+        self.language_action.triggered.connect(self.toggle_language)
 
     def _create_menus(self) -> None:
-        file_menu = self.menuBar().addMenu("Arquivo")
-        file_menu.addActions(
+        self.file_menu = self.menuBar().addMenu("Arquivo")
+        self.file_menu.addActions(
             [
                 self.new_action,
                 self.open_action,
@@ -213,14 +233,14 @@ class MainWindow(QMainWindow):
                 self.export_action,
             ]
         )
-        file_menu.addSeparator()
-        file_menu.addAction(self.preferences_action)
-        file_menu.addSeparator()
-        file_menu.addAction(self.quit_action)
-        edit_menu = self.menuBar().addMenu("Editar")
-        edit_menu.addActions([self.undo_action, self.redo_action])
-        pedigree_menu = self.menuBar().addMenu("Heredograma")
-        pedigree_menu.addActions(
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self.preferences_action)
+        self.file_menu.addSeparator()
+        self.file_menu.addAction(self.quit_action)
+        self.edit_menu = self.menuBar().addMenu("Editar")
+        self.edit_menu.addActions([self.undo_action, self.redo_action])
+        self.pedigree_menu = self.menuBar().addMenu("Heredograma")
+        self.pedigree_menu.addActions(
             [
                 self.add_man_action,
                 self.add_woman_action,
@@ -234,13 +254,14 @@ class MainWindow(QMainWindow):
                 self.add_child_action,
                 self.add_sibling_action,
                 self.delete_action,
+                self.edit_action,
                 self.twins_mz_action,
                 self.twins_dz_action,
             ]
         )
-        view_menu = self.menuBar().addMenu("Exibir")
-        view_menu.addActions([self.zoom_in_action, self.zoom_out_action])
-        view_menu.addActions([self.fit_action, self.auto_layout_action])
+        self.view_menu = self.menuBar().addMenu("Exibir")
+        self.view_menu.addActions([self.zoom_in_action, self.zoom_out_action])
+        self.view_menu.addActions([self.fit_action, self.auto_layout_action])
 
     def _create_toolbar(self) -> None:
         toolbar = QToolBar("Ferramentas principais", self)
@@ -263,6 +284,7 @@ class MainWindow(QMainWindow):
                 self.auto_layout_action,
                 self.export_action,
                 self.preferences_action,
+                self.language_action,
             ]
         )
         toolbar.addSeparator()
@@ -277,24 +299,47 @@ class MainWindow(QMainWindow):
     def _create_toolbox(self) -> QFrame:
         panel = QFrame()
         panel.setObjectName("tool-rail")
-        panel.setFixedWidth(58)
+        panel.setFixedWidth(210)
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(7, 10, 7, 10)
         layout.setSpacing(5)
-        select_action = QAction("Selecionar", self)
-        select_action.setCheckable(True)
-        select_action.setChecked(True)
-        layout.addWidget(ToolRailButton(select_action, "select"))
-        layout.addWidget(ToolRailButton(self.add_unspecified_action, "person"))
-        family_button = QToolButton()
+        self.select_action = QAction("Selecionar", self)
+        self.select_action.setCheckable(True)
+        self.select_action.setChecked(True)
+        select_button = ToolRailButton(self.select_action, "select", expanded=True)
+        layout.addWidget(select_button)
+        self.person_button = QToolButton()
+        person_button = self.person_button
+        person_button.setIcon(icon("person"))
+        person_button.setText("Adicionar indivíduo")
+        person_button.setFixedHeight(46)
+        person_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        person_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        person_menu = FamilyMenu(
+            [self.add_man_action, self.add_woman_action, self.add_unspecified_action],
+            person_button,
+        )
+        person_button.setMenu(person_menu)
+        layout.addWidget(person_button)
+        self.family_button = QToolButton()
+        family_button = self.family_button
         family_button.setIcon(icon("family"))
-        family_button.setFixedSize(44, 44)
+        family_button.setFixedHeight(46)
+        family_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        family_button.setText("Adicionar familiar")
         family_button.setProperty("railButton", True)
         family_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        family_button.setMenu(FamilyMenu([
-            self.add_parents_action, self.add_partner_action, self.add_child_action,
-            self.add_sibling_action,
-        ], family_button))
+        family_button.setMenu(
+            FamilyMenu(
+                [
+                    self.add_parents_action,
+                    self.add_partner_action,
+                    self.add_child_action,
+                    self.add_sibling_action,
+                ],
+                family_button,
+            )
+        )
         family_button.menu().addSeparator()
         family_button.menu().addAction("Adicionar pais desconhecidos").triggered.connect(
             lambda: self._context_for_selected("unknown_parents")
@@ -305,11 +350,11 @@ class MainWindow(QMainWindow):
         family_button.setToolTip("Adicionar familiar")
         family_button.setAccessibleName("Adicionar familiar")
         layout.addWidget(family_button)
-        layout.addWidget(ToolRailButton(self.relationship_action, "link"))
-        layout.addWidget(ToolRailButton(self.auto_layout_action, "layout"))
+        layout.addWidget(ToolRailButton(self.relationship_action, "link", expanded=True))
+        layout.addWidget(ToolRailButton(self.auto_layout_action, "layout", expanded=True))
         layout.addStretch()
-        layout.addWidget(ToolRailButton(self.fit_action, "fit"))
-        layout.addWidget(ToolRailButton(self.delete_action, "delete"))
+        layout.addWidget(ToolRailButton(self.fit_action, "fit", expanded=True))
+        layout.addWidget(ToolRailButton(self.delete_action, "delete", expanded=True))
         return panel
 
     def _create_statusbar(self) -> None:
@@ -318,10 +363,16 @@ class MainWindow(QMainWindow):
         self.save_status = QLabel("Salvo")
         self.message_status = QLabel("Pronto")
         self.zoom_control = ZoomControl()
+        self.floating_zoom = ZoomControl(self.view.viewport())
+        self.view.floating_control = self.floating_zoom
         self.zoom_control.zoomIn.connect(self.zoom_in_action.trigger)
         self.zoom_control.zoomOut.connect(self.zoom_out_action.trigger)
         self.zoom_control.fitRequested.connect(self.fit_action.trigger)
+        self.floating_zoom.zoomIn.connect(self.zoom_in_action.trigger)
+        self.floating_zoom.zoomOut.connect(self.zoom_out_action.trigger)
+        self.floating_zoom.fitRequested.connect(self.fit_action.trigger)
         self.view.zoomChanged.connect(self.zoom_control.set_zoom)
+        self.view.zoomChanged.connect(self.floating_zoom.set_zoom)
         self.statusBar().addWidget(self.message_status, 1)
         self.statusBar().addPermanentWidget(self.count_status)
         self.statusBar().addPermanentWidget(self.generation_status)
@@ -331,11 +382,20 @@ class MainWindow(QMainWindow):
     def new_project(self) -> None:
         if not self._may_discard_changes():
             return
-        self.project = PedigreeProject()
+        dialog = NewProjectDialog(self)
+        if self.isVisible() and dialog.exec() != dialog.DialogCode.Accepted:
+            return
+        self.project = dialog.create_project() if self.isVisible() else PedigreeProject()
+        if self.project.individuals:
+            positions = self.layout_engine.compute(self.project)
+            for person in self.project.individuals:
+                person.layout.x, person.layout.y = positions[person.id]
         self.current_path = None
         self.undo_stack.clear()
         self.scene.load_project(self.project)
-        self._update_title()
+        self._update_workspace_state()
+        if self.project.individuals:
+            self.fit_pedigree()
 
     def _apply_project(self, project: PedigreeProject) -> None:
         self.project = project
@@ -365,11 +425,27 @@ class MainWindow(QMainWindow):
             item.setSelected(True)
             self.properties.label_edit.setFocus()
             return
+        if action == "edit_dialog":
+            dialog = EditIndividualDialog(item.person, self)
+            if dialog.exec() == dialog.DialogCode.Accepted:
+                values = dialog.values()
+                old_values = {field: getattr(item.person, field) for field in values}
+                if values != old_values:
+                    self.undo_stack.push(UpdateIndividualCommand(item, old_values, values))
+                    self.properties.set_item(item, self.project)
+                    self.message_status.setText("Indivíduo atualizado")
+            return
         before = self.project.model_copy(deep=True)
         try:
             if action == "parents":
                 after, _ = FamilyService.add_parents(before, item.person.id)
                 label = "Adicionar pais"
+            elif action == "father":
+                after, _ = FamilyService.add_parent(before, item.person.id, GenderIdentity.MAN)
+                label = "Adicionar pai"
+            elif action == "mother":
+                after, _ = FamilyService.add_parent(before, item.person.id, GenderIdentity.WOMAN)
+                label = "Adicionar mãe"
             elif action == "unknown_parents":
                 after, _ = FamilyService.add_parents(before, item.person.id, unknown=True)
                 label = "Adicionar pais desconhecidos"
@@ -388,9 +464,7 @@ class MainWindow(QMainWindow):
                 after, _ = FamilyService.add_child(before, item.person.id, partner_id)
                 label = "Adicionar filho"
             elif action == "adopted_child":
-                after, _ = FamilyService.add_child(
-                    before, item.person.id, kind=ParentageKind.LEGAL
-                )
+                after, _ = FamilyService.add_child(before, item.person.id, kind=ParentageKind.LEGAL)
                 label = "Adicionar filho adotivo"
             elif action == "sibling":
                 after, _ = FamilyService.add_sibling(before, item.person.id)
@@ -407,7 +481,8 @@ class MainWindow(QMainWindow):
         for person in after.individuals:
             person.layout.x, person.layout.y = positions[person.id]
         self.undo_stack.push(ReplaceProjectCommand(label, before, after, self._apply_project))
-        self.message_status.setText(label)
+        self.message_status.setText(tr(label))
+        self.toast.show_message(tr(label))
         self.fit_pedigree()
 
     def auto_layout(self, push_undo: bool = True) -> None:
@@ -457,6 +532,7 @@ class MainWindow(QMainWindow):
         self.scene.clearSelection()
         self.scene.person_items[person.id].setSelected(True)
         self._update_workspace_state()
+        self.toast.show_message(tr("Indivíduo adicionado"))
         return person
 
     def add_relationship(self, kind: RelationshipKind) -> Relationship | None:
@@ -482,18 +558,14 @@ class MainWindow(QMainWindow):
     def _on_person_moved(
         self, item: IndividualItem, old_position: QPointF, new_position: QPointF
     ) -> None:
-        self.undo_stack.push(
-            MoveIndividualCommand(self.scene, item, old_position, new_position)
-        )
+        self.undo_stack.push(MoveIndividualCommand(self.scene, item, old_position, new_position))
 
     def _selection_changed(self) -> None:
         try:
             selected = self.scene.selected_people()
         except RuntimeError:
             return
-        self.properties.set_item(
-            selected[0] if len(selected) == 1 else None, self.project
-        )
+        self.properties.set_item(selected[0] if len(selected) == 1 else None, self.project)
 
     def _apply_properties(self, item: IndividualItem, new_values: dict[str, Any]) -> None:
         old_values = {field: getattr(item.person, field) for field in new_values}
@@ -530,6 +602,7 @@ class MainWindow(QMainWindow):
         self.undo_stack.setClean()
         self._update_workspace_state()
         self.statusBar().showMessage(f"Projeto salvo em {path}", 5000)
+        self.toast.show_message("Projeto salvo")
         return True
 
     def open_project(self) -> None:
@@ -569,6 +642,8 @@ class MainWindow(QMainWindow):
             png_scale=self.settings.value("export/png_scale", 2, int),
             margin=self.settings.value("export/margin", 30, int),
             landscape=self.settings.value("export/landscape", True, bool),
+            include_legend=self.settings.value("export/include_legend", True, bool),
+            monochrome=self.settings.value("export/monochrome", False, bool),
         )
         try:
             if "PNG" in selected_filter or path.suffix.lower() == ".png":
@@ -581,14 +656,64 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Falha na exportação", str(error))
             return
         self.statusBar().showMessage(f"Figura exportada para {path}", 5000)
+        self.toast.show_message(tr("Exportação concluída"))
+
+    def open_preferences(self) -> None:
+        dialog = PreferencesDialog(self)
+        dialog.applied.connect(self.apply_preferences)
+        dialog.exec()
+
+    def apply_preferences(self) -> None:
+        self.view.grid_enabled = self.settings.value("pedigree/grid", True, bool)
+        self.scene.apply_render_style(PedigreeRenderStyle.from_settings(self.settings))
+        self.view.viewport().update()
+        self._update_workspace_state()
+
+    def toggle_language(self) -> None:
+        language_manager.set_language("en" if language_manager.language == "pt_BR" else "pt_BR")
+
+    def retranslate_ui(self, _language: str | None = None) -> None:
+        mapping = {
+            self.new_action: "Novo",
+            self.open_action: "Abrir…",
+            self.save_action: "Salvar",
+            self.undo_action: "Desfazer",
+            self.redo_action: "Refazer",
+            self.auto_layout_action: "Organização automática",
+            self.export_action: "Exportar figura…",
+            self.preferences_action: "Preferências…",
+            self.delete_action: "Excluir",
+            self.select_action: "Selecionar",
+            self.edit_action: "Editar indivíduo",
+            self.relationship_action: "Relacionamento",
+            self.fit_action: "Ajustar à tela",
+        }
+        for action, source in mapping.items():
+            action.setText(tr(source))
+            action.setToolTip(tr(source))
+        self.language_action.setText("EN" if language_manager.language == "en" else "PT")
+        self.file_menu.setTitle("File" if language_manager.language == "en" else "Arquivo")
+        self.edit_menu.setTitle("Edit" if language_manager.language == "en" else "Editar")
+        self.pedigree_menu.setTitle(
+            "Pedigree" if language_manager.language == "en" else "Heredograma"
+        )
+        self.view_menu.setTitle("View" if language_manager.language == "en" else "Exibir")
+        self.person_button.setText(tr("Adicionar indivíduo"))
+        self.family_button.setText(tr("Adicionar familiar"))
+        self.empty_state.retranslate_ui()
+        self.properties.retranslate_ui()
+        self.properties_dock.setWindowTitle(tr("Propriedades do indivíduo"))
+        self.scene.apply_render_style(self.scene.render_style)
+        self._update_title()
+        self._update_workspace_state()
 
     def _update_title(self) -> None:
-        filename = self.current_path.name if self.current_path else "Sem título"
+        filename = self.current_path.name if self.current_path else tr("Sem título")
         dirty = " *" if not self.undo_stack.isClean() else ""
         self.setWindowTitle(f"{filename}{dirty} — RarePedigree Scientific Workspace")
         if hasattr(self, "project_title_label"):
             self.project_title_label.setText(filename)
-            self.dirty_label.setText("NÃO SALVO" if dirty else "SALVO")
+            self.dirty_label.setText(tr("NÃO SALVO") if dirty else tr("SALVO"))
 
     def _undo_index_changed(self, _index: int) -> None:
         self._update_workspace_state()
@@ -601,13 +726,16 @@ class MainWindow(QMainWindow):
         self.empty_overlay.setVisible(count == 0)
         self.canvas_stack.setCurrentWidget(self.empty_overlay if count == 0 else self.view)
         if hasattr(self, "count_status"):
-            suffix = "s" if count != 1 else ""
-            self.count_status.setText(f"{count} indivíduo{suffix}")
+            unit = tr("indivíduo" if count == 1 else "indivíduos")
+            self.count_status.setText(f"{count} {unit}")
         if hasattr(self, "generation_status"):
             generations = self.layout_engine.generations(self.project)
             total = len(set(generations.values())) if generations else 0
-            self.generation_status.setText(f"{total} gerações")
-            self.save_status.setText("Alterado" if not self.undo_stack.isClean() else "Salvo")
+            unit = tr("geração" if total == 1 else "gerações")
+            self.generation_status.setText(f"{total} {unit}")
+            self.save_status.setText(
+                tr("Alterado") if not self.undo_stack.isClean() else tr("Salvo")
+            )
 
     def _may_discard_changes(self) -> bool:
         if self.undo_stack.isClean() or not self.isVisible():

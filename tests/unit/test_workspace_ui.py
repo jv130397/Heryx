@@ -66,7 +66,7 @@ def test_workspace_keeps_canvas_at_supported_resolutions(qtbot, size: QSize) -> 
     window.show()
     qtbot.wait(1)
     assert window.view.viewport().width() > size.width() * 0.45
-    assert window.tool_rail.width() == 58
+    assert window.tool_rail.width() == 210
 
 
 def test_preferences_are_persisted(qtbot) -> None:

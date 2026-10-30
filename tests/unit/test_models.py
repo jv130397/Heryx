@@ -20,4 +20,3 @@ def test_native_model_round_trip_preserves_unknown_state() -> None:
     restored = PedigreeProject.model_validate_json(project.model_dump_json())
     assert restored == project
     assert restored.individuals[0].phenotype_status.value == "unknown"
-

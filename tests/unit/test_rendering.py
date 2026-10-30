@@ -57,9 +57,7 @@ def test_consanguineous_partnership_reaches_the_graphics_scene(qapp) -> None:
         member_b=second.id,
         kind=RelationshipKind.CONSANGUINEOUS_PARTNERSHIP,
     )
-    project = PedigreeProject(
-        individuals=[first, second], relationships=[relationship]
-    )
+    project = PedigreeProject(individuals=[first, second], relationships=[relationship])
     scene = PedigreeScene()
     scene.load_project(project)
     rendered = scene.relationship_items[relationship.id]
