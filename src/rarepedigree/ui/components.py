@@ -1,6 +1,6 @@
 """Reusable presentation components for the Scientific Workspace."""
 
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QEasingCurve, QPropertyAnimation, QRect, Qt, QTimer, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QFrame,
@@ -22,6 +22,8 @@ class ToolRailButton(QToolButton):
         self, action: QAction, icon_name: str, parent=None, expanded: bool = False
     ) -> None:
         super().__init__(parent)
+        if parent is not None:
+            parent.installEventFilter(self)
         self.setDefaultAction(action)
         self.setIcon(icon(icon_name))
         self.setToolButtonStyle(
@@ -143,3 +145,80 @@ class Toast(QFrame):
         self.show()
         self.raise_()
         QTimer.singleShot(3200, self.hide)
+
+
+class SlidingPanel(QFrame):
+    """Overlay drawer that does not permanently consume canvas width."""
+
+    closeRequested = Signal()
+
+    def __init__(self, content: QWidget, parent=None) -> None:
+        super().__init__(parent)
+        self.setObjectName("properties-drawer")
+        self.setMinimumWidth(330)
+        self.setFixedWidth(370)
+        self._open = False
+        self.animation = QPropertyAnimation(self, b"geometry", self)
+        self.animation.setDuration(180)
+        self.animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self.animation.finished.connect(self._hide_if_closed)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        header = QWidget()
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(16, 10, 8, 8)
+        self.title = QLabel(tr("Propriedades do indivíduo"))
+        self.title.setStyleSheet("font-weight: 700;")
+        close = QToolButton(text="✕")
+        close.setAccessibleName(tr("Fechar"))
+        close.clicked.connect(self.close_panel)
+        header_layout.addWidget(self.title)
+        header_layout.addStretch()
+        header_layout.addWidget(close)
+        root.addWidget(header)
+        root.addWidget(content, 1)
+        self.hide()
+
+    def open_panel(self) -> None:
+        if self.parentWidget() is None:
+            return
+        was_visible = self.isVisible()
+        self._open = True
+        self.show()
+        self.raise_()
+        parent_rect = self.parentWidget().rect()
+        start = QRect(parent_rect.width(), 0, self.width(), parent_rect.height())
+        end = QRect(parent_rect.width() - self.width(), 0, self.width(), parent_rect.height())
+        self.animation.stop()
+        self.animation.setStartValue(self.geometry() if was_visible else start)
+        self.animation.setEndValue(end)
+        self.animation.start()
+
+    def close_panel(self) -> None:
+        if self.parentWidget() is None or self.isHidden():
+            return
+        self._open = False
+        parent_rect = self.parentWidget().rect()
+        self.animation.stop()
+        self.animation.setStartValue(self.geometry())
+        self.animation.setEndValue(
+            QRect(parent_rect.width(), 0, self.width(), parent_rect.height())
+        )
+        self.animation.start()
+        self.closeRequested.emit()
+
+    def _hide_if_closed(self) -> None:
+        if not self._open:
+            self.hide()
+
+    def sync_geometry(self) -> None:
+        if self.parentWidget() is None:
+            return
+        parent_rect = self.parentWidget().rect()
+        x = parent_rect.width() - self.width() if self._open else parent_rect.width()
+        self.setGeometry(x, 0, self.width(), parent_rect.height())
+
+    def eventFilter(self, watched, event) -> bool:
+        if watched is self.parentWidget() and event.type() == QEvent.Type.Resize:
+            QTimer.singleShot(0, self.sync_geometry)
+        return super().eventFilter(watched, event)

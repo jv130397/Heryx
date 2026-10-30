@@ -72,6 +72,43 @@ def test_tool_rail_collapses_and_expands(qtbot) -> None:
     assert window.rail_expanded
 
 
+def test_selecting_person_opens_overlay_drawer(qtbot) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window.add_person(GenderIdentity.MAN)
+    assert not window.properties_drawer.isHidden()
+    assert window.properties_drawer._open
+    window.properties_drawer.close_panel()
+    assert not window.properties_drawer._open
+
+
+def test_new_parents_are_above_proband_without_overlap(qtbot) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    proband = window.add_person(GenderIdentity.UNKNOWN)
+    window._context_action(window.scene.person_items[proband.id], "parents")
+    proband_item = window.scene.person_items[proband.id]
+    parent_edges = [edge for edge in window.project.parentages if edge.child_id == proband.id]
+    parents = [window.scene.person_items[edge.parent_id] for edge in parent_edges]
+    assert len(parents) == 2
+    assert all(parent.pos().y() < proband_item.pos().y() for parent in parents)
+    assert parents[0].pos() != parents[1].pos()
+    assert abs(parents[0].pos().x() - parents[1].pos().x()) >= 100
+    assert all(parent.pos() != proband_item.pos() for parent in parents)
+
+    window._context_action(proband_item, "partner")
+    proband_item = window.scene.person_items[proband.id]
+    relation = next(
+        relation
+        for relation in window.project.relationships
+        if proband.id in {relation.member_a, relation.member_b}
+    )
+    partner_id = relation.member_b if relation.member_a == proband.id else relation.member_a
+    partner_item = window.scene.person_items[partner_id]
+    assert partner_item.pos().y() == proband_item.pos().y()
+    assert partner_item.pos().x() != proband_item.pos().x()
+
+
 def test_context_actions_filter_existing_parents(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
@@ -86,14 +123,14 @@ def test_context_actions_filter_existing_parents(qtbot) -> None:
     assert "mother" in actions
 
 
-@pytest.mark.parametrize(("scale", "expected"), [(100, 330), (125, 412), (150, 495)])
+@pytest.mark.parametrize(("scale", "expected"), [(100, 370), (125, 462), (150, 555)])
 def test_ui_scale_changes_workspace_geometry(qtbot, scale, expected) -> None:
     settings = QSettings()
     settings.setValue("ui/scale", scale)
     settings.setValue("ui/font_size", 14)
     window = MainWindow()
     qtbot.addWidget(window)
-    assert window.properties_dock.minimumWidth() == expected
+    assert window.properties_drawer.width() == expected
     assert window.font().pixelSize() == round(14 * scale / 100)
     assert window.devicePixelRatioF() > 0
     settings.setValue("ui/scale", 100)

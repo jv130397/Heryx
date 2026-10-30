@@ -106,7 +106,10 @@ class PedigreeScene(QGraphicsScene):
         legend.setPos(*positions.get(self.render_style.legend_position, positions["bottom"]))
         self.addItem(legend)
         self.legend_item = legend
-        legend.setVisible(self.render_style.show_legend)
+        # The interactive canvas deliberately stays free of a legend because
+        # its wide bounding box distorts fit-to-view. Exporters may temporarily
+        # reveal the same item when the export option requests it.
+        legend.setVisible(False)
 
     def _add_parentage_connectors(self, project: PedigreeProject) -> None:
         twin_member_ids = {member for group in project.twin_groups for member in group.member_ids}
@@ -189,6 +192,14 @@ class PedigreeScene(QGraphicsScene):
 
     def selected_people(self) -> list[IndividualItem]:
         return [item for item in self.selectedItems() if isinstance(item, IndividualItem)]
+
+    def pedigree_bounding_rect(self) -> QRectF:
+        """Bounds for editor navigation, explicitly excluding the export legend."""
+        bounds = QRectF()
+        for item in self.items():
+            if item is not self.legend_item and item.isVisible():
+                bounds = bounds.united(item.sceneBoundingRect())
+        return bounds
 
 
 def _roman(number: int) -> str:

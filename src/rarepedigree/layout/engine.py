@@ -14,8 +14,21 @@ class PedigreeLayoutEngine:
 
     def generations(self, project: PedigreeProject) -> dict[UUID, int]:
         generation = {person.id: 0 for person in project.individuals}
-        for _ in range(len(project.individuals)):
+        # Parentage establishes vertical levels. Partnerships then pull both
+        # members onto the same level and the constraints are propagated again.
+        # The bounded fixed-point keeps malformed cross-generation partnerships
+        # from hanging the editor while producing stable normal pedigrees.
+        limit = max(1, len(project.individuals) * 2)
+        for _ in range(limit):
             changed = False
+            for relation in project.relationships:
+                shared = max(generation[relation.member_a], generation[relation.member_b])
+                if generation[relation.member_a] != shared:
+                    generation[relation.member_a] = shared
+                    changed = True
+                if generation[relation.member_b] != shared:
+                    generation[relation.member_b] = shared
+                    changed = True
             for edge in project.parentages:
                 candidate = generation[edge.parent_id] + 1
                 if generation[edge.child_id] < candidate:

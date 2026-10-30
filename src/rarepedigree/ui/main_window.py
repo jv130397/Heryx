@@ -13,10 +13,10 @@ from PySide6.QtGui import (
     QFont,
     QKeySequence,
     QPainter,
+    QResizeEvent,
     QUndoStack,
 )
 from PySide6.QtWidgets import (
-    QDockWidget,
     QFileDialog,
     QFrame,
     QHBoxLayout,
@@ -53,7 +53,14 @@ from rarepedigree.persistence import JsonProjectRepository
 from rarepedigree.rendering import IndividualItem, PedigreeScene, PedigreeView
 from rarepedigree.rendering.exporters import ExportOptions, export_pdf, export_png, export_svg
 from rarepedigree.rendering.style import PedigreeRenderStyle
-from rarepedigree.ui.components import EmptyState, FamilyMenu, Toast, ToolRailButton, ZoomControl
+from rarepedigree.ui.components import (
+    EmptyState,
+    FamilyMenu,
+    SlidingPanel,
+    Toast,
+    ToolRailButton,
+    ZoomControl,
+)
 from rarepedigree.ui.dialogs import EditIndividualDialog, NewProjectDialog
 from rarepedigree.ui.i18n import language_manager, tr
 from rarepedigree.ui.icons import icon
@@ -113,12 +120,10 @@ class MainWindow(QMainWindow):
 
         self.properties = PropertiesPanel(self._apply_properties)
         self.properties.editRequested.connect(lambda: self._context_for_selected("edit_dialog"))
-        dock = QDockWidget("Propriedades do indivíduo", self)
-        self.properties_dock = dock
-        dock.setObjectName("individual-properties")
-        dock.setMinimumWidth(330)
-        dock.setWidget(self.properties)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
+        self.properties_drawer = SlidingPanel(self.properties, self.central_shell)
+        self.properties_drawer.closeRequested.connect(self.scene.clearSelection)
+        # Compatibility alias for callers that previously adjusted the dock.
+        self.properties_dock = self.properties_drawer
 
         self._create_menus()
         self._create_toolbar()
@@ -591,7 +596,7 @@ class MainWindow(QMainWindow):
         )
 
     def fit_pedigree(self) -> None:
-        rect = self.scene.itemsBoundingRect().adjusted(-80, -80, 80, 80)
+        rect = self.scene.pedigree_bounding_rect().adjusted(-80, -80, 80, 80)
         if not rect.isEmpty():
             self.view.fitInView(rect, Qt.AspectRatioMode.KeepAspectRatio)
             self.view.zoomChanged.emit(self.view.zoom_percent)
@@ -642,6 +647,10 @@ class MainWindow(QMainWindow):
         except RuntimeError:
             return
         self.properties.set_item(selected[0] if len(selected) == 1 else None, self.project)
+        if len(selected) == 1:
+            self.properties_drawer.open_panel()
+        else:
+            self.properties_drawer.close_panel()
 
     def _apply_properties(self, item: IndividualItem, new_values: dict[str, Any]) -> None:
         old_values = {field: getattr(item.person, field) for field in new_values}
@@ -749,7 +758,10 @@ class MainWindow(QMainWindow):
         font = QFont(self.font())
         font.setPixelSize(effective_size)
         self.setFont(font)
-        self.properties_dock.setMinimumWidth(round(330 * scale))
+        drawer_width = round(370 * scale)
+        self.properties_drawer.setMinimumWidth(round(330 * scale))
+        self.properties_drawer.setFixedWidth(drawer_width)
+        self.properties_drawer.sync_geometry()
         self.tool_rail.setFixedWidth(round((210 if self.rail_expanded else 60) * scale))
         self.view.grid_enabled = self.settings.value("pedigree/grid", True, bool)
         self.scene.apply_render_style(PedigreeRenderStyle.from_settings(self.settings))
@@ -802,7 +814,7 @@ class MainWindow(QMainWindow):
         self.family_button.setText(tr("Adicionar familiar"))
         self.empty_state.retranslate_ui()
         self.properties.retranslate_ui()
-        self.properties_dock.setWindowTitle(tr("Propriedades do indivíduo"))
+        self.properties_drawer.title.setText(tr("Propriedades do indivíduo"))
         self.scene.apply_render_style(self.scene.render_style)
         self._update_title()
         self._update_workspace_state()
@@ -851,3 +863,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:
         event.accept() if self._may_discard_changes() else event.ignore()
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        super().resizeEvent(event)
+        if hasattr(self, "properties_drawer"):
+            self.properties_drawer.sync_geometry()
