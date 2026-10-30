@@ -1,6 +1,8 @@
 # RarePedigree Studio
 
-Aplicativo científico para criação e análise responsável de heredogramas. A **Fase 4.5** acrescenta relações parentais explícitas, construção contextual de famílias, auto-layout multigeracional, migração do schema 0.1.0 e a interface RarePedigree Scientific Workspace.
+Aplicativo científico para criação e análise responsável de heredogramas. A **Fase 4.6**
+refina a RarePedigree Scientific Workspace com toolbar compacta, rail de ferramentas, estado
+vazio funcional, propriedades contextuais e design system próprio.
 
 Leia primeiro:
 
@@ -14,6 +16,8 @@ Leia primeiro:
 - `specifications/PHASE3_ENVIRONMENT.md`
 - `specifications/PHASE4_PROTOTYPE.md`
 - `specifications/PHASE_4_5_REPORT.md`
+- `specifications/UI_DESIGN_SYSTEM.md`
+- `specifications/PHASE_4_6_REPORT.md`
 
 Os PDFs originais permanecem em `Artigos/`. `literature/` contém cópias organizadas e material aberto obtido durante a auditoria. Nenhum arquivo contém dados reais de pacientes.
 
@@ -27,4 +31,5 @@ ruff check .
 rarepedigree-studio
 ```
 
-**Estado:** Fase 4.5 validada. Consulte as limitações antes de usar; o software ainda não deve ser empregado como ferramenta diagnóstica ou em produção clínica.
+**Estado:** Fase 4.6 validada. Consulte as limitações antes de usar; o software ainda não deve
+ser empregado como ferramenta diagnóstica ou em produção clínica.

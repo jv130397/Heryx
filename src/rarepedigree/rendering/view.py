@@ -1,15 +1,51 @@
-"""Interactive graphics view with bounded wheel zoom."""
+"""Interactive scientific canvas with non-exportable navigation aids."""
 
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QMouseEvent, QWheelEvent
+from PySide6.QtCore import QLineF, QRectF, Qt, Signal
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPen, QWheelEvent
 from PySide6.QtWidgets import QGraphicsView
 
 
 class PedigreeView(QGraphicsView):
+    zoomChanged = Signal(int)
+
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self.setResizeAnchor(QGraphicsView.ViewportAnchor.AnchorViewCenter)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setAccessibleName("Canvas do heredograma")
         self._middle_panning = False
+        self.grid_enabled = True
+
+    @property
+    def zoom_percent(self) -> int:
+        return round(self.transform().m11() * 100)
+
+    def set_zoom(self, percent: int) -> None:
+        target = max(20, min(500, percent)) / 100
+        current = self.transform().m11()
+        self.scale(target / current, target / current)
+        self.zoomChanged.emit(self.zoom_percent)
+
+    def drawBackground(self, painter: QPainter, rect: QRectF) -> None:
+        super().drawBackground(painter, rect)
+        if not self.grid_enabled:
+            return
+        step = 40
+        left = int(rect.left()) - (int(rect.left()) % step)
+        top = int(rect.top()) - (int(rect.top()) % step)
+        lines = [
+            QLineF(x, rect.top(), x, rect.bottom())
+            for x in range(left, int(rect.right()), step)
+        ]
+        lines += [
+            QLineF(rect.left(), y, rect.right(), y)
+            for y in range(top, int(rect.bottom()), step)
+        ]
+        painter.setPen(QPen(QColor("#E5EAF0"), 0))
+        painter.drawLines(lines)
 
     def wheelEvent(self, event: QWheelEvent) -> None:
         if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
@@ -17,6 +53,7 @@ class PedigreeView(QGraphicsView):
             next_scale = self.transform().m11() * factor
             if 0.2 <= next_scale <= 5.0:
                 self.scale(factor, factor)
+                self.zoomChanged.emit(self.zoom_percent)
             event.accept()
             return
         super().wheelEvent(event)

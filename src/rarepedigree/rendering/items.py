@@ -158,6 +158,7 @@ class IndividualItem(QGraphicsObject):
             menu.addAction("Adicionar irmão"): "sibling",
         }
         menu.addSeparator()
+        actions[menu.addAction("Editar propriedades")] = "edit"
         actions[menu.addAction("Excluir indivíduo")] = "delete"
         selected = menu.exec(event.screenPos())
         if selected in actions:
