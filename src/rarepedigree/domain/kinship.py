@@ -104,6 +104,32 @@ class KinshipValidator:
                     )
                 )
             pairs.add(marker)
+            derived = KinshipEngine()._biological_sibling_kind(
+                project, assertion.member_a, assertion.member_b
+            )
+            if derived is not None:
+                issues.append(
+                    KinshipIssue(
+                        KinshipSeverity.AMBIGUITY,
+                        "declared_kinship_has_biological_path",
+                        "O parentesco declarado já possui um caminho biológico "
+                        "que deve ser revisado.",
+                        (assertion.member_a, assertion.member_b),
+                    )
+                )
+        seen_relationships: set[tuple[frozenset[UUID], object]] = set()
+        for relation in project.relationships:
+            marker = (frozenset((relation.member_a, relation.member_b)), relation.kind)
+            if marker in seen_relationships:
+                issues.append(
+                    KinshipIssue(
+                        KinshipSeverity.ERROR,
+                        "duplicate_relationship",
+                        "A mesma relação foi registrada mais de uma vez.",
+                        (relation.member_a, relation.member_b),
+                    )
+                )
+            seen_relationships.add(marker)
         try:
             PedigreeProject.model_validate(project.model_dump())
         except ValidationError as error:
@@ -187,6 +213,11 @@ class KinshipEngine:
                 DeclaredKinshipKind.ADOPTIVE_SIBLING: SiblingKind.ADOPTIVE,
                 DeclaredKinshipKind.SOCIAL_SIBLING: SiblingKind.SOCIAL,
             }[declared.kind]
+        return self._biological_sibling_kind(project, first_id, second_id)
+
+    def _biological_sibling_kind(
+        self, project: PedigreeProject, first_id: UUID, second_id: UUID
+    ) -> SiblingKind | None:
         biological = {ParentageKind.BIOLOGICAL}
         first = set(self.parents(project, first_id, biological))
         second = set(self.parents(project, second_id, biological))
@@ -201,6 +232,119 @@ class KinshipEngine:
         if parent.gender_identity == GenderIdentity.WOMAN:
             return SiblingKind.MATERNAL_HALF
         return SiblingKind.UNRESOLVED
+
+    def plan_change_sibling_kind(
+        self,
+        project: PedigreeProject,
+        first_id: UUID,
+        second_id: UUID,
+        new_kind: SiblingKind,
+    ) -> KinshipPlan:
+        """Replace only the second person's sibling-defining incoming edges."""
+        self._person(project, first_id)
+        self._person(project, second_id)
+        new_kind = SiblingKind(new_kind)
+        after = project.model_copy(deep=True)
+        affected = [
+            edge
+            for edge in after.parentages
+            if edge.child_id == second_id and edge.kind == ParentageKind.BIOLOGICAL
+        ]
+        after.parentages = [
+            edge
+            for edge in after.parentages
+            if not (edge.child_id == second_id and edge.kind == ParentageKind.BIOLOGICAL)
+        ]
+        after.declared_kinships = [
+            item
+            for item in after.declared_kinships
+            if {item.member_a, item.member_b} != {first_id, second_id}
+        ]
+        plan = KinshipPlan(
+            "Alterar tipo de irmandade",
+            project.model_copy(deep=True),
+            after,
+            notes=[
+                f"{len(affected)} parentalidade(s) biológica(s) do segundo "
+                "indivíduo serão substituídas."
+            ],
+        )
+        if new_kind in {SiblingKind.UNRESOLVED, SiblingKind.ADOPTIVE, SiblingKind.SOCIAL}:
+            declared_kind = {
+                SiblingKind.UNRESOLVED: DeclaredKinshipKind.SIBLING_UNRESOLVED,
+                SiblingKind.ADOPTIVE: DeclaredKinshipKind.ADOPTIVE_SIBLING,
+                SiblingKind.SOCIAL: DeclaredKinshipKind.SOCIAL_SIBLING,
+            }[new_kind]
+            after.declared_kinships.append(
+                DeclaredKinship(
+                    member_a=first_id,
+                    member_b=second_id,
+                    kind=declared_kind,
+                    provenance="kinship relationship editor",
+                )
+            )
+        else:
+            first_edges = [
+                edge
+                for edge in after.parentages
+                if edge.child_id == first_id and edge.kind == ParentageKind.BIOLOGICAL
+            ]
+            if new_kind == SiblingKind.FULL:
+                if len(first_edges) != 2:
+                    raise ValueError(
+                        "o indivíduo de referência precisa ter dois genitores definidos"
+                    )
+                shared = first_edges
+            else:
+                required = (
+                    GenderIdentity.MAN
+                    if new_kind == SiblingKind.PATERNAL_HALF
+                    else GenderIdentity.WOMAN
+                )
+                shared = [
+                    edge
+                    for edge in first_edges
+                    if self._person(after, edge.parent_id).gender_identity == required
+                ]
+                if len(shared) != 1:
+                    raise ValueError("o genitor compartilhado não está definido sem ambiguidade")
+            for edge in shared:
+                after.parentages.append(
+                    Parentage(
+                        parent_id=edge.parent_id,
+                        child_id=second_id,
+                        kind=ParentageKind.BIOLOGICAL,
+                        evidence_status=edge.evidence_status,
+                        provenance="kinship relationship editor",
+                    )
+                )
+                plan.reused_ids.append(edge.parent_id)
+            if new_kind in {SiblingKind.PATERNAL_HALF, SiblingKind.MATERNAL_HALF}:
+                other_gender = (
+                    GenderIdentity.WOMAN
+                    if new_kind == SiblingKind.PATERNAL_HALF
+                    else GenderIdentity.MAN
+                )
+                unknown = self._unknown(
+                    after,
+                    "genitor diferente criado pela edição de irmandade",
+                    other_gender,
+                )
+                after.individuals.append(unknown)
+                after.parentages.append(
+                    Parentage(
+                        parent_id=unknown.id,
+                        child_id=second_id,
+                        kind=ParentageKind.BIOLOGICAL,
+                        evidence_status=EvidenceStatus.PROVISIONAL,
+                        provenance="kinship relationship editor",
+                    )
+                )
+                plan.created_ids.append(unknown.id)
+                plan.unknown_ids.append(unknown.id)
+        self.validator.require_valid(after)
+        plan.after = after
+        return plan
 
     def plan_sibling(
         self,
@@ -428,6 +572,251 @@ class KinshipEngine:
         self.validator.require_valid(after)
         return plan
 
+    def plan_ancestor_path(
+        self,
+        project: PedigreeProject,
+        person_id: UUID,
+        path: list[GenderIdentity],
+        *,
+        label: str | None = None,
+        create_missing_intermediates: bool = True,
+    ) -> KinshipPlan:
+        """Add/reuse an ancestor using an unambiguous upward path.
+
+        ``[WOMAN, MAN]`` means mother followed by maternal grandfather.
+        Only the final ancestor is identified; missing intermediate people are
+        structural unknowns with stable UUIDs and provenance.
+        """
+        if not path:
+            raise ValueError("o caminho ancestral não pode estar vazio")
+        self._person(project, person_id)
+        after = project.model_copy(deep=True)
+        plan = KinshipPlan("Adicionar ascendente", project.model_copy(deep=True), after)
+        current_id = person_id
+        for index, gender in enumerate(path):
+            is_final = index == len(path) - 1
+            candidates = [
+                edge.parent_id
+                for edge in after.parentages
+                if edge.child_id == current_id
+                and edge.kind == ParentageKind.BIOLOGICAL
+                and self._person(after, edge.parent_id).gender_identity == gender
+            ]
+            if len(candidates) > 1:
+                raise ValueError("há mais de um ascendente possível neste ramo")
+            if candidates:
+                current_id = candidates[0]
+                plan.reused_ids.append(current_id)
+                if is_final and label:
+                    raise ValueError("o ascendente já existe; edite ou reconcilie o indivíduo")
+                continue
+            if not is_final and not create_missing_intermediates:
+                raise ValueError("o caminho exige um familiar intermediário ainda ausente")
+            if is_final:
+                ancestor = Individual(
+                    label=label or self._next_label(after),
+                    gender_identity=gender,
+                    provenance="kinship ancestor assistant",
+                )
+            else:
+                ancestor = self._unknown(
+                    after,
+                    f"intermediário ancestral no nível {index + 1}",
+                    gender,
+                )
+            after.individuals.append(ancestor)
+            after.parentages.append(
+                Parentage(
+                    parent_id=ancestor.id,
+                    child_id=current_id,
+                    kind=ParentageKind.BIOLOGICAL,
+                    evidence_status=(
+                        EvidenceStatus.CONFIRMED if is_final else EvidenceStatus.PROVISIONAL
+                    ),
+                    provenance="kinship ancestor assistant",
+                )
+            )
+            plan.created_ids.append(ancestor.id)
+            if ancestor.placeholder:
+                plan.unknown_ids.append(ancestor.id)
+            current_id = ancestor.id
+        plan.notes.append("Caminho ancestral: " + " → ".join(item.value for item in path))
+        self.validator.require_valid(after)
+        return plan
+
+    def plan_descendant(
+        self,
+        project: PedigreeProject,
+        person_id: UUID,
+        generations: int,
+        *,
+        label: str | None = None,
+        gender: GenderIdentity = GenderIdentity.UNKNOWN,
+        create_missing_intermediates: bool = True,
+    ) -> KinshipPlan:
+        """Plan child/grandchild/great-grandchild as one atomic operation."""
+        if generations < 1:
+            raise ValueError("a distância do descendente deve ser positiva")
+        if generations > 1 and not create_missing_intermediates:
+            raise ValueError("o caminho descendente exige familiares intermediários")
+        self._person(project, person_id)
+        after = project.model_copy(deep=True)
+        combined = KinshipPlan("Adicionar descendente", project.model_copy(deep=True), after)
+        current_id = person_id
+        for depth in range(1, generations + 1):
+            is_final = depth == generations
+            if not is_final and not create_missing_intermediates:
+                raise ValueError("o descendente exige um familiar intermediário ausente")
+            step = self.plan_child(
+                after,
+                current_id,
+                label=label if is_final else "Desconhecido",
+            )
+            after = step.apply()
+            child_id = step.created_ids[0]
+            child = self._person(after, child_id)
+            if is_final:
+                child.gender_identity = gender
+            else:
+                child.placeholder = True
+                child.unknown_reason = f"descendente intermediário no nível {depth}"
+                child.provenance = "kinship descendant assistant"
+                combined.unknown_ids.append(child_id)
+            combined.created_ids.extend(step.created_ids)
+            combined.unknown_ids.extend(
+                item for item in step.unknown_ids if item not in combined.unknown_ids
+            )
+            current_id = child_id
+        combined.after = PedigreeProject.model_validate(after.model_dump())
+        self.validator.require_valid(combined.after)
+        return combined
+
+    def plan_aunt_uncle(
+        self,
+        project: PedigreeProject,
+        person_id: UUID,
+        *,
+        branch_gender: GenderIdentity,
+        relative_gender: GenderIdentity,
+        sibling_kind: SiblingKind = SiblingKind.FULL,
+        label: str | None = None,
+        create_missing_intermediates: bool = True,
+    ) -> KinshipPlan:
+        """Plan an aunt/uncle through the explicitly selected parental branch."""
+        parent_plan = self.plan_ancestor_path(
+            project,
+            person_id,
+            [branch_gender],
+            create_missing_intermediates=create_missing_intermediates,
+        )
+        after = parent_plan.apply()
+        branch_parent = next(
+            edge.parent_id
+            for edge in after.parentages
+            if edge.child_id == person_id
+            and self._person(after, edge.parent_id).gender_identity == branch_gender
+        )
+        if branch_parent in parent_plan.created_ids:
+            structural_parent = self._person(after, branch_parent)
+            structural_parent.placeholder = True
+            structural_parent.unknown_reason = "genitor intermediário para parentesco colateral"
+            structural_parent.provenance = "kinship collateral assistant"
+            if branch_parent not in parent_plan.unknown_ids:
+                parent_plan.unknown_ids.append(branch_parent)
+            parent_plan.after = after.model_copy(deep=True)
+        sibling_plan = self.plan_sibling(
+            after,
+            branch_parent,
+            sibling_kind,
+            label=label,
+        )
+        result = self._combine_plans("Adicionar tio ou tia", project, parent_plan, sibling_plan)
+        relative = self._person(result.after, sibling_plan.created_ids[0])
+        relative.gender_identity = relative_gender
+        result.after = PedigreeProject.model_validate(result.after.model_dump())
+        return result
+
+    def plan_cousin(
+        self,
+        project: PedigreeProject,
+        person_id: UUID,
+        *,
+        branch_gender: GenderIdentity,
+        intermediary_gender: GenderIdentity = GenderIdentity.UNKNOWN,
+        cousin_gender: GenderIdentity = GenderIdentity.UNKNOWN,
+        intermediary_sibling_kind: SiblingKind = SiblingKind.FULL,
+        label: str | None = None,
+        create_missing_intermediates: bool = True,
+    ) -> KinshipPlan:
+        aunt_plan = self.plan_aunt_uncle(
+            project,
+            person_id,
+            branch_gender=branch_gender,
+            relative_gender=intermediary_gender,
+            sibling_kind=intermediary_sibling_kind,
+            create_missing_intermediates=create_missing_intermediates,
+        )
+        intermediary_id = next(
+            item
+            for item in aunt_plan.created_ids
+            if not self._person(aunt_plan.after, item).placeholder
+        )
+        child_plan = self.plan_child(aunt_plan.after, intermediary_id, label=label)
+        result = self._combine_plans("Adicionar primo ou prima", project, aunt_plan, child_plan)
+        self._person(result.after, child_plan.created_ids[0]).gender_identity = cousin_gender
+        result.after = PedigreeProject.model_validate(result.after.model_dump())
+        return result
+
+    def plan_nephew_niece(
+        self,
+        project: PedigreeProject,
+        person_id: UUID,
+        *,
+        sibling_id: UUID | None = None,
+        sibling_kind: SiblingKind = SiblingKind.FULL,
+        gender: GenderIdentity = GenderIdentity.UNKNOWN,
+        label: str | None = None,
+    ) -> KinshipPlan:
+        if sibling_id is None:
+            sibling_plan = self.plan_sibling(project, person_id, sibling_kind)
+            after = sibling_plan.apply()
+            sibling_id = sibling_plan.created_ids[0]
+            plans = [sibling_plan]
+        else:
+            self._person(project, sibling_id)
+            after = project.model_copy(deep=True)
+            plans = []
+            if self.sibling_kind(after, person_id, sibling_id) is None:
+                raise ValueError("o genitor indicado não é irmão do indivíduo de referência")
+        child_plan = self.plan_child(after, sibling_id, label=label)
+        plans.append(child_plan)
+        result = self._combine_plans("Adicionar sobrinho ou sobrinha", project, *plans)
+        self._person(result.after, child_plan.created_ids[0]).gender_identity = gender
+        result.after = PedigreeProject.model_validate(result.after.model_dump())
+        return result
+
+    @staticmethod
+    def _combine_plans(label: str, project: PedigreeProject, *plans: KinshipPlan) -> KinshipPlan:
+        if not plans:
+            raise ValueError("nenhuma operação foi planejada")
+        result = KinshipPlan(
+            label,
+            project.model_copy(deep=True),
+            plans[-1].after.model_copy(deep=True),
+        )
+        for plan in plans:
+            for item in plan.created_ids:
+                if item not in result.created_ids:
+                    result.created_ids.append(item)
+            for item in plan.reused_ids:
+                if item not in result.reused_ids:
+                    result.reused_ids.append(item)
+            for item in plan.unknown_ids:
+                if item not in result.unknown_ids:
+                    result.unknown_ids.append(item)
+            result.notes.extend(plan.notes)
+        return result
+
     def reconcile_unknown(
         self, project: PedigreeProject, unknown_id: UUID, existing_id: UUID
     ) -> KinshipPlan:
@@ -453,8 +842,26 @@ class KinshipEngine:
                 assertion["member_a"] = existing_id
             if assertion["member_b"] == unknown_id:
                 assertion["member_b"] = existing_id
+        for group in after_data["twin_groups"]:
+            group["member_ids"] = [
+                existing_id if item == unknown_id else item for item in group["member_ids"]
+            ]
         after_data["individuals"] = [
             person for person in after_data["individuals"] if person["id"] != unknown_id
+        ]
+        after_data["parentages"] = self._deduplicate_dicts(
+            after_data["parentages"], ("parent_id", "child_id", "kind")
+        )
+        after_data["relationships"] = self._deduplicate_undirected(
+            after_data["relationships"], "member_a", "member_b", "kind"
+        )
+        after_data["declared_kinships"] = self._deduplicate_undirected(
+            after_data["declared_kinships"], "member_a", "member_b", "kind"
+        )
+        for group in after_data["twin_groups"]:
+            group["member_ids"] = list(dict.fromkeys(group["member_ids"]))
+        after_data["twin_groups"] = [
+            group for group in after_data["twin_groups"] if len(group["member_ids"]) >= 2
         ]
         after = PedigreeProject.model_validate(after_data)
         self.validator.require_valid(after)
@@ -465,6 +872,30 @@ class KinshipEngine:
             reused_ids=[existing_id],
             notes=["O representante desconhecido será substituído após validação."],
         )
+
+    @staticmethod
+    def _deduplicate_dicts(items: list[dict], keys: tuple[str, ...]) -> list[dict]:
+        result = []
+        seen = set()
+        for item in items:
+            marker = tuple(item[key] for key in keys)
+            if marker not in seen:
+                seen.add(marker)
+                result.append(item)
+        return result
+
+    @staticmethod
+    def _deduplicate_undirected(
+        items: list[dict], first_key: str, second_key: str, kind_key: str
+    ) -> list[dict]:
+        result = []
+        seen = set()
+        for item in items:
+            marker = (frozenset((item[first_key], item[second_key])), item[kind_key])
+            if marker not in seen:
+                seen.add(marker)
+                result.append(item)
+        return result
 
     @staticmethod
     def _person(project: PedigreeProject, person_id: UUID) -> Individual:

@@ -126,6 +126,60 @@ def test_unknown_reconciliation_preserves_parentage_and_uuid_of_known_person() -
     assert identified.id in set(KinshipEngine.parents(reconciled, sibling_id))
 
 
+def test_unknown_reconciliation_deduplicates_resulting_parentage() -> None:
+    parent = Individual(label="Known")
+    unknown = Individual(label="Unknown", placeholder=True)
+    child = Individual(label="Child")
+    project = PedigreeProject(
+        individuals=[parent, unknown, child],
+        parentages=[
+            Parentage(parent_id=parent.id, child_id=child.id),
+            Parentage(parent_id=unknown.id, child_id=child.id),
+        ],
+    )
+    reconciled = KinshipEngine().reconcile_unknown(project, unknown.id, parent.id).apply()
+    assert len(reconciled.parentages) == 1
+    assert reconciled.parentages[0].parent_id == parent.id
+
+
+def test_change_full_sibling_to_paternal_half_is_atomic() -> None:
+    project, proband_id, parent_ids = family_with_parents()
+    full_plan = KinshipEngine().plan_sibling(project, proband_id, SiblingKind.FULL)
+    project = full_plan.apply()
+    sibling_id = full_plan.created_ids[0]
+    change = KinshipEngine().plan_change_sibling_kind(
+        project, proband_id, sibling_id, SiblingKind.PATERNAL_HALF
+    )
+    updated = change.apply()
+    assert (
+        KinshipEngine().sibling_kind(updated, proband_id, sibling_id) == SiblingKind.PATERNAL_HALF
+    )
+    assert project == change.before
+    assert set(KinshipEngine.parents(updated, sibling_id)) != set(parent_ids)
+
+
+def test_validator_marks_declared_sibling_with_biological_path_as_ambiguity() -> None:
+    project, proband_id, _ = family_with_parents()
+    plan = KinshipEngine().plan_sibling(project, proband_id, SiblingKind.FULL)
+    project = plan.apply()
+    sibling_id = plan.created_ids[0]
+    from rarepedigree.domain import DeclaredKinship, DeclaredKinshipKind
+
+    project.declared_kinships.append(
+        DeclaredKinship(
+            member_a=proband_id,
+            member_b=sibling_id,
+            kind=DeclaredKinshipKind.SIBLING_UNRESOLVED,
+        )
+    )
+    issues = KinshipValidator().validate(project)
+    assert any(
+        issue.code == "declared_kinship_has_biological_path"
+        and issue.severity == KinshipSeverity.AMBIGUITY
+        for issue in issues
+    )
+
+
 def test_validator_reports_duplicate_parentage_and_excess_biological_parents() -> None:
     child = Individual()
     parents = [Individual() for _ in range(3)]

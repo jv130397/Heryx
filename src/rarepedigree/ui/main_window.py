@@ -64,7 +64,13 @@ from rarepedigree.ui.components import (
     ToolRailButton,
     ZoomControl,
 )
-from rarepedigree.ui.dialogs import AddSiblingDialog, EditIndividualDialog, NewProjectDialog
+from rarepedigree.ui.dialogs import (
+    AddRelativeWizard,
+    AddSiblingDialog,
+    EditIndividualDialog,
+    EditSiblingRelationshipDialog,
+    NewProjectDialog,
+)
 from rarepedigree.ui.i18n import language_manager, tr
 from rarepedigree.ui.icons import icon
 from rarepedigree.ui.preferences import PreferencesDialog
@@ -159,6 +165,9 @@ class MainWindow(QMainWindow):
         self.separation_action = QAction("Relação separada", self)
         self.divorce_action = QAction("Relação divorciada", self)
         self.add_parents_action = QAction("Adicionar pais", self)
+        self.add_relative_action = QAction("Adicionar familiar…", self)
+        self.edit_kinship_action = QAction("Editar parentesco entre selecionados…", self)
+        self.reconcile_action = QAction("Identificar familiar desconhecido…", self)
         self.add_partner_action = QAction("Adicionar parceiro", self)
         self.add_child_action = QAction("Adicionar filho", self)
         self.add_sibling_action = QAction("Adicionar irmão", self)
@@ -228,6 +237,9 @@ class MainWindow(QMainWindow):
             lambda: self.add_relationship(RelationshipKind.DIVORCED_PARTNERSHIP)
         )
         self.add_parents_action.triggered.connect(lambda: self._context_for_selected("parents"))
+        self.add_relative_action.triggered.connect(self._open_relative_wizard)
+        self.edit_kinship_action.triggered.connect(self._edit_selected_kinship)
+        self.reconcile_action.triggered.connect(self._reconcile_selected_unknown)
         self.add_partner_action.triggered.connect(lambda: self._context_for_selected("partner"))
         self.add_child_action.triggered.connect(lambda: self._context_for_selected("child"))
         self.add_sibling_action.triggered.connect(lambda: self._context_for_selected("sibling"))
@@ -366,10 +378,13 @@ class MainWindow(QMainWindow):
         family_button.setMenu(
             FamilyMenu(
                 [
+                    self.add_relative_action,
                     self.add_parents_action,
                     self.add_partner_action,
                     self.add_child_action,
                     self.add_sibling_action,
+                    self.edit_kinship_action,
+                    self.reconcile_action,
                 ],
                 family_button,
             )
@@ -399,6 +414,91 @@ class MainWindow(QMainWindow):
             self.rail_buttons.append(button)
             layout.addWidget(button)
         return panel
+
+    def _open_relative_wizard(self) -> None:
+        selected = self.scene.selected_people()
+        if not selected:
+            QMessageBox.information(self, tr("Família"), tr("Selecione um indivíduo."))
+            return
+        before = self.project.model_copy(deep=True)
+        wizard = AddRelativeWizard(before, selected[0].person, self)
+        if wizard.exec() != wizard.DialogCode.Accepted:
+            return
+        try:
+            plan = wizard.result_plan()
+            after = plan.apply()
+        except ValueError as error:
+            QMessageBox.warning(self, tr("Relação inválida"), tr(str(error)))
+            return
+        positions = self.layout_engine.compute(after)
+        for person in after.individuals:
+            person.layout.x, person.layout.y = positions[person.id]
+        self.undo_stack.push(ReplaceProjectCommand(plan.label, before, after, self._apply_project))
+        self.message_status.setText(tr(plan.label))
+        self.toast.show_message(tr(plan.label))
+        self.fit_pedigree()
+
+    def _edit_selected_kinship(self) -> None:
+        selected = self.scene.selected_people()
+        if len(selected) != 2:
+            QMessageBox.information(
+                self, tr("Parentesco"), tr("Selecione exatamente dois indivíduos.")
+            )
+            return
+        before = self.project.model_copy(deep=True)
+        dialog = EditSiblingRelationshipDialog(before, selected[0].person, selected[1].person, self)
+        if dialog.exec() != dialog.DialogCode.Accepted:
+            return
+        try:
+            plan = dialog.result_plan()
+            after = plan.apply()
+        except ValueError as error:
+            QMessageBox.warning(self, tr("Relação inválida"), tr(str(error)))
+            return
+        self._finish_kinship_plan(plan.label, before, after)
+
+    def _reconcile_selected_unknown(self) -> None:
+        selected = self.scene.selected_people()
+        if len(selected) != 2:
+            QMessageBox.information(
+                self, tr("Reconciliação"), tr("Selecione um desconhecido e uma pessoa cadastrada.")
+            )
+            return
+        unknowns = [item.person for item in selected if item.person.placeholder]
+        known = [item.person for item in selected if not item.person.placeholder]
+        if len(unknowns) != 1 or len(known) != 1:
+            QMessageBox.warning(
+                self, tr("Reconciliação"), tr("A seleção deve conter um único desconhecido.")
+            )
+            return
+        before = self.project.model_copy(deep=True)
+        try:
+            plan = self.kinship_engine.reconcile_unknown(before, unknowns[0].id, known[0].id)
+        except ValueError as error:
+            QMessageBox.warning(self, tr("Reconciliação"), tr(str(error)))
+            return
+        if self.isVisible():
+            answer = QMessageBox.question(
+                self,
+                tr("Confirmar reconciliação"),
+                tr("Substituir o representante desconhecido e preservar suas relações?"),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Cancel,
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+        self._finish_kinship_plan(plan.label, before, plan.apply())
+
+    def _finish_kinship_plan(
+        self, label: str, before: PedigreeProject, after: PedigreeProject
+    ) -> None:
+        positions = self.layout_engine.compute(after)
+        for person in after.individuals:
+            person.layout.x, person.layout.y = positions[person.id]
+        self.undo_stack.push(ReplaceProjectCommand(label, before, after, self._apply_project))
+        self.message_status.setText(tr(label))
+        self.toast.show_message(tr(label))
+        self.fit_pedigree()
 
     def toggle_tool_rail(self) -> None:
         self.rail_expanded = not self.rail_expanded
