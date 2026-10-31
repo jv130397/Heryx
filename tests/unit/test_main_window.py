@@ -76,6 +76,29 @@ def test_contextual_delete_removes_edges_and_is_undoable(qtbot) -> None:
     assert len(window.project.relationships) == 1
 
 
+def test_child_without_partner_creates_unknown_coparent_atomically(qtbot) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    father = window.add_person(GenderIdentity.MAN)
+    window._context_action(window.scene.person_items[father.id], "child")
+    unknown_mothers = [
+        person
+        for person in window.project.individuals
+        if person.placeholder and person.gender_identity == GenderIdentity.WOMAN
+    ]
+    assert len(unknown_mothers) == 1
+    child_ids = {edge.child_id for edge in window.project.parentages if edge.parent_id == father.id}
+    assert len(child_ids) == 1
+    child_id = next(iter(child_ids))
+    assert {edge.parent_id for edge in window.project.parentages if edge.child_id == child_id} == {
+        father.id,
+        unknown_mothers[0].id,
+    }
+    assert window.project.relationships == []
+    window.undo_stack.undo()
+    assert window.project.individuals == [father]
+
+
 def test_move_mode_controls_item_mobility(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)

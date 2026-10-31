@@ -270,11 +270,13 @@ class ParentageConnectorItem(QGraphicsPathItem):
         edges: list[Parentage],
         parents: list[IndividualItem],
         children: list[IndividualItem],
+        draw_coparent_line: bool = False,
     ) -> None:
         super().__init__()
         self.edges = edges
         self.parents = parents
         self.children = children
+        self.draw_coparent_line = draw_coparent_line
         pen = QPen(QColor("#303740"), 2)
         if any(edge.kind != ParentageKind.BIOLOGICAL for edge in edges):
             pen.setStyle(Qt.PenStyle.DashLine)
@@ -286,10 +288,17 @@ class ParentageConnectorItem(QGraphicsPathItem):
         if not self.parents:
             return
         parent_x = sum(item.pos().x() for item in self.parents) / len(self.parents)
-        parent_y = max(item.pos().y() for item in self.parents) + SYMBOL_SIZE / 2
+        parent_y = max(item.pos().y() for item in self.parents)
+        if len(self.parents) == 1:
+            parent_y += SYMBOL_SIZE / 2
         child_y = min(child.pos().y() for child in self.children) - SYMBOL_SIZE / 2
         junction_y = parent_y + max(35.0, (child_y - parent_y) * 0.5)
-        path = QPainterPath(QPointF(parent_x, parent_y))
+        path = QPainterPath()
+        if self.draw_coparent_line and len(self.parents) == 2:
+            left, right = sorted(self.parents, key=lambda item: item.pos().x())
+            path.moveTo(left.pos().x() + SYMBOL_SIZE / 2, parent_y)
+            path.lineTo(right.pos().x() - SYMBOL_SIZE / 2, parent_y)
+        path.moveTo(parent_x, parent_y)
         path.lineTo(parent_x, junction_y)
         child_xs = [child.pos().x() for child in self.children]
         if len(child_xs) == 1:

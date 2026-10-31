@@ -47,6 +47,7 @@ def test_parentage_connectors_and_generation_labels(qapp) -> None:
     scene.load_project(project)
     assert child.id in scene.parentage_items
     assert len(scene.generation_items) == 2
+    assert len({label.pos().x() for label in scene.generation_items}) == 1
 
 
 def test_independent_grandparent_nuclei_use_distinct_connectors(qapp) -> None:

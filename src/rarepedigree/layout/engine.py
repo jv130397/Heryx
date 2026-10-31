@@ -30,6 +30,15 @@ class PedigreeLayoutEngine:
                 if generation[relation.member_b] != shared:
                     generation[relation.member_b] = shared
                     changed = True
+            parents_by_child: dict[UUID, list[UUID]] = defaultdict(list)
+            for edge in project.parentages:
+                parents_by_child[edge.child_id].append(edge.parent_id)
+            for parent_ids in parents_by_child.values():
+                shared = max(generation[parent_id] for parent_id in parent_ids)
+                for parent_id in parent_ids:
+                    if generation[parent_id] != shared:
+                        generation[parent_id] = shared
+                        changed = True
             for edge in project.parentages:
                 candidate = generation[edge.parent_id] + 1
                 if generation[edge.child_id] < candidate:

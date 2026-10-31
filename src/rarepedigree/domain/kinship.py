@@ -355,6 +355,79 @@ class KinshipEngine:
         self.validator.require_valid(after)
         return plan
 
+    def plan_child(
+        self,
+        project: PedigreeProject,
+        parent_id: UUID,
+        *,
+        coparent_id: UUID | None = None,
+        label: str | None = None,
+        kind: ParentageKind = ParentageKind.BIOLOGICAL,
+        create_unknown_coparent: bool = True,
+    ) -> KinshipPlan:
+        """Plan a child and supply a traceable unknown co-parent when safe.
+
+        A reproductive co-parent is not recorded as a partnership. For an
+        unspecified/diverse selected parent, the missing co-parent's sex also
+        remains unspecified instead of manufacturing a binary fact.
+        """
+        source = self._person(project, parent_id)
+        after = project.model_copy(deep=True)
+        child = Individual(label=label or self._next_label(after))
+        after.individuals.append(child)
+        plan = KinshipPlan("Adicionar filho", project.model_copy(deep=True), after)
+        plan.created_ids.append(child.id)
+        after.parentages.append(
+            Parentage(
+                parent_id=parent_id,
+                child_id=child.id,
+                kind=kind,
+                evidence_status=EvidenceStatus.CONFIRMED,
+                provenance="child assistant",
+            )
+        )
+        if coparent_id is not None:
+            self._person(after, coparent_id)
+            if coparent_id == parent_id:
+                raise ValueError("o outro genitor deve ser um indivíduo diferente")
+            after.parentages.append(
+                Parentage(
+                    parent_id=coparent_id,
+                    child_id=child.id,
+                    kind=kind,
+                    evidence_status=EvidenceStatus.CONFIRMED,
+                    provenance="child assistant",
+                )
+            )
+            plan.reused_ids.append(coparent_id)
+        elif create_unknown_coparent and kind == ParentageKind.BIOLOGICAL:
+            gender = {
+                GenderIdentity.MAN: GenderIdentity.WOMAN,
+                GenderIdentity.WOMAN: GenderIdentity.MAN,
+            }.get(source.gender_identity, GenderIdentity.UNKNOWN)
+            relation = {
+                GenderIdentity.WOMAN: "mãe biológica não identificada",
+                GenderIdentity.MAN: "pai biológico não identificado",
+            }.get(gender, "outro genitor biológico não identificado")
+            unknown = self._unknown(after, f"{relation} de {child.label}", gender)
+            after.individuals.append(unknown)
+            after.parentages.append(
+                Parentage(
+                    parent_id=unknown.id,
+                    child_id=child.id,
+                    kind=ParentageKind.BIOLOGICAL,
+                    evidence_status=EvidenceStatus.PROVISIONAL,
+                    provenance="child assistant: automatically created missing co-parent",
+                )
+            )
+            plan.created_ids.append(unknown.id)
+            plan.unknown_ids.append(unknown.id)
+            plan.notes.append(
+                "Genitor biológico desconhecido criado sem inferir parceria ou casamento."
+            )
+        self.validator.require_valid(after)
+        return plan
+
     def reconcile_unknown(
         self, project: PedigreeProject, unknown_id: UUID, existing_id: UUID
     ) -> KinshipPlan:

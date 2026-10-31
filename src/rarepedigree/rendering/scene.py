@@ -59,6 +59,9 @@ class PedigreeScene(QGraphicsScene):
 
     def _add_generation_labels(self, project: PedigreeProject) -> None:
         generations = PedigreeLayoutEngine().generations(project)
+        if not self.person_items:
+            return
+        label_x = min(item.pos().x() for item in self.person_items.values()) - 110
         for generation in sorted(set(generations.values())):
             members = [
                 self.person_items[item]
@@ -73,7 +76,7 @@ class PedigreeScene(QGraphicsScene):
             font.setPointSize(12)
             label.setFont(font)
             label.setBrush(QColor("#516575"))
-            label.setPos(min(item.pos().x() for item in members) - 90, members[0].pos().y() - 12)
+            label.setPos(label_x, members[0].pos().y() - 12)
             self.addItem(label)
             self.generation_items.append(label)
 
@@ -115,6 +118,9 @@ class PedigreeScene(QGraphicsScene):
         twin_member_ids = {member for group in project.twin_groups for member in group.member_ids}
         child_ids = {edge.child_id for edge in project.parentages} - twin_member_ids
         children_by_parents: dict[frozenset[UUID], list[UUID]] = {}
+        relationship_pairs = {
+            frozenset((relation.member_a, relation.member_b)) for relation in project.relationships
+        }
         for child_id in child_ids:
             parent_ids = frozenset(
                 edge.parent_id for edge in project.parentages if edge.child_id == child_id
@@ -124,7 +130,12 @@ class PedigreeScene(QGraphicsScene):
             edges = [edge for edge in project.parentages if edge.child_id in grouped_children]
             parents = [self.person_items[parent_id] for parent_id in parent_ids]
             children = [self.person_items[child_id] for child_id in grouped_children]
-            item = ParentageConnectorItem(edges, parents, children)
+            item = ParentageConnectorItem(
+                edges,
+                parents,
+                children,
+                draw_coparent_line=len(parent_ids) == 2 and parent_ids not in relationship_pairs,
+            )
             self.addItem(item)
             for child_id in grouped_children:
                 self.parentage_items[child_id] = item

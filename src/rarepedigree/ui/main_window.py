@@ -518,7 +518,10 @@ class MainWindow(QMainWindow):
             elif action == "child":
                 selected = self.scene.selected_people()
                 partner_id = self._partner_for_new_child(item.person.id, selected)
-                after, _ = FamilyService.add_child(before, item.person.id, partner_id)
+                plan = self.kinship_engine.plan_child(
+                    before, item.person.id, coparent_id=partner_id
+                )
+                after = plan.apply()
                 label = "Adicionar filho"
             elif action == "adopted_child":
                 after, _ = FamilyService.add_child(

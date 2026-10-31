@@ -165,6 +165,35 @@ def test_non_biological_parentage_does_not_define_biological_siblings() -> None:
     assert KinshipEngine().sibling_kind(project, first.id, second.id) is None
 
 
+def test_child_of_man_automatically_gets_unknown_biological_mother() -> None:
+    father = Individual(label="F", gender_identity=GenderIdentity.MAN)
+    project = PedigreeProject(individuals=[father])
+    plan = KinshipEngine().plan_child(project, father.id)
+    updated = plan.apply()
+    child_id, mother_id = plan.created_ids
+    mother = next(person for person in updated.individuals if person.id == mother_id)
+    assert mother.placeholder
+    assert mother.gender_identity == GenderIdentity.WOMAN
+    assert mother_id in plan.unknown_ids
+    assert set(KinshipEngine.parents(updated, child_id)) == {father.id, mother_id}
+    assert updated.relationships == []
+
+    from rarepedigree.layout import PedigreeLayoutEngine
+
+    generations = PedigreeLayoutEngine().generations(updated)
+    assert generations[mother_id] == generations[father.id]
+    assert generations[child_id] == generations[father.id] + 1
+
+
+def test_child_of_unspecified_parent_does_not_invent_coparent_sex() -> None:
+    parent = Individual(gender_identity=GenderIdentity.UNKNOWN)
+    project = PedigreeProject(individuals=[parent])
+    plan = KinshipEngine().plan_child(project, parent.id)
+    updated = plan.apply()
+    unknown = next(person for person in updated.individuals if person.id == plan.unknown_ids[0])
+    assert unknown.gender_identity == GenderIdentity.UNKNOWN
+
+
 @pytest.mark.parametrize("size", [50, 100, 200])
 def test_large_multinuclear_family_remains_valid_and_collision_free(size) -> None:
     father = Individual(label="F", gender_identity=GenderIdentity.MAN)
