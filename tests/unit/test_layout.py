@@ -148,3 +148,18 @@ def test_partner_is_not_placed_between_full_siblings() -> None:
     sibling_x = positions[sibling.id][0]
     partner_x = positions[partner.id][0]
     assert min(partner_x, sibling_x) < focal_x < max(partner_x, sibling_x)
+
+
+def test_asymmetric_partner_ancestries_never_skip_a_generation() -> None:
+    shallow = Individual(label="S")
+    deep = Individual(label="D")
+    project = PedigreeProject(individuals=[shallow, deep])
+    project, _ = FamilyService.add_parents(project, shallow.id)
+    project, deep_parents = FamilyService.add_parents(project, deep.id)
+    project, _ = FamilyService.add_parents(project, deep_parents[0])
+    project.relationships.append(Relationship(member_a=shallow.id, member_b=deep.id))
+    generations = PedigreeLayoutEngine().generations(project)
+    assert generations[shallow.id] == generations[deep.id]
+    assert all(
+        generations[edge.child_id] == generations[edge.parent_id] + 1 for edge in project.parentages
+    )

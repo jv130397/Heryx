@@ -44,8 +44,17 @@ class PedigreeLayoutEngine:
                 if generation[edge.child_id] < candidate:
                     generation[edge.child_id] = candidate
                     changed = True
+                elif generation[edge.child_id] > candidate:
+                    # A deeper ancestry on the co-parent's side may already
+                    # have moved the child down. Pull this parent's entire
+                    # branch down as well so no edge skips a generation.
+                    generation[edge.parent_id] = generation[edge.child_id] - 1
+                    changed = True
             if not changed:
                 break
+        minimum = min(generation.values(), default=0)
+        if minimum:
+            generation = {person_id: level - minimum for person_id, level in generation.items()}
         return generation
 
     def compute(
