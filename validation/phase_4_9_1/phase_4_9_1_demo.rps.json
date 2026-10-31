@@ -1,0 +1,570 @@
+{
+  "schema_version": "0.2.0",
+  "project_id": "e4d8a382-deaf-4c66-a009-083a9561c574",
+  "title": "Validação 4.9.1",
+  "description": "",
+  "project_language": "pt_BR",
+  "representation": "scientific",
+  "created_at": "2026-10-31T15:03:05.537473Z",
+  "updated_at": "2026-10-31T15:03:05.551127Z",
+  "individuals": [
+    {
+      "id": "f73ed072-1c6e-42dc-a499-677afb8bc540",
+      "label": "P",
+      "gender_identity": "man",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": true,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": 285.0,
+        "y": 360.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "ade1fd2e-8efc-4062-bffc-06ab05085c76",
+      "label": "P-3",
+      "gender_identity": "woman",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": 415.0,
+        "y": 180.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "0b0553e8-8cfd-4c39-9576-3d2e5b58a07b",
+      "label": "Desconhecido",
+      "gender_identity": "man",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "genitor compartilhado de P-2",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": -240.0,
+        "y": 0.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "ea74d7a3-2041-405d-917f-07a9d1ad4b46",
+      "label": "Desconhecido",
+      "gender_identity": "woman",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "genitor compartilhado de P-2",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": -110.0,
+        "y": 0.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "4aee89de-52d0-4801-8178-2c75df016cc7",
+      "label": "Primo-M",
+      "gender_identity": "unknown",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": 725.0,
+        "y": 360.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "f9450621-8ce2-467c-a0a6-1bf22486e59d",
+      "label": "Desconhecido",
+      "gender_identity": "man",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "pai biológico não identificado de Primo-M",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": 545.0,
+        "y": 180.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "a349b917-e5bf-471f-bea8-2001faa3f58f",
+      "label": "Irmão-1",
+      "gender_identity": "unknown",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": -375.0,
+        "y": 360.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "c81f297c-7128-462d-90de-3bd089ec0e8b",
+      "label": "Desconhecido",
+      "gender_identity": "man",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "genitor compartilhado de P",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": -415.0,
+        "y": 180.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "e5b36c34-cd31-4fe5-8395-26620ae009b8",
+      "label": "Irmão-2",
+      "gender_identity": "unknown",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": 65.0,
+        "y": 360.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "96251330-ef40-4507-982b-88e89e7d2ef5",
+      "label": "Meio-irmão-P",
+      "gender_identity": "unknown",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": -155.0,
+        "y": 360.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "dc478576-1df6-4d41-bee0-50eddd68e284",
+      "label": "Desconhecido",
+      "gender_identity": "woman",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "genitor diferente do meio-irmão de P",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": -285.0,
+        "y": 180.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "4c868044-7fd7-4bd8-a019-e3e279556605",
+      "label": "Meia-irmã-M",
+      "gender_identity": "woman",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": -725.0,
+        "y": 360.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "18089261-1c83-47b9-90a0-462219f1ef2e",
+      "label": "Desconhecido",
+      "gender_identity": "man",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "genitor diferente do meio-irmão de P",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": -545.0,
+        "y": 180.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "4d82d13e-950c-4338-9771-f36774d60445",
+      "label": "Tio-P",
+      "gender_identity": "man",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": 65.0,
+        "y": 180.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "554c86c1-01b5-41ce-8f78-f38a274069c7",
+      "label": "Desconhecido",
+      "gender_identity": "man",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "genitor compartilhado de Desconhecido",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": 110.0,
+        "y": 0.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "99876ec9-b21e-4e7f-9559-0f05a6633c55",
+      "label": "Desconhecido",
+      "gender_identity": "woman",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "genitor compartilhado de Desconhecido",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": 240.0,
+        "y": 0.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "1f5424d2-e66a-436a-9b77-fa13f9f43c6d",
+      "label": "Primo-P",
+      "gender_identity": "unknown",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": 505.0,
+        "y": 360.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "d677228d-a1ae-4bf0-a10d-8e91d889f969",
+      "label": "Desconhecido",
+      "gender_identity": "woman",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "mãe biológica não identificada de Primo-P",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": 195.0,
+        "y": 180.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "775641f4-9a88-4086-9168-98ea6331f976",
+      "label": "Sobrinho",
+      "gender_identity": "unknown",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": 0.0,
+        "y": 540.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "b928dd51-a55c-40c6-b7a5-21aa63fa9165",
+      "label": "Desconhecido",
+      "gender_identity": "unknown",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "outro genitor biológico não identificado de Sobrinho",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": -505.0,
+        "y": 360.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "f6edce5f-e79d-4676-bc40-f86b3f9dad2a",
+      "label": "Familiar identificado",
+      "gender_identity": "woman",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": -155.0,
+        "y": 180.0,
+        "locked": false
+      }
+    }
+  ],
+  "relationships": [],
+  "parentages": [
+    {
+      "id": "56392673-b50a-4888-bda9-fbb8ff8e8c13",
+      "parent_id": "f6edce5f-e79d-4676-bc40-f86b3f9dad2a",
+      "child_id": "f73ed072-1c6e-42dc-a499-677afb8bc540",
+      "kind": "biological",
+      "evidence_status": "confirmed",
+      "provenance": "kinship ancestor assistant"
+    },
+    {
+      "id": "1c81dbba-13c4-425b-a729-2b7d83daf8a6",
+      "parent_id": "0b0553e8-8cfd-4c39-9576-3d2e5b58a07b",
+      "child_id": "f6edce5f-e79d-4676-bc40-f86b3f9dad2a",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "b6108454-81af-41c1-951a-002b99f0bb94",
+      "parent_id": "ea74d7a3-2041-405d-917f-07a9d1ad4b46",
+      "child_id": "f6edce5f-e79d-4676-bc40-f86b3f9dad2a",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "0b92006f-62d7-41f5-8780-9058d895143f",
+      "parent_id": "0b0553e8-8cfd-4c39-9576-3d2e5b58a07b",
+      "child_id": "ade1fd2e-8efc-4062-bffc-06ab05085c76",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "99f65132-c296-4199-81d9-abba12ce2f8c",
+      "parent_id": "ea74d7a3-2041-405d-917f-07a9d1ad4b46",
+      "child_id": "ade1fd2e-8efc-4062-bffc-06ab05085c76",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "03d57f76-e08c-49f8-a813-2cbb8d3d39d3",
+      "parent_id": "ade1fd2e-8efc-4062-bffc-06ab05085c76",
+      "child_id": "4aee89de-52d0-4801-8178-2c75df016cc7",
+      "kind": "biological",
+      "evidence_status": "confirmed",
+      "provenance": "child assistant"
+    },
+    {
+      "id": "4e8cbb03-b373-445e-863f-f61ccc390862",
+      "parent_id": "f9450621-8ce2-467c-a0a6-1bf22486e59d",
+      "child_id": "4aee89de-52d0-4801-8178-2c75df016cc7",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "child assistant: automatically created missing co-parent"
+    },
+    {
+      "id": "ac6d7f48-0472-4b3a-b5c8-a4808ec03880",
+      "parent_id": "c81f297c-7128-462d-90de-3bd089ec0e8b",
+      "child_id": "f73ed072-1c6e-42dc-a499-677afb8bc540",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "1da3e963-546a-411d-955b-f7c6e8ee62ab",
+      "parent_id": "f6edce5f-e79d-4676-bc40-f86b3f9dad2a",
+      "child_id": "a349b917-e5bf-471f-bea8-2001faa3f58f",
+      "kind": "biological",
+      "evidence_status": "confirmed",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "7c34f97a-1f2e-4be5-af56-2906d555312d",
+      "parent_id": "c81f297c-7128-462d-90de-3bd089ec0e8b",
+      "child_id": "a349b917-e5bf-471f-bea8-2001faa3f58f",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "a7ed7a9d-66e9-4f8e-88c8-9afdc4e722f5",
+      "parent_id": "f6edce5f-e79d-4676-bc40-f86b3f9dad2a",
+      "child_id": "e5b36c34-cd31-4fe5-8395-26620ae009b8",
+      "kind": "biological",
+      "evidence_status": "confirmed",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "d80626cb-2769-4923-b90e-b538c6487a15",
+      "parent_id": "c81f297c-7128-462d-90de-3bd089ec0e8b",
+      "child_id": "e5b36c34-cd31-4fe5-8395-26620ae009b8",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "82e67c94-37a3-4b74-a599-6ab943839912",
+      "parent_id": "c81f297c-7128-462d-90de-3bd089ec0e8b",
+      "child_id": "96251330-ef40-4507-982b-88e89e7d2ef5",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "eab1d32c-c259-483d-af4a-104515e2124d",
+      "parent_id": "dc478576-1df6-4d41-bee0-50eddd68e284",
+      "child_id": "96251330-ef40-4507-982b-88e89e7d2ef5",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant: confirmed different parent"
+    },
+    {
+      "id": "e6539ef6-0c9e-48b6-bf44-b14b76eb5142",
+      "parent_id": "f6edce5f-e79d-4676-bc40-f86b3f9dad2a",
+      "child_id": "4c868044-7fd7-4bd8-a019-e3e279556605",
+      "kind": "biological",
+      "evidence_status": "confirmed",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "6fc12621-318c-40f2-990d-e5565afb0a0d",
+      "parent_id": "18089261-1c83-47b9-90a0-462219f1ef2e",
+      "child_id": "4c868044-7fd7-4bd8-a019-e3e279556605",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant: confirmed different parent"
+    },
+    {
+      "id": "ad897dab-6c08-4acd-b981-81859b06753c",
+      "parent_id": "554c86c1-01b5-41ce-8f78-f38a274069c7",
+      "child_id": "c81f297c-7128-462d-90de-3bd089ec0e8b",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "9b59e6ae-0859-4ad4-8428-840336608e6c",
+      "parent_id": "99876ec9-b21e-4e7f-9559-0f05a6633c55",
+      "child_id": "c81f297c-7128-462d-90de-3bd089ec0e8b",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "8952d60a-8c7a-4d77-afe5-2eb3da137d07",
+      "parent_id": "554c86c1-01b5-41ce-8f78-f38a274069c7",
+      "child_id": "4d82d13e-950c-4338-9771-f36774d60445",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "9e9152c0-fedf-4293-af27-adc6cc26286c",
+      "parent_id": "99876ec9-b21e-4e7f-9559-0f05a6633c55",
+      "child_id": "4d82d13e-950c-4338-9771-f36774d60445",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "2514f5be-3dfe-470a-8725-13577a64460e",
+      "parent_id": "4d82d13e-950c-4338-9771-f36774d60445",
+      "child_id": "1f5424d2-e66a-436a-9b77-fa13f9f43c6d",
+      "kind": "biological",
+      "evidence_status": "confirmed",
+      "provenance": "child assistant"
+    },
+    {
+      "id": "ace3c443-723d-43d5-9035-e86f55dd9096",
+      "parent_id": "d677228d-a1ae-4bf0-a10d-8e91d889f969",
+      "child_id": "1f5424d2-e66a-436a-9b77-fa13f9f43c6d",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "child assistant: automatically created missing co-parent"
+    },
+    {
+      "id": "ea4a788a-a6e3-4abf-b98f-3edbb4490ca4",
+      "parent_id": "a349b917-e5bf-471f-bea8-2001faa3f58f",
+      "child_id": "775641f4-9a88-4086-9168-98ea6331f976",
+      "kind": "biological",
+      "evidence_status": "confirmed",
+      "provenance": "child assistant"
+    },
+    {
+      "id": "21ea4ede-f9bb-47f2-aaf5-b9ab776b0cb0",
+      "parent_id": "b928dd51-a55c-40c6-b7a5-21aa63fa9165",
+      "child_id": "775641f4-9a88-4086-9168-98ea6331f976",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "child assistant: automatically created missing co-parent"
+    }
+  ],
+  "twin_groups": [],
+  "declared_kinships": [],
+  "family": {
+    "id": "95c5e1db-ea27-4608-bb0c-7708dd7424d3",
+    "label": "Família"
+  }
+}

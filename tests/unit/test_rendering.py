@@ -98,6 +98,37 @@ def test_full_siblings_share_one_scientific_sibship_connector(qapp) -> None:
     assert scene.parentage_items[first.id] is scene.parentage_items[second.id]
 
 
+def test_reproductive_lanes_follow_visual_order_not_uuid_order(qapp) -> None:
+    del qapp
+    parents = [
+        Individual(label=f"P{index}", layout=LayoutPosition(x=index * 260, y=0))
+        for index in range(3)
+    ]
+    children = [
+        Individual(label=f"C{index}", layout=LayoutPosition(x=index * 260, y=180))
+        for index in range(3)
+    ]
+    project = PedigreeProject(
+        individuals=[*reversed(parents), *children],
+        parentages=[
+            Parentage(parent_id=parent.id, child_id=child.id)
+            for parent, child in zip(parents, children, strict=True)
+        ],
+    )
+    scene = PedigreeScene()
+    scene.load_project(project)
+    offsets = [scene.parentage_items[child.id].routing_offset for child in children]
+    assert offsets == [0.0, 14.0, -14.0]
+
+
+def test_long_identifier_participates_in_scene_bounds(qapp) -> None:
+    del qapp
+    person = Individual(label="Primo materno identificado")
+    scene = PedigreeScene()
+    scene.load_project(PedigreeProject(individuals=[person]))
+    assert scene.person_items[person.id].boundingRect().width() > 150
+
+
 def test_consanguineous_partnership_reaches_the_graphics_scene(qapp) -> None:
     del qapp
     first = Individual(layout=LayoutPosition(x=-80, y=0))

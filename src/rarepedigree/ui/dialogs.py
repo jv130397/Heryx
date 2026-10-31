@@ -348,7 +348,8 @@ class AddRelativeWizard(QWizard):
             scene.load_project(preview_project)
             self.preview_view.setScene(scene)
             self.preview_view.fitInView(
-                scene.pedigree_bounding_rect(), Qt.AspectRatioMode.KeepAspectRatio
+                scene.pedigree_bounding_rect().adjusted(-70, -50, 70, 70),
+                Qt.AspectRatioMode.KeepAspectRatio,
             )
             self.preview_summary.setText(self._summary(self._plan))
         else:

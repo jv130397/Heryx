@@ -126,6 +126,29 @@ class PedigreeScene(QGraphicsScene):
                 edge.parent_id for edge in project.parentages if edge.child_id == child_id
             )
             children_by_parents.setdefault(parent_ids, []).append(child_id)
+        generations = PedigreeLayoutEngine().generations(project)
+        groups_by_generation: dict[int, list[frozenset[UUID]]] = {}
+        for parent_ids, grouped_children in children_by_parents.items():
+            generation = generations[grouped_children[0]]
+            groups_by_generation.setdefault(generation, []).append(parent_ids)
+        offsets: dict[frozenset[UUID], float] = {}
+        lane_sequence = (0.0, 14.0, -14.0, 28.0, -28.0, 42.0, -42.0)
+        for parent_sets in groups_by_generation.values():
+            # Assign lanes in the same left-to-right order in which the
+            # nuclei are drawn. UUID order made an otherwise stable pedigree
+            # weave across itself after each insertion/reload.
+            for index, parent_ids in enumerate(
+                sorted(
+                    parent_sets,
+                    key=lambda ids: sum(self.person_items[item].pos().x() for item in ids)
+                    / max(1, len(ids)),
+                )
+            ):
+                offsets[parent_ids] = (
+                    lane_sequence[index]
+                    if index < len(lane_sequence)
+                    else (index - len(lane_sequence) + 4) * 14.0
+                )
         for parent_ids, grouped_children in children_by_parents.items():
             edges = [edge for edge in project.parentages if edge.child_id in grouped_children]
             parents = [self.person_items[parent_id] for parent_id in parent_ids]
@@ -135,6 +158,7 @@ class PedigreeScene(QGraphicsScene):
                 parents,
                 children,
                 draw_coparent_line=len(parent_ids) == 2 and parent_ids not in relationship_pairs,
+                routing_offset=offsets[parent_ids],
             )
             self.addItem(item)
             for child_id in grouped_children:

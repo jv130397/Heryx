@@ -1,0 +1,19 @@
+{
+  "individuals": 21,
+  "parentages": 24,
+  "relationships": 0,
+  "captures": {
+    "01_three_generations": "specifications/assets/phase_4_9_1/01_three_generations.png",
+    "02_four_generations": "specifications/assets/phase_4_9_1/02_four_generations.png",
+    "03_paternal_half_siblings": "specifications/assets/phase_4_9_1/03_paternal_half_siblings.png",
+    "04_maternal_half_siblings": "specifications/assets/phase_4_9_1/04_maternal_half_siblings.png",
+    "05_father_three_mothers": "specifications/assets/phase_4_9_1/05_father_three_mothers.png",
+    "06_mother_three_fathers": "specifications/assets/phase_4_9_1/06_mother_three_fathers.png",
+    "07_aunts_cousins": "specifications/assets/phase_4_9_1/07_aunts_cousins.png",
+    "08_unknown_people": "specifications/assets/phase_4_9_1/08_unknown_people.png",
+    "09_relative_wizard": "specifications/assets/phase_4_9_1/09_relative_wizard.png",
+    "10_wizard_preview": "specifications/assets/phase_4_9_1/10_wizard_preview.png",
+    "11_large_family_50": "specifications/assets/phase_4_9_1/11_large_family_50.png"
+  },
+  "project": "validation/phase_4_9_1/phase_4_9_1_demo.rps.json"
+}

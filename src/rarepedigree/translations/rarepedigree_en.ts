@@ -18,7 +18,6 @@
     <message><source>Excluir</source><translation>Delete</translation></message>
     <message><source>Relacionamento</source><translation>Relationship</translation></message>
     <message><source>Adicionar indivíduo</source><translation>Add individual</translation></message>
-    <message><source>Adicionar familiar</source><translation>Add relative</translation></message>
     <message><source>Ajustar à tela</source><translation>Fit to view</translation></message>
     <message><source>Aparência</source><translation>Appearance</translation></message>
     <message><source>Idioma</source><translation>Language</translation></message>
@@ -35,7 +34,6 @@
     <message><source>Nome do projeto</source><translation>Project name</translation></message>
     <message><source>Identificador familiar</source><translation>Family identifier</translation></message>
     <message><source>Descrição opcional</source><translation>Optional description</translation></message>
-    <message><source>Representação</source><translation>Representation</translation></message>
     <message><source>Arquivo</source><translation>File</translation></message>
     <message><source>Editar</source><translation>Edit</translation></message>
     <message><source>Exibir</source><translation>View</translation></message>
@@ -80,5 +78,26 @@
     <message><source>falecido</source><translation>deceased</translation></message>
     <message><source>contorno azul/rosa/cinza = categoria de representação</source><translation>blue/pink/gray outline = representation category</translation></message>
     <message><source>modo científico monocromático</source><translation>scientific monochrome mode</translation></message>
+    <message><source>Adicionar familiar</source><translation>Add relative</translation></message>
+    <message><source>1. Identificação</source><translation>1. Identification</translation></message>
+    <message><source>2. Parentesco</source><translation>2. Kinship</translation></message>
+    <message><source>3. Genitores e intermediários</source><translation>3. Parents and intermediates</translation></message>
+    <message><source>4. Prévia estrutural</source><translation>4. Structural preview</translation></message>
+    <message><source>5. Confirmação</source><translation>5. Confirmation</translation></message>
+    <message><source>Identificador</source><translation>Identifier</translation></message>
+    <message><source>Representação</source><translation>Representation</translation></message>
+    <message><source>Relação com o indivíduo selecionado</source><translation>Relationship to the selected individual</translation></message>
+    <message><source>Pessoa de referência</source><translation>Reference person</translation></message>
+    <message><source>Outro genitor existente</source><translation>Existing other parent</translation></message>
+    <message><source>Manter outro genitor desconhecido</source><translation>Keep the other parent unknown</translation></message>
+    <message><source>Autorizar representantes desconhecidos quando o caminho exigir</source><translation>Authorize unknown representatives when the path requires them</translation></message>
+    <message><source>Editar parentesco entre irmãos</source><translation>Edit sibling relationship</translation></message>
+    <message><source>Vínculo parental</source><translation>Parental relationship</translation></message>
+    <message><source>Mesmo pai e mesma mãe</source><translation>Same father and mother</translation></message>
+    <message><source>Mesmo pai e mães diferentes</source><translation>Same father and different mothers</translation></message>
+    <message><source>Mesma mãe e pais diferentes</source><translation>Same mother and different fathers</translation></message>
+    <message><source>Irmandade ainda não esclarecida</source><translation>Sibling relationship not yet resolved</translation></message>
+    <message><source>Irmandade adotiva ou social</source><translation>Adoptive or social sibling relationship</translation></message>
+    <message><source>A operação será aplicada como uma única ação reversível.</source><translation>The operation will be applied as one reversible action.</translation></message>
   </context>
 </TS>

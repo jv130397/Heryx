@@ -163,3 +163,31 @@ def test_asymmetric_partner_ancestries_never_skip_a_generation() -> None:
     assert all(
         generations[edge.child_id] == generations[edge.parent_id] + 1 for edge in project.parentages
     )
+
+
+@pytest.mark.parametrize("size", [50, 100, 200])
+def test_extended_synthetic_families_have_unique_positions_and_exact_generations(size) -> None:
+    root = Individual(label="P")
+    project = PedigreeProject(individuals=[root])
+    engine = KinshipEngine()
+    frontier = [root.id]
+    while len(project.individuals) < min(size, 31):
+        child_id = frontier.pop(0)
+        project, parent_ids = FamilyService.add_parents(project, child_id)
+        frontier.extend(parent_ids)
+    candidates = [person.id for person in project.individuals if engine.parents(project, person.id)]
+    index = 0
+    while len(project.individuals) < size:
+        project = engine.plan_sibling(
+            project,
+            candidates[index % len(candidates)],
+            SiblingKind.FULL,
+            label=f"S{index}",
+        ).apply()
+        index += 1
+    generations = PedigreeLayoutEngine().generations(project)
+    assert all(
+        generations[edge.child_id] == generations[edge.parent_id] + 1
+        for edge in project.parentages
+    )
+    _assert_no_position_collisions(project)

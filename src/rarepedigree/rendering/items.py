@@ -61,7 +61,11 @@ class IndividualItem(QGraphicsObject):
         self.adopted = False
 
     def boundingRect(self) -> QRectF:
-        return QRectF(-35, -35, 70, 88)
+        # Identifiers are part of the scientific symbol, so their complete
+        # width must participate in fitting/export bounds.  A fixed 68 px
+        # label box clipped names in the relative-wizard preview.
+        label_width = max(70.0, min(220.0, len(self.person.label) * 8.5 + 16.0))
+        return QRectF(-label_width / 2, -35, label_width, 88)
 
     def shape(self) -> QPainterPath:
         path = QPainterPath()
@@ -135,7 +139,12 @@ class IndividualItem(QGraphicsObject):
         font.setBold(False)
         font.setPointSize(self.render_style.identifier_size)
         painter.setFont(font)
-        painter.drawText(QRectF(-34, 29, 68, 20), Qt.AlignmentFlag.AlignCenter, self.person.label)
+        label_width = max(70.0, min(220.0, len(self.person.label) * 8.5 + 16.0))
+        painter.drawText(
+            QRectF(-label_width / 2, 29, label_width, 20),
+            Qt.AlignmentFlag.AlignCenter,
+            self.person.label,
+        )
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         self._drag_start = self.pos()
@@ -271,12 +280,14 @@ class ParentageConnectorItem(QGraphicsPathItem):
         parents: list[IndividualItem],
         children: list[IndividualItem],
         draw_coparent_line: bool = False,
+        routing_offset: float = 0.0,
     ) -> None:
         super().__init__()
         self.edges = edges
         self.parents = parents
         self.children = children
         self.draw_coparent_line = draw_coparent_line
+        self.routing_offset = routing_offset
         pen = QPen(QColor("#303740"), 2)
         if any(edge.kind != ParentageKind.BIOLOGICAL for edge in edges):
             pen.setStyle(Qt.PenStyle.DashLine)
@@ -288,16 +299,26 @@ class ParentageConnectorItem(QGraphicsPathItem):
         if not self.parents:
             return
         parent_x = sum(item.pos().x() for item in self.parents) / len(self.parents)
-        parent_y = max(item.pos().y() for item in self.parents)
-        if len(self.parents) == 1:
-            parent_y += SYMBOL_SIZE / 2
+        parent_center_y = max(item.pos().y() for item in self.parents)
+        source_y = parent_center_y + (SYMBOL_SIZE / 2 if len(self.parents) == 1 else 0.0)
+        parent_y = source_y + self.routing_offset
         child_y = min(child.pos().y() for child in self.children) - SYMBOL_SIZE / 2
         junction_y = parent_y + max(35.0, (child_y - parent_y) * 0.5)
         path = QPainterPath()
+        if len(self.parents) == 1 and self.routing_offset:
+            path.moveTo(parent_x, source_y)
+            path.lineTo(parent_x, parent_y)
         if self.draw_coparent_line and len(self.parents) == 2:
             left, right = sorted(self.parents, key=lambda item: item.pos().x())
-            path.moveTo(left.pos().x() + SYMBOL_SIZE / 2, parent_y)
-            path.lineTo(right.pos().x() - SYMBOL_SIZE / 2, parent_y)
+            left_x = left.pos().x() + SYMBOL_SIZE / 2
+            right_x = right.pos().x() - SYMBOL_SIZE / 2
+            if self.routing_offset:
+                path.moveTo(left_x, parent_center_y)
+                path.lineTo(left_x, parent_y)
+                path.moveTo(right_x, parent_center_y)
+                path.lineTo(right_x, parent_y)
+            path.moveTo(left_x, parent_y)
+            path.lineTo(right_x, parent_y)
         path.moveTo(parent_x, parent_y)
         path.lineTo(parent_x, junction_y)
         child_xs = [child.pos().x() for child in self.children]
