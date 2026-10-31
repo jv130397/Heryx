@@ -19,8 +19,17 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from rarepedigree.domain import GenderIdentity, ObservationStatus, PedigreeProject
+from rarepedigree.domain import (
+    GenderIdentity,
+    KinshipEngine,
+    KinshipSeverity,
+    ObservationStatus,
+    ParentageKind,
+    PedigreeProject,
+    SiblingKind,
+)
 from rarepedigree.rendering import IndividualItem
+from rarepedigree.rendering.items import ParentageConnectorItem
 from rarepedigree.ui.components import SectionHeader
 from rarepedigree.ui.i18n import tr
 
@@ -94,9 +103,21 @@ class PropertiesPanel(QWidget):
         self.relations_header = SectionHeader("Relações calculadas")
         relation_layout.addWidget(self.relations_header)
         self.parents_label = QLabel()
+        self.kinship_label = QLabel()
+        self.unknown_parents_label = QLabel()
+        self.siblings_label = QLabel()
         self.partners_label = QLabel()
         self.children_label = QLabel()
-        for widget in (self.parents_label, self.partners_label, self.children_label):
+        self.warnings_label = QLabel()
+        for widget in (
+            self.kinship_label,
+            self.parents_label,
+            self.unknown_parents_label,
+            self.siblings_label,
+            self.partners_label,
+            self.children_label,
+            self.warnings_label,
+        ):
             widget.setWordWrap(True)
             relation_layout.addWidget(widget)
         relation_layout.addStretch()
@@ -151,13 +172,35 @@ class PropertiesPanel(QWidget):
         self.lock_layout_check.setChecked(person.layout.locked)
         self._update_relations(person.id)
 
+    def set_connection(self, item: ParentageConnectorItem) -> None:
+        self._item = None
+        self.summary.setVisible(False)
+        parents = ", ".join(parent.person.label for parent in item.parents)
+        children = ", ".join(child.person.label for child in item.children)
+        edge_lines = [
+            f"{edge.parent_id} → {edge.child_id} · {edge.kind.value} · {edge.evidence_status.value}"
+            for edge in item.edges
+        ]
+        self.empty.setText(
+            tr("Núcleo parental selecionado")
+            + f"\n\n{tr('Genitores')}: {parents}\n{tr('Descendentes')}: {children}\n\n"
+            + "\n".join(edge_lines)
+        )
+        self.stack.setCurrentWidget(self.empty)
+
     def _update_relations(self, person_id) -> None:
         if self._project is None:
             return
         names = {person.id: person.label for person in self._project.individuals}
-        parents = [
-            names[edge.parent_id] for edge in self._project.parentages if edge.child_id == person_id
+        engine = KinshipEngine()
+        parent_people = [
+            person
+            for person in self._project.individuals
+            if person.id
+            in engine.parents(self._project, person_id, {ParentageKind.BIOLOGICAL})
         ]
+        parents = [person.label for person in parent_people if not person.placeholder]
+        unknown_parents = [person.label for person in parent_people if person.placeholder]
         children = [
             names[edge.child_id] for edge in self._project.parentages if edge.parent_id == person_id
         ]
@@ -167,10 +210,64 @@ class PropertiesPanel(QWidget):
             if person_id in {relation.member_a, relation.member_b}
         ]
         self.parents_label.setText(f"Pais: {', '.join(parents) if parents else 'não registrados'}")
+        self.unknown_parents_label.setText(
+            "Genitores desconhecidos: "
+            + (", ".join(unknown_parents) if unknown_parents else "nenhum")
+        )
+        full: list[str] = []
+        half: list[str] = []
+        for other in self._project.individuals:
+            if other.id == person_id:
+                continue
+            kind = engine.sibling_kind(self._project, person_id, other.id)
+            if kind == SiblingKind.FULL:
+                full.append(other.label)
+            elif kind in {SiblingKind.PATERNAL_HALF, SiblingKind.MATERNAL_HALF}:
+                half.append(other.label)
+        self.siblings_label.setText(
+            f"Irmãos completos: {', '.join(full) if full else 'nenhum'}\n"
+            f"Meio-irmãos: {', '.join(half) if half else 'nenhum'}"
+        )
         partner_text = ", ".join(partners) if partners else "não registrados"
         child_text = ", ".join(children) if children else "não registrados"
         self.partners_label.setText(f"Parceiros: {partner_text}")
         self.children_label.setText(f"Filhos: {child_text}")
+        probands = [person for person in self._project.individuals if person.proband]
+        relationship = "não calculado"
+        if len(probands) == 1:
+            relationship = self._kinship_with_proband(engine, probands[0].id, person_id)
+        self.kinship_label.setText(f"Parentesco com o probando: {relationship}")
+        issues = [
+            issue.message
+            for issue in engine.validator.validate(self._project)
+            if person_id in issue.person_ids
+            and issue.severity in {KinshipSeverity.ERROR, KinshipSeverity.AMBIGUITY}
+        ]
+        self.warnings_label.setText(
+            "Avisos: " + ("; ".join(issues) if issues else "nenhuma ambiguidade detectada")
+        )
+
+    def _kinship_with_proband(self, engine: KinshipEngine, proband_id, person_id) -> str:
+        if person_id == proband_id:
+            return "probando"
+        parent_ids = engine.parents(self._project, proband_id, {ParentageKind.BIOLOGICAL})
+        if person_id in parent_ids:
+            return "genitor"
+        if proband_id in engine.children(self._project, person_id, {ParentageKind.BIOLOGICAL}):
+            return "genitor"
+        sibling = engine.sibling_kind(self._project, proband_id, person_id)
+        if sibling is not None:
+            return sibling.value
+        context = engine.collateral_context(self._project, proband_id, person_id)
+        if context is not None:
+            return context[0]
+        ancestors = engine.ancestors(self._project, proband_id)
+        descendants = engine.descendants(self._project, proband_id)
+        if person_id in ancestors:
+            return f"ascendente ({ancestors[person_id]} geração/ões)"
+        if person_id in descendants:
+            return f"descendente ({descendants[person_id]} geração/ões)"
+        return "não determinado"
 
     def retranslate_ui(self) -> None:
         self.tabs.setTabText(0, tr("Identificação"))

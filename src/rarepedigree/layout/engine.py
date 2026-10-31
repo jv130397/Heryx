@@ -117,6 +117,32 @@ class PedigreeLayoutEngine:
                     )
                 )
 
+        # When both members of a reproductive unit have known ancestry,
+        # orient them in the same left-to-right order as their parent groups.
+        # This prevents two grandparent sibship bars from interleaving merely
+        # because the default gender ordering reversed the couple.
+        for level in sorted(units_by_level):
+            units = units_by_level[level]
+            if level == min(units_by_level):
+                continue
+            ancestry_ranks = ranks()
+            previous_order = {id(unit): index for index, unit in enumerate(units)}
+            units.sort(
+                key=lambda unit: self._barycenter_key(
+                    unit, parents, ancestry_ranks, previous_order[id(unit)]
+                )
+            )
+            ancestry_ranks = ranks()
+            for unit in units:
+                if len(unit) < 2 or not all(parents[person_id] for person_id in unit):
+                    continue
+                unit.sort(
+                    key=lambda person_id: sum(
+                        ancestry_ranks[parent_id] for parent_id in parents[person_id]
+                    )
+                    / len(parents[person_id])
+                )
+
         # If one member of a partnership belongs to a sibship, keep that
         # member on the side facing their siblings. Otherwise the partner can
         # be placed between siblings and appear to be their biological sibling.
@@ -148,7 +174,7 @@ class PedigreeLayoutEngine:
                     else [anchor, *partners]
                 )
 
-        positions: dict[UUID, tuple[float, float]] = {}
+        provisional_levels: dict[int, dict[UUID, float]] = {}
         for level in sorted(units_by_level):
             units = units_by_level[level]
             total_width = (
@@ -162,15 +188,48 @@ class PedigreeLayoutEngine:
                 for index, person_id in enumerate(unit):
                     provisional[person_id] = cursor + index * self.HORIZONTAL_SPACING
                 cursor += unit_width + self.FAMILY_GAP
-            for person_id in levels[level]:
+            provisional_levels[level] = provisional
+
+        # Align every reproductive unit above the centre of its descendants,
+        # working from the youngest generation upward. Equal-width rows alone
+        # can place a parent nucleus inside a neighbouring sibship span, which
+        # forces visually misleading connector crossings in large pedigrees.
+        aligned = {
+            person_id: x
+            for provisional in provisional_levels.values()
+            for person_id, x in provisional.items()
+        }
+        for level in sorted(units_by_level, reverse=True)[1:]:
+            cursor = float("-inf")
+            for unit in units_by_level[level]:
+                offsets = [
+                    provisional_levels[level][person_id]
+                    - sum(provisional_levels[level][item] for item in unit) / len(unit)
+                    for person_id in unit
+                ]
+                descendants = {
+                    child_id for person_id in unit for child_id in children[person_id]
+                }
+                desired = (
+                    sum(aligned[child_id] for child_id in descendants) / len(descendants)
+                    if descendants
+                    else sum(aligned[person_id] for person_id in unit) / len(unit)
+                )
+                half_width = (max(offsets) - min(offsets)) / 2 if offsets else 0.0
+                center = max(desired, cursor + self.FAMILY_GAP + half_width)
+                for person_id, offset in zip(unit, offsets, strict=True):
+                    aligned[person_id] = center + offset
+                cursor = center + half_width
+
+        positions: dict[UUID, tuple[float, float]] = {}
+        for level, person_ids in levels.items():
+            for person_id in person_ids:
                 person = people[person_id]
-                if preserve_locked and person.layout.locked:
-                    positions[person_id] = (person.layout.x, person.layout.y)
-                else:
-                    positions[person_id] = (
-                        provisional[person_id],
-                        level * self.VERTICAL_SPACING,
-                    )
+                positions[person_id] = (
+                    (person.layout.x, person.layout.y)
+                    if preserve_locked and person.layout.locked
+                    else (aligned[person_id], level * self.VERTICAL_SPACING)
+                )
         return positions
 
     @staticmethod

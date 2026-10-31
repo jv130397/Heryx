@@ -139,6 +139,14 @@ class PreferencesDialog(QDialog):
         self.monochrome.setChecked(self.settings.value("pedigree/monochrome", False, bool))
         self.show_legend = QCheckBox("Mostrar legenda")
         self.show_legend.setChecked(self.settings.value("pedigree/show_legend", True, bool))
+        self.show_auxiliary_labels = QCheckBox("Mostrar rótulos auxiliares")
+        self.show_auxiliary_labels.setChecked(
+            self.settings.value("pedigree/show_auxiliary_labels", True, bool)
+        )
+        self.show_auxiliary_labels = QCheckBox("Mostrar rótulos auxiliares")
+        self.show_auxiliary_labels.setChecked(
+            self.settings.value("pedigree/show_auxiliary_labels", True, bool)
+        )
         self.identifier_size = QSpinBox()
         self.identifier_size.setRange(8, 18)
         self.identifier_size.setValue(self.settings.value("pedigree/identifier_size", 10, int))
@@ -169,6 +177,7 @@ class PreferencesDialog(QDialog):
         form.addRow(self.category_colors)
         form.addRow(self.monochrome)
         form.addRow(self.show_legend)
+        form.addRow(self.show_auxiliary_labels)
         form.addRow("Posição da legenda", self.legend_position)
         form.addRow("Tamanho dos identificadores", self.identifier_size)
         form.addRow("Paleta", self.palette)
@@ -246,6 +255,7 @@ class PreferencesDialog(QDialog):
             "pedigree/category_colors": self.category_colors.isChecked(),
             "pedigree/monochrome": self.monochrome.isChecked(),
             "pedigree/show_legend": self.show_legend.isChecked(),
+            "pedigree/show_auxiliary_labels": self.show_auxiliary_labels.isChecked(),
             "pedigree/legend_position": self.legend_position.currentData(),
             "pedigree/identifier_size": self.identifier_size.value(),
             "pedigree/man_color": self.man_color.color,

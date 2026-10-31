@@ -45,6 +45,18 @@ def test_properties_follow_selection_and_show_relations(qtbot) -> None:
     assert window.properties.stack.currentWidget() is window.properties.empty
 
 
+def test_parentage_connection_can_be_selected_and_inspected(qtbot) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    child = window.add_person(GenderIdentity.UNKNOWN)
+    window._context_action(window.scene.person_items[child.id], "parents")
+    connector = window.scene.parentage_items[child.id]
+    window.scene.clearSelection()
+    connector.setSelected(True)
+    assert "Núcleo parental" in window.properties.empty.text()
+    assert "→" in window.properties.empty.text()
+
+
 def test_zoom_is_bounded_and_reported(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)

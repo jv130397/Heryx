@@ -146,3 +146,69 @@ def test_great_grandchild_creates_authorized_intermediate_path() -> None:
     assert KinshipEngine().descendants(updated, root.id)[final.id] == 3
     assert final.gender_identity == GenderIdentity.WOMAN
     assert len(plan.unknown_ids) >= 2
+
+
+def test_maternal_cousin_can_be_migrated_atomically_to_paternal_branch() -> None:
+    engine = KinshipEngine()
+    proband = Individual(label="P", proband=True)
+    project = PedigreeProject(individuals=[proband])
+    project = engine.plan_ancestor_path(
+        project, proband.id, [GenderIdentity.MAN], label="Father"
+    ).apply()
+    project = engine.plan_ancestor_path(
+        project, proband.id, [GenderIdentity.WOMAN], label="Mother"
+    ).apply()
+    project = engine.plan_cousin(
+        project,
+        proband.id,
+        branch_gender=GenderIdentity.WOMAN,
+        intermediary_gender=GenderIdentity.WOMAN,
+        label="Cousin",
+    ).apply()
+    cousin = next(person for person in project.individuals if person.label == "Cousin")
+    old_context = engine.collateral_context(project, proband.id, cousin.id)
+    assert old_context is not None
+    old_branch = next(person for person in project.individuals if person.id == old_context[1])
+    assert old_branch.label == "Mother"
+    cousin_parent_ids = set(engine.parents(project, cousin.id))
+
+    plan = engine.plan_reassign_collateral_branch(
+        project,
+        proband.id,
+        cousin.id,
+        GenderIdentity.MAN,
+    )
+    migrated = plan.apply()
+    new_context = engine.collateral_context(migrated, proband.id, cousin.id)
+    assert new_context is not None
+    new_branch = next(person for person in migrated.individuals if person.id == new_context[1])
+    assert new_branch.label == "Father"
+    assert set(engine.parents(migrated, cousin.id)) == cousin_parent_ids
+    assert project.model_dump() == plan.before.model_dump()
+    assert any("descendente" in note for note in plan.notes)
+
+
+def test_aunt_branch_migration_preserves_aunts_children_and_third_party_edges() -> None:
+    engine = KinshipEngine()
+    proband = Individual(label="P")
+    project = PedigreeProject(individuals=[proband])
+    for gender, label in ((GenderIdentity.MAN, "F"), (GenderIdentity.WOMAN, "M")):
+        project = engine.plan_ancestor_path(project, proband.id, [gender], label=label).apply()
+    project = engine.plan_aunt_uncle(
+        project,
+        proband.id,
+        branch_gender=GenderIdentity.WOMAN,
+        relative_gender=GenderIdentity.WOMAN,
+        label="Aunt",
+    ).apply()
+    aunt = next(person for person in project.individuals if person.label == "Aunt")
+    project = engine.plan_child(project, aunt.id, label="Child").apply()
+    child = next(person for person in project.individuals if person.label == "Child")
+    child_parents = set(engine.parents(project, child.id))
+    migrated = engine.plan_reassign_collateral_branch(
+        project, proband.id, aunt.id, GenderIdentity.MAN
+    ).apply()
+    assert set(engine.parents(migrated, child.id)) == child_parents
+    assert engine.collateral_context(migrated, proband.id, aunt.id)[1] == next(
+        person.id for person in migrated.individuals if person.label == "F"
+    )

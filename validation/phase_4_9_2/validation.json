@@ -1,0 +1,862 @@
+{
+  "baseline_captures": "specifications/assets/phase_4_9_1",
+  "evidence": {
+    "four_generations": "specifications/assets/phase_4_9_2/after_four_generations.png",
+    "father_three_mothers": "specifications/assets/phase_4_9_2/after_father_three_mothers.png",
+    "mother_three_fathers": "specifications/assets/phase_4_9_2/after_mother_three_fathers.png",
+    "aunts_cousins": "specifications/assets/phase_4_9_2/after_aunts_cousins.png",
+    "extended_50": "specifications/assets/phase_4_9_2/after_extended_50.png",
+    "branch_before": "specifications/assets/phase_4_9_2/branch_before.png",
+    "branch_after": "specifications/assets/phase_4_9_2/branch_after.png",
+    "branch_wizard": "specifications/assets/phase_4_9_2/branch_migration_preview.png"
+  },
+  "metrics": {
+    "four_generations": {
+      "symbol_collisions": 0,
+      "connector_symbol_intersections": 0,
+      "connector_crossings": 0,
+      "connector_overlaps": 0,
+      "total_connector_length": 2410.0,
+      "maximum_connector_length": 698.0
+    },
+    "father_three_mothers": {
+      "symbol_collisions": 0,
+      "connector_symbol_intersections": 0,
+      "connector_crossings": 0,
+      "connector_overlaps": 0,
+      "total_connector_length": 1725.0,
+      "maximum_connector_length": 814.0
+    },
+    "mother_three_fathers": {
+      "symbol_collisions": 0,
+      "connector_symbol_intersections": 0,
+      "connector_crossings": 0,
+      "connector_overlaps": 0,
+      "total_connector_length": 1725.0,
+      "maximum_connector_length": 786.0
+    },
+    "aunts_cousins": {
+      "symbol_collisions": 0,
+      "connector_symbol_intersections": 0,
+      "connector_crossings": 0,
+      "connector_overlaps": 0,
+      "total_connector_length": 1678.0,
+      "maximum_connector_length": 536.0
+    },
+    "extended_50": {
+      "symbol_collisions": 0,
+      "connector_symbol_intersections": 0,
+      "connector_crossings": 0,
+      "connector_overlaps": 0,
+      "total_connector_length": 13111.666666666668,
+      "maximum_connector_length": 3704.666666666667
+    }
+  },
+  "connector_audit": {
+    "four_generations": [
+      {
+        "parents": [
+          "P-4",
+          "P-5"
+        ],
+        "parent_x": [
+          -130.0,
+          0.0
+        ],
+        "children": [
+          "P-2"
+        ],
+        "child_x": [
+          -65.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "P-9",
+          "P-8"
+        ],
+        "parent_x": [
+          -65.0,
+          -195.0
+        ],
+        "children": [
+          "P-4"
+        ],
+        "child_x": [
+          -130.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "P-2",
+          "P-3"
+        ],
+        "parent_x": [
+          -65.0,
+          65.0
+        ],
+        "children": [
+          "P"
+        ],
+        "child_x": [
+          0.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "P-11",
+          "P-10"
+        ],
+        "parent_x": [
+          285.0,
+          155.0
+        ],
+        "children": [
+          "P-5"
+        ],
+        "child_x": [
+          0.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "P-12",
+          "P-13"
+        ],
+        "parent_x": [
+          505.0,
+          635.0
+        ],
+        "children": [
+          "P-6"
+        ],
+        "child_x": [
+          220.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 14.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "P-15",
+          "P-14"
+        ],
+        "parent_x": [
+          985.0,
+          855.0
+        ],
+        "children": [
+          "P-7"
+        ],
+        "child_x": [
+          350.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 28.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "P-6",
+          "P-7"
+        ],
+        "parent_x": [
+          220.0,
+          350.0
+        ],
+        "children": [
+          "P-3"
+        ],
+        "child_x": [
+          65.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      }
+    ],
+    "father_three_mothers": [
+      {
+        "parents": [
+          "C3",
+          "P"
+        ],
+        "parent_x": [
+          195.0,
+          -195.0
+        ],
+        "children": [
+          "F3"
+        ],
+        "child_x": [
+          220.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 96.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "C1",
+          "P"
+        ],
+        "parent_x": [
+          -65.0,
+          -195.0
+        ],
+        "children": [
+          "F1"
+        ],
+        "child_x": [
+          -220.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 68.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "C2",
+          "P"
+        ],
+        "parent_x": [
+          65.0,
+          -195.0
+        ],
+        "children": [
+          "F2"
+        ],
+        "child_x": [
+          0.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 82.0,
+        "conflicts": []
+      }
+    ],
+    "mother_three_fathers": [
+      {
+        "parents": [
+          "C2",
+          "P"
+        ],
+        "parent_x": [
+          -65.0,
+          195.0
+        ],
+        "children": [
+          "F2"
+        ],
+        "child_x": [
+          0.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 82.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "C1",
+          "P"
+        ],
+        "parent_x": [
+          -195.0,
+          195.0
+        ],
+        "children": [
+          "F1"
+        ],
+        "child_x": [
+          -220.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 68.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "C3",
+          "P"
+        ],
+        "parent_x": [
+          65.0,
+          195.0
+        ],
+        "children": [
+          "F3"
+        ],
+        "child_x": [
+          220.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 96.0,
+        "conflicts": []
+      }
+    ],
+    "aunts_cousins": [
+      {
+        "parents": [
+          "P-3",
+          "Desconhecido"
+        ],
+        "parent_x": [
+          -45.0,
+          -175.0
+        ],
+        "children": [
+          "Primo-M"
+        ],
+        "child_x": [
+          -110.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed",
+          "provisional"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "Desconhecido",
+          "Desconhecido"
+        ],
+        "parent_x": [
+          480.0,
+          350.0
+        ],
+        "children": [
+          "Tio-P",
+          "P-8"
+        ],
+        "child_x": [
+          525.0,
+          305.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "provisional"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "Desconhecido",
+          "Desconhecido"
+        ],
+        "parent_x": [
+          0.0,
+          130.0
+        ],
+        "children": [
+          "P-2",
+          "P-3"
+        ],
+        "child_x": [
+          175.0,
+          -45.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "provisional"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "P-8",
+          "P-2"
+        ],
+        "parent_x": [
+          305.0,
+          175.0
+        ],
+        "children": [
+          "P"
+        ],
+        "child_x": [
+          110.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      }
+    ],
+    "extended_50": [
+      {
+        "parents": [
+          "E19",
+          "E6"
+        ],
+        "parent_x": [
+          1050.0,
+          920.0
+        ],
+        "children": [
+          "E21",
+          "E20",
+          "E48",
+          "E47",
+          "E22"
+        ],
+        "child_x": [
+          765.0,
+          545.0,
+          1425.0,
+          1205.0,
+          985.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "E4",
+          "E11"
+        ],
+        "parent_x": [
+          -1056.6666666666667,
+          -1186.6666666666667
+        ],
+        "children": [
+          "E13",
+          "E12",
+          "E14"
+        ],
+        "child_x": [
+          -1165.0,
+          -1475.0,
+          -725.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "E2",
+          "E1"
+        ],
+        "parent_x": [
+          563.1666666666666,
+          433.16666666666663
+        ],
+        "children": [
+          "E4",
+          "E5",
+          "E3",
+          "E6"
+        ],
+        "child_x": [
+          -1056.6666666666667,
+          -46.66666666666667,
+          2176.0,
+          920.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "E7",
+          "E3"
+        ],
+        "parent_x": [
+          2306.0,
+          2176.0
+        ],
+        "children": [
+          "E9",
+          "E49",
+          "E50",
+          "E8",
+          "E10"
+        ],
+        "child_x": [
+          2785.0,
+          1995.0,
+          2215.0,
+          2435.0,
+          1775.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "E10",
+          "E29"
+        ],
+        "parent_x": [
+          1775.0,
+          1645.0
+        ],
+        "children": [
+          "E30",
+          "E31"
+        ],
+        "child_x": [
+          550.0,
+          770.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "E12",
+          "E32"
+        ],
+        "parent_x": [
+          -1475.0,
+          -1605.0
+        ],
+        "children": [
+          "E33",
+          "E34"
+        ],
+        "child_x": [
+          -1650.0,
+          -1430.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "E17",
+          "E44"
+        ],
+        "parent_x": [
+          195.0,
+          325.0
+        ],
+        "children": [
+          "E46",
+          "E45"
+        ],
+        "child_x": [
+          330.0,
+          110.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "E35",
+          "E13"
+        ],
+        "parent_x": [
+          -1035.0,
+          -1165.0
+        ],
+        "children": [
+          "E37",
+          "E36"
+        ],
+        "child_x": [
+          -990.0,
+          -1210.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "E15",
+          "E5"
+        ],
+        "parent_x": [
+          -176.66666666666669,
+          -46.66666666666667
+        ],
+        "children": [
+          "E18",
+          "E17",
+          "E16"
+        ],
+        "child_x": [
+          -375.0,
+          195.0,
+          -155.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "E14",
+          "E38"
+        ],
+        "parent_x": [
+          -725.0,
+          -595.0
+        ],
+        "children": [
+          "E39",
+          "E40"
+        ],
+        "child_x": [
+          -770.0,
+          -550.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "E41",
+          "E16"
+        ],
+        "parent_x": [
+          -25.0,
+          -155.0
+        ],
+        "children": [
+          "E42",
+          "E43"
+        ],
+        "child_x": [
+          -330.0,
+          -110.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 0.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "E23",
+          "E8"
+        ],
+        "parent_x": [
+          2565.0,
+          2435.0
+        ],
+        "children": [
+          "E24",
+          "E25"
+        ],
+        "child_x": [
+          990.0,
+          1210.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 14.0,
+        "conflicts": []
+      },
+      {
+        "parents": [
+          "E9",
+          "E26"
+        ],
+        "parent_x": [
+          2785.0,
+          2915.0
+        ],
+        "children": [
+          "E27",
+          "E28"
+        ],
+        "child_x": [
+          1430.0,
+          1650.0
+        ],
+        "kinds": [
+          "biological"
+        ],
+        "evidence": [
+          "confirmed"
+        ],
+        "routing_offset": 28.0,
+        "conflicts": []
+      }
+    ]
+  },
+  "branch_before": {
+    "symbol_collisions": 0,
+    "connector_symbol_intersections": 0,
+    "connector_crossings": 0,
+    "connector_overlaps": 0,
+    "total_connector_length": 1142.0,
+    "maximum_connector_length": 536.0
+  },
+  "branch_after": {
+    "symbol_collisions": 0,
+    "connector_symbol_intersections": 0,
+    "connector_crossings": 0,
+    "connector_overlaps": 0,
+    "total_connector_length": 1490.0,
+    "maximum_connector_length": 536.0
+  },
+  "branch_notes": [
+    "Parentesco atual: cousin.",
+    "Ramo removido: Mãe.",
+    "Ramo criado: Pai.",
+    "1 descendente(s) do intermediário serão preservados.",
+    "2 parentalidade(s) biológica(s) do segundo indivíduo serão substituídas."
+  ],
+  "persisted_project": "validation/phase_4_9_2/branch_migration_demo.rps.json"
+}

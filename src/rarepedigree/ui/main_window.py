@@ -53,7 +53,12 @@ from rarepedigree.domain import (
 )
 from rarepedigree.layout import PedigreeLayoutEngine
 from rarepedigree.persistence import JsonProjectRepository
-from rarepedigree.rendering import IndividualItem, PedigreeScene, PedigreeView
+from rarepedigree.rendering import (
+    IndividualItem,
+    ParentageConnectorItem,
+    PedigreeScene,
+    PedigreeView,
+)
 from rarepedigree.rendering.exporters import ExportOptions, export_pdf, export_png, export_svg
 from rarepedigree.rendering.style import PedigreeRenderStyle
 from rarepedigree.ui.components import (
@@ -70,6 +75,7 @@ from rarepedigree.ui.dialogs import (
     EditIndividualDialog,
     EditSiblingRelationshipDialog,
     NewProjectDialog,
+    ReassignBranchWizard,
 )
 from rarepedigree.ui.i18n import language_manager, tr
 from rarepedigree.ui.icons import icon
@@ -168,6 +174,7 @@ class MainWindow(QMainWindow):
         self.add_relative_action = QAction("Adicionar familiar…", self)
         self.edit_kinship_action = QAction("Editar parentesco entre selecionados…", self)
         self.reconcile_action = QAction("Identificar familiar desconhecido…", self)
+        self.reassign_branch_action = QAction("Corrigir ramo de tio ou primo…", self)
         self.add_partner_action = QAction("Adicionar parceiro", self)
         self.add_child_action = QAction("Adicionar filho", self)
         self.add_sibling_action = QAction("Adicionar irmão", self)
@@ -240,6 +247,7 @@ class MainWindow(QMainWindow):
         self.add_relative_action.triggered.connect(self._open_relative_wizard)
         self.edit_kinship_action.triggered.connect(self._edit_selected_kinship)
         self.reconcile_action.triggered.connect(self._reconcile_selected_unknown)
+        self.reassign_branch_action.triggered.connect(self._reassign_selected_branch)
         self.add_partner_action.triggered.connect(lambda: self._context_for_selected("partner"))
         self.add_child_action.triggered.connect(lambda: self._context_for_selected("child"))
         self.add_sibling_action.triggered.connect(lambda: self._context_for_selected("sibling"))
@@ -295,6 +303,10 @@ class MainWindow(QMainWindow):
                 self.add_partner_action,
                 self.add_child_action,
                 self.add_sibling_action,
+                self.add_relative_action,
+                self.edit_kinship_action,
+                self.reassign_branch_action,
+                self.reconcile_action,
                 self.delete_action,
                 self.edit_action,
                 self.twins_mz_action,
@@ -385,6 +397,7 @@ class MainWindow(QMainWindow):
                     self.add_sibling_action,
                     self.edit_kinship_action,
                     self.reconcile_action,
+                    self.reassign_branch_action,
                 ],
                 family_button,
             )
@@ -487,6 +500,37 @@ class MainWindow(QMainWindow):
             )
             if answer != QMessageBox.StandardButton.Yes:
                 return
+        self._finish_kinship_plan(plan.label, before, plan.apply())
+
+    def _reassign_selected_branch(self) -> None:
+        selected = self.scene.selected_people()
+        probands = [person for person in self.project.individuals if person.proband]
+        if len(selected) != 1 or len(probands) != 1:
+            QMessageBox.information(
+                self,
+                tr("Corrigir ramo familiar"),
+                tr("Selecione um tio, tia, primo ou prima e defina exatamente um probando."),
+            )
+            return
+        relative = selected[0].person
+        if self.kinship_engine.collateral_context(
+            self.project, probands[0].id, relative.id
+        ) is None:
+            QMessageBox.warning(
+                self,
+                tr("Relação inválida"),
+                tr("O indivíduo selecionado não é tio, tia, primo ou prima do probando."),
+            )
+            return
+        before = self.project.model_copy(deep=True)
+        wizard = ReassignBranchWizard(before, probands[0], relative, self)
+        if wizard.exec() != wizard.DialogCode.Accepted:
+            return
+        try:
+            plan = wizard.result_plan()
+        except ValueError as error:
+            QMessageBox.warning(self, tr("Relação inválida"), tr(str(error)))
+            return
         self._finish_kinship_plan(plan.label, before, plan.apply())
 
     def _finish_kinship_plan(
@@ -789,7 +833,16 @@ class MainWindow(QMainWindow):
         if len(selected) == 1:
             self.properties_drawer.open_panel()
         else:
-            self.properties_drawer.close_panel()
+            connectors = [
+                item
+                for item in self.scene.selectedItems()
+                if isinstance(item, ParentageConnectorItem)
+            ]
+            if len(connectors) == 1:
+                self.properties.set_connection(connectors[0])
+                self.properties_drawer.open_panel()
+            else:
+                self.properties_drawer.close_panel()
 
     def _apply_properties(self, item: IndividualItem, new_values: dict[str, Any]) -> None:
         old_values = {field: getattr(item.person, field) for field in new_values}

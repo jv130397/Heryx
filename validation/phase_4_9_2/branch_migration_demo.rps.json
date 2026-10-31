@@ -1,0 +1,271 @@
+{
+  "schema_version": "0.2.0",
+  "project_id": "4e99b010-1201-471e-b9a7-96e3ea8b15ee",
+  "title": "Migração de ramo",
+  "description": "",
+  "project_language": "pt_BR",
+  "representation": "scientific",
+  "created_at": "2026-10-31T15:21:45.168780Z",
+  "updated_at": "2026-10-31T15:21:45.408916Z",
+  "individuals": [
+    {
+      "id": "18a1a73c-10d3-4b46-927f-f88a79275111",
+      "label": "P",
+      "gender_identity": "unknown",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": true,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": 110.0,
+        "y": 360.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "afa923b5-fd1a-4cf5-95f4-ec7026ee35f1",
+      "label": "Pai",
+      "gender_identity": "man",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": "kinship ancestor assistant",
+      "layout": {
+        "x": 175.0,
+        "y": 180.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "27e5e3d2-e5fa-42e7-a480-6df0afffbc60",
+      "label": "Mãe",
+      "gender_identity": "woman",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": "kinship ancestor assistant",
+      "layout": {
+        "x": 305.0,
+        "y": 180.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "8aa06aab-7145-4367-8109-a6d0ae63abf9",
+      "label": "P-4",
+      "gender_identity": "woman",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": -45.0,
+        "y": 180.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "bd9514ac-1335-4b78-a140-31791ec45a5c",
+      "label": "Desconhecido",
+      "gender_identity": "man",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "genitor compartilhado de Mãe",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": 350.0,
+        "y": 0.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "24bbdb20-fd58-4d60-ac38-53af8640d751",
+      "label": "Desconhecido",
+      "gender_identity": "woman",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "genitor compartilhado de Mãe",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": 480.0,
+        "y": 0.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "bc8e8d4a-a45e-4b47-a2bd-fb582600992c",
+      "label": "Primo",
+      "gender_identity": "man",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": false,
+      "unknown_reason": null,
+      "provenance": null,
+      "layout": {
+        "x": -110.0,
+        "y": 360.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "35cd7145-d8ee-49ba-9099-d44f3e6fafa1",
+      "label": "Desconhecido",
+      "gender_identity": "man",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "pai biológico não identificado de Primo",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": -175.0,
+        "y": 180.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "3c825f7e-6154-4d7d-8114-d58156f390ba",
+      "label": "Desconhecido",
+      "gender_identity": "man",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "ascendente estrutural autorizado pela migração de ramo",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": 0.0,
+        "y": 0.0,
+        "locked": false
+      }
+    },
+    {
+      "id": "0d1f439a-8c1c-4a86-9e85-adbce7196242",
+      "label": "Desconhecido",
+      "gender_identity": "woman",
+      "phenotype_status": "unknown",
+      "deceased": false,
+      "proband": false,
+      "consultand": false,
+      "placeholder": true,
+      "unknown_reason": "ascendente estrutural autorizado pela migração de ramo",
+      "provenance": "kinship engine",
+      "layout": {
+        "x": 130.0,
+        "y": 0.0,
+        "locked": false
+      }
+    }
+  ],
+  "relationships": [],
+  "parentages": [
+    {
+      "id": "1fb32de6-9358-41cf-8b12-aad6c9b7e121",
+      "parent_id": "afa923b5-fd1a-4cf5-95f4-ec7026ee35f1",
+      "child_id": "18a1a73c-10d3-4b46-927f-f88a79275111",
+      "kind": "biological",
+      "evidence_status": "confirmed",
+      "provenance": "kinship ancestor assistant"
+    },
+    {
+      "id": "b51dcab5-09d2-4af0-998b-82185a80a2e7",
+      "parent_id": "27e5e3d2-e5fa-42e7-a480-6df0afffbc60",
+      "child_id": "18a1a73c-10d3-4b46-927f-f88a79275111",
+      "kind": "biological",
+      "evidence_status": "confirmed",
+      "provenance": "kinship ancestor assistant"
+    },
+    {
+      "id": "24f3dcc6-71cd-4a9a-9580-6b3dd13b5635",
+      "parent_id": "bd9514ac-1335-4b78-a140-31791ec45a5c",
+      "child_id": "27e5e3d2-e5fa-42e7-a480-6df0afffbc60",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "b4062e60-5552-40a9-ba3f-17f39ee371e1",
+      "parent_id": "24bbdb20-fd58-4d60-ac38-53af8640d751",
+      "child_id": "27e5e3d2-e5fa-42e7-a480-6df0afffbc60",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "sibling assistant"
+    },
+    {
+      "id": "34c45750-fa8e-46cc-a269-66755f507306",
+      "parent_id": "8aa06aab-7145-4367-8109-a6d0ae63abf9",
+      "child_id": "bc8e8d4a-a45e-4b47-a2bd-fb582600992c",
+      "kind": "biological",
+      "evidence_status": "confirmed",
+      "provenance": "child assistant"
+    },
+    {
+      "id": "270bbef9-e6fd-4aa1-a93f-64c8cca29b36",
+      "parent_id": "35cd7145-d8ee-49ba-9099-d44f3e6fafa1",
+      "child_id": "bc8e8d4a-a45e-4b47-a2bd-fb582600992c",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "child assistant: automatically created missing co-parent"
+    },
+    {
+      "id": "136f7e1d-7349-49f8-a631-af9a6b1f3c13",
+      "parent_id": "3c825f7e-6154-4d7d-8114-d58156f390ba",
+      "child_id": "afa923b5-fd1a-4cf5-95f4-ec7026ee35f1",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "collateral branch migration"
+    },
+    {
+      "id": "da7ddb5c-81ac-4399-b55f-fd2cbc0dc44d",
+      "parent_id": "0d1f439a-8c1c-4a86-9e85-adbce7196242",
+      "child_id": "afa923b5-fd1a-4cf5-95f4-ec7026ee35f1",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "collateral branch migration"
+    },
+    {
+      "id": "c70470d7-6d53-4d33-81b5-6d4cbd7b0145",
+      "parent_id": "3c825f7e-6154-4d7d-8114-d58156f390ba",
+      "child_id": "8aa06aab-7145-4367-8109-a6d0ae63abf9",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "kinship relationship editor"
+    },
+    {
+      "id": "9cb95148-04b8-467b-81ec-1905c6d5dc40",
+      "parent_id": "0d1f439a-8c1c-4a86-9e85-adbce7196242",
+      "child_id": "8aa06aab-7145-4367-8109-a6d0ae63abf9",
+      "kind": "biological",
+      "evidence_status": "provisional",
+      "provenance": "kinship relationship editor"
+    }
+  ],
+  "twin_groups": [],
+  "declared_kinships": [],
+  "family": {
+    "id": "11e86436-38e6-4d92-8214-f32b305ee16f",
+    "label": "Família"
+  }
+}

@@ -10,6 +10,7 @@ from rarepedigree.domain import (
     Relationship,
     RelationshipKind,
 )
+from rarepedigree.layout import PedigreeLayoutEngine, measure_scene
 from rarepedigree.rendering import PedigreeScene
 from rarepedigree.rendering.exporters import export_pdf, export_png, export_svg
 
@@ -43,11 +44,17 @@ def test_parentage_connectors_and_generation_labels(qapp) -> None:
     child = Individual()
     project = PedigreeProject(individuals=[child])
     project, _ = FamilyService.add_parents(project, child.id)
+    positions = PedigreeLayoutEngine().compute(project, preserve_locked=False)
+    for person in project.individuals:
+        person.layout.x, person.layout.y = positions[person.id]
     scene = PedigreeScene()
     scene.load_project(project)
     assert child.id in scene.parentage_items
     assert len(scene.generation_items) == 2
     assert len({label.pos().x() for label in scene.generation_items}) == 1
+    metrics = measure_scene(scene)
+    assert metrics.symbol_collisions == 0
+    assert metrics.connector_symbol_intersections == 0
 
 
 def test_independent_grandparent_nuclei_use_distinct_connectors(qapp) -> None:
@@ -96,9 +103,13 @@ def test_full_siblings_share_one_scientific_sibship_connector(qapp) -> None:
     scene = PedigreeScene()
     scene.load_project(project)
     assert scene.parentage_items[first.id] is scene.parentage_items[second.id]
+    connector = scene.parentage_items[first.id]
+    assert connector.segments
+    assert "→" in connector.toolTip()
+    assert connector.flags() & connector.GraphicsItemFlag.ItemIsSelectable
 
 
-def test_reproductive_lanes_follow_visual_order_not_uuid_order(qapp) -> None:
+def test_independent_reproductive_nuclei_keep_natural_lane(qapp) -> None:
     del qapp
     parents = [
         Individual(label=f"P{index}", layout=LayoutPosition(x=index * 260, y=0))
@@ -118,7 +129,33 @@ def test_reproductive_lanes_follow_visual_order_not_uuid_order(qapp) -> None:
     scene = PedigreeScene()
     scene.load_project(project)
     offsets = [scene.parentage_items[child.id].routing_offset for child in children]
-    assert offsets == [0.0, 14.0, -14.0]
+    assert offsets == [0.0, 0.0, 0.0]
+
+
+def test_multiple_coparents_use_distinct_lanes_below_labels(qapp) -> None:
+    del qapp
+    shared = Individual(label="P", layout=LayoutPosition(x=0, y=0))
+    partners = [
+        Individual(label=f"C{index}", layout=LayoutPosition(x=(index + 1) * 130, y=0))
+        for index in range(3)
+    ]
+    children = [
+        Individual(label=f"F{index}", layout=LayoutPosition(x=index * 180, y=180))
+        for index in range(3)
+    ]
+    project = PedigreeProject(
+        individuals=[shared, *partners, *children],
+        parentages=[
+            Parentage(parent_id=parent.id, child_id=child.id)
+            for parent, child in zip(partners, children, strict=True)
+        ]
+        + [Parentage(parent_id=shared.id, child_id=child.id) for child in children],
+    )
+    scene = PedigreeScene()
+    scene.load_project(project)
+    offsets = [scene.parentage_items[child.id].routing_offset for child in children]
+    assert offsets == [68.0, 82.0, 96.0]
+    assert measure_scene(scene).connector_symbol_intersections == 0
 
 
 def test_long_identifier_participates_in_scene_bounds(qapp) -> None:

@@ -2,7 +2,7 @@ import pytest
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QDockWidget, QGraphicsItem, QGraphicsView, QMessageBox
 
-from rarepedigree.domain import GenderIdentity
+from rarepedigree.domain import GenderIdentity, Individual, KinshipEngine, PedigreeProject
 from rarepedigree.ui import MainWindow
 from rarepedigree.ui.dialogs import AddSiblingDialog
 
@@ -19,6 +19,36 @@ def test_add_person_supports_undo_and_redo(qtbot) -> None:
     window.undo_stack.redo()
     assert person in window.project.individuals
     assert person.id in window.scene.person_items
+
+
+def test_branch_migration_is_one_undoable_command(qtbot) -> None:
+    engine = KinshipEngine()
+    proband = Individual(label="P", proband=True)
+    project = PedigreeProject(individuals=[proband])
+    for gender, label in ((GenderIdentity.MAN, "F"), (GenderIdentity.WOMAN, "M")):
+        project = engine.plan_ancestor_path(project, proband.id, [gender], label=label).apply()
+    project = engine.plan_aunt_uncle(
+        project,
+        proband.id,
+        branch_gender=GenderIdentity.WOMAN,
+        relative_gender=GenderIdentity.WOMAN,
+        label="Tia",
+    ).apply()
+    aunt = next(person for person in project.individuals if person.label == "Tia")
+    plan = engine.plan_reassign_collateral_branch(
+        project, proband.id, aunt.id, GenderIdentity.MAN
+    )
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window._apply_project(project)
+    window.undo_stack.clear()
+    window._finish_kinship_plan(plan.label, project, plan.apply())
+    original_branch = engine.collateral_context(project, proband.id, aunt.id)[1]
+    assert engine.collateral_context(window.project, proband.id, aunt.id)[1] != original_branch
+    window.undo_stack.undo()
+    assert window.project.model_dump() == project.model_dump()
+    window.undo_stack.redo()
+    assert engine.collateral_context(window.project, proband.id, aunt.id)[1] != original_branch
 
 
 def test_contextual_parents_are_atomic_and_undoable(qtbot) -> None:

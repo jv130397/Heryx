@@ -5,7 +5,15 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from PySide6.QtCore import QCoreApplication, QLineF, QPointF, QRectF, Qt
-from PySide6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen, QPolygonF
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QPainter,
+    QPainterPath,
+    QPainterPathStroker,
+    QPen,
+    QPolygonF,
+)
 from PySide6.QtWidgets import (
     QGraphicsItem,
     QGraphicsLineItem,
@@ -65,7 +73,9 @@ class IndividualItem(QGraphicsObject):
         # width must participate in fitting/export bounds.  A fixed 68 px
         # label box clipped names in the relative-wizard preview.
         label_width = max(70.0, min(220.0, len(self.person.label) * 8.5 + 16.0))
-        return QRectF(-label_width / 2, -35, label_width, 88)
+        show_auxiliary = self.person.placeholder and self.render_style.show_auxiliary_labels
+        auxiliary_height = 14.0 if show_auxiliary else 0.0
+        return QRectF(-label_width / 2, -35, label_width, 88 + auxiliary_height)
 
     def shape(self) -> QPainterPath:
         path = QPainterPath()
@@ -145,6 +155,17 @@ class IndividualItem(QGraphicsObject):
             Qt.AlignmentFlag.AlignCenter,
             self.person.label,
         )
+        if self.person.placeholder and self.render_style.show_auxiliary_labels:
+            # A provisional structural representative is not synonymous with
+            # unknown sex (diamond) or unknown phenotype (question mark).
+            font.setPointSize(max(7, self.render_style.identifier_size - 2))
+            painter.setFont(font)
+            painter.setPen(QColor("#64748B"))
+            painter.drawText(
+                QRectF(-70, 48, 140, 16),
+                Qt.AlignmentFlag.AlignCenter,
+                QCoreApplication.translate("RarePedigree", "representante provisório"),
+            )
 
     def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
         self._drag_start = self.pos()
@@ -288,11 +309,20 @@ class ParentageConnectorItem(QGraphicsPathItem):
         self.children = children
         self.draw_coparent_line = draw_coparent_line
         self.routing_offset = routing_offset
+        self.segments: list[QLineF] = []
         pen = QPen(QColor("#303740"), 2)
         if any(edge.kind != ParentageKind.BIOLOGICAL for edge in edges):
             pen.setStyle(Qt.PenStyle.DashLine)
         self.setPen(pen)
         self.setZValue(-9)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
+        parent_names = ", ".join(parent.person.label for parent in parents)
+        child_names = ", ".join(child.person.label for child in children)
+        kinds = ", ".join(sorted({edge.kind.value for edge in edges}))
+        self.setToolTip(
+            QCoreApplication.translate("RarePedigree", "Núcleo parental")
+            + f": {parent_names} → {child_names} ({kinds})"
+        )
         self.update_position()
 
     def update_position(self) -> None:
@@ -303,34 +333,62 @@ class ParentageConnectorItem(QGraphicsPathItem):
         source_y = parent_center_y + (SYMBOL_SIZE / 2 if len(self.parents) == 1 else 0.0)
         parent_y = source_y + self.routing_offset
         child_y = min(child.pos().y() for child in self.children) - SYMBOL_SIZE / 2
-        junction_y = parent_y + max(35.0, (child_y - parent_y) * 0.5)
+        junction_y = min(
+            parent_y + max(30.0, (child_y - parent_y) * 0.5),
+            child_y - 12.0,
+        )
         path = QPainterPath()
+        self.segments = []
+
+        def segment(start: QPointF, end: QPointF, *, move: bool = True) -> None:
+            if move:
+                path.moveTo(start)
+            path.lineTo(end)
+            self.segments.append(QLineF(start, end))
+
         if len(self.parents) == 1 and self.routing_offset:
-            path.moveTo(parent_x, source_y)
-            path.lineTo(parent_x, parent_y)
+            segment(QPointF(parent_x, source_y), QPointF(parent_x, parent_y))
         if self.draw_coparent_line and len(self.parents) == 2:
             left, right = sorted(self.parents, key=lambda item: item.pos().x())
             left_x = left.pos().x() + SYMBOL_SIZE / 2
             right_x = right.pos().x() - SYMBOL_SIZE / 2
             if self.routing_offset:
-                path.moveTo(left_x, parent_center_y)
-                path.lineTo(left_x, parent_y)
-                path.moveTo(right_x, parent_center_y)
-                path.lineTo(right_x, parent_y)
-            path.moveTo(left_x, parent_y)
-            path.lineTo(right_x, parent_y)
-        path.moveTo(parent_x, parent_y)
-        path.lineTo(parent_x, junction_y)
+                segment(QPointF(left_x, parent_center_y), QPointF(left_x, parent_y))
+                segment(QPointF(right_x, parent_center_y), QPointF(right_x, parent_y))
+            segment(QPointF(left_x, parent_y), QPointF(right_x, parent_y))
+        segment(QPointF(parent_x, parent_y), QPointF(parent_x, junction_y))
         child_xs = [child.pos().x() for child in self.children]
         if len(child_xs) == 1:
-            path.lineTo(child_xs[0], junction_y)
+            segment(
+                QPointF(parent_x, junction_y),
+                QPointF(child_xs[0], junction_y),
+                move=False,
+            )
         else:
-            path.moveTo(min(child_xs), junction_y)
-            path.lineTo(max(child_xs), junction_y)
+            segment(
+                QPointF(min(child_xs), junction_y), QPointF(max(child_xs), junction_y)
+            )
         for child in self.children:
-            path.moveTo(child.pos().x(), junction_y)
-            path.lineTo(child.pos().x(), child.pos().y() - SYMBOL_SIZE / 2)
+            segment(
+                QPointF(child.pos().x(), junction_y),
+                QPointF(child.pos().x(), child.pos().y() - SYMBOL_SIZE / 2),
+            )
         self.setPath(path)
+
+    def paint(self, painter, option, widget=None) -> None:
+        del option, widget
+        pen = QPen(self.pen())
+        if self.isSelected():
+            pen.setColor(QColor("#0891B2"))
+            pen.setWidth(4)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawPath(self.path())
+
+    def shape(self) -> QPainterPath:
+        stroker = QPainterPathStroker()
+        stroker.setWidth(12.0)
+        return stroker.createStroke(self.path())
 
 
 class TwinConnectorItem(QGraphicsPathItem):

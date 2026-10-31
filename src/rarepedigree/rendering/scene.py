@@ -132,23 +132,43 @@ class PedigreeScene(QGraphicsScene):
             generation = generations[grouped_children[0]]
             groups_by_generation.setdefault(generation, []).append(parent_ids)
         offsets: dict[frozenset[UUID], float] = {}
-        lane_sequence = (0.0, 14.0, -14.0, 28.0, -28.0, 42.0, -42.0)
         for parent_sets in groups_by_generation.values():
-            # Assign lanes in the same left-to-right order in which the
-            # nuclei are drawn. UUID order made an otherwise stable pedigree
-            # weave across itself after each insertion/reload.
-            for index, parent_ids in enumerate(
-                sorted(
-                    parent_sets,
-                    key=lambda ids: sum(self.person_items[item].pos().x() for item in ids)
-                    / max(1, len(ids)),
+            frequencies: dict[UUID, int] = {}
+            for parent_ids in parent_sets:
+                for parent_id in parent_ids:
+                    frequencies[parent_id] = frequencies.get(parent_id, 0) + 1
+            shared_nuclei = [
+                parent_ids
+                for parent_ids in parent_sets
+                if any(frequencies[parent_id] > 1 for parent_id in parent_ids)
+            ]
+            shared_nuclei.sort(
+                key=lambda ids: sum(self.person_items[item].pos().x() for item in ids)
+                / max(1, len(ids))
+            )
+            # A shared parent with multiple co-parents cannot use a straight
+            # same-level line to a distant partner: it would cross the
+            # intervening partners. Route every such nucleus below identifiers
+            # on a dedicated orthogonal lane. Independent nuclei stay natural.
+            for parent_ids in parent_sets:
+                offsets[parent_ids] = 0.0
+            independent = [item for item in parent_sets if item not in shared_nuclei]
+            intervals = []
+            for parent_ids in independent:
+                points = [self.person_items[item].pos().x() for item in parent_ids]
+                points.extend(
+                    self.person_items[child_id].pos().x()
+                    for child_id in children_by_parents[parent_ids]
                 )
-            ):
-                offsets[parent_ids] = (
-                    lane_sequence[index]
-                    if index < len(lane_sequence)
-                    else (index - len(lane_sequence) + 4) * 14.0
-                )
+                intervals.append((min(points), max(points), parent_ids))
+            active: list[tuple[float, int]] = []
+            for left, right, parent_ids in sorted(intervals, key=lambda item: item[0]):
+                active = [(end, lane) for end, lane in active if left <= end + 8.0]
+                lane = max((item[1] for item in active), default=-1) + 1
+                active.append((right, lane))
+                offsets[parent_ids] = lane * 14.0
+            for index, parent_ids in enumerate(shared_nuclei):
+                offsets[parent_ids] = 68.0 + index * 14.0
         for parent_ids, grouped_children in children_by_parents.items():
             edges = [edge for edge in project.parentages if edge.child_id in grouped_children]
             parents = [self.person_items[parent_id] for parent_id in parent_ids]

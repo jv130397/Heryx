@@ -1,5 +1,5 @@
 from rarepedigree.domain import GenderIdentity, Individual, PedigreeProject, SiblingKind
-from rarepedigree.ui.dialogs import AddRelativeWizard
+from rarepedigree.ui.dialogs import AddRelativeWizard, ReassignBranchWizard
 
 
 def _select(combo, value) -> None:
@@ -58,3 +58,29 @@ def test_wizard_half_sibling_can_select_existing_different_parent(qtbot) -> None
         wizard.engine.sibling_kind(plan.after, proband.id, sibling.id) == SiblingKind.PATERNAL_HALF
     )
     assert set(wizard.engine.parents(plan.after, sibling.id)) == {father.id, different_mother.id}
+
+
+def test_branch_wizard_previews_migration_without_mutating_source(qtbot) -> None:
+    from rarepedigree.domain import KinshipEngine
+
+    engine = KinshipEngine()
+    proband = Individual(label="P", proband=True)
+    project = PedigreeProject(individuals=[proband])
+    for gender, label in ((GenderIdentity.MAN, "F"), (GenderIdentity.WOMAN, "M")):
+        project = engine.plan_ancestor_path(project, proband.id, [gender], label=label).apply()
+    project = engine.plan_aunt_uncle(
+        project,
+        proband.id,
+        branch_gender=GenderIdentity.WOMAN,
+        relative_gender=GenderIdentity.WOMAN,
+        label="Tia",
+    ).apply()
+    relative = next(person for person in project.individuals if person.label == "Tia")
+    before = project.model_dump()
+    wizard = ReassignBranchWizard(project, proband, relative)
+    qtbot.addWidget(wizard)
+    assert len(wizard.pageIds()) == 4
+    plan = wizard.result_plan()
+    assert project.model_dump() == before
+    assert "Ramo removido" in "\n".join(plan.notes)
+    assert wizard.preview.scene() is not None

@@ -150,6 +150,38 @@ def test_partner_is_not_placed_between_full_siblings() -> None:
     assert min(partner_x, sibling_x) < focal_x < max(partner_x, sibling_x)
 
 
+def test_couple_orientation_follows_their_distinct_ancestry_branches() -> None:
+    left_grandparents = [Individual(label="LG1"), Individual(label="LG2")]
+    right_grandparents = [Individual(label="RG1"), Individual(label="RG2")]
+    left_parent = Individual(label="LP")
+    right_parent = Individual(label="RP")
+    child = Individual(label="C")
+    project = PedigreeProject(
+        individuals=[
+            *left_grandparents,
+            *right_grandparents,
+            left_parent,
+            right_parent,
+            child,
+        ],
+        parentages=[
+            *(Parentage(parent_id=item.id, child_id=left_parent.id) for item in left_grandparents),
+            *(
+                Parentage(parent_id=item.id, child_id=right_parent.id)
+                for item in right_grandparents
+            ),
+            Parentage(parent_id=left_parent.id, child_id=child.id),
+            Parentage(parent_id=right_parent.id, child_id=child.id),
+        ],
+    )
+    positions = PedigreeLayoutEngine().compute(project, preserve_locked=False)
+    left_ancestry_center = sum(positions[item.id][0] for item in left_grandparents) / 2
+    right_ancestry_center = sum(positions[item.id][0] for item in right_grandparents) / 2
+    assert (left_ancestry_center < right_ancestry_center) == (
+        positions[left_parent.id][0] < positions[right_parent.id][0]
+    )
+
+
 def test_asymmetric_partner_ancestries_never_skip_a_generation() -> None:
     shallow = Individual(label="S")
     deep = Individual(label="D")

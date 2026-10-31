@@ -544,6 +544,146 @@ class EditSiblingRelationshipDialog(QDialog):
         super().accept()
 
 
+class ReassignBranchWizard(QWizard):
+    """Preview and atomically migrate a collateral relative between branches."""
+
+    def __init__(
+        self,
+        project: PedigreeProject,
+        proband: Individual,
+        relative: Individual,
+        parent=None,
+    ) -> None:
+        super().__init__(parent)
+        self.project = project.model_copy(deep=True)
+        self.proband = proband
+        self.relative = relative
+        self.engine = KinshipEngine()
+        self._plan: KinshipPlan | None = None
+        self.setWindowTitle(tr("Corrigir ramo familiar"))
+        self.resize(880, 640)
+
+        current_page = QWizardPage()
+        current_page.setTitle(tr("1. Parentesco atual"))
+        self.current_summary = QLabel()
+        self.current_summary.setWordWrap(True)
+        current_layout = QVBoxLayout(current_page)
+        current_layout.addWidget(self.current_summary)
+        current_layout.addStretch()
+        self.addPage(current_page)
+
+        target_page = QWizardPage()
+        target_page.setTitle(tr("2. Ramo correto"))
+        target_form = QFormLayout(target_page)
+        self.target_branch = QComboBox()
+        self.target_branch.addItem(tr("Ramo paterno"), GenderIdentity.MAN.value)
+        self.target_branch.addItem(tr("Ramo materno"), GenderIdentity.WOMAN.value)
+        self.sibling_kind = QComboBox()
+        self.sibling_kind.addItem(tr("Irmão completo do genitor"), SiblingKind.FULL.value)
+        self.sibling_kind.addItem(
+            tr("Meio-irmão paterno do genitor"), SiblingKind.PATERNAL_HALF.value
+        )
+        self.sibling_kind.addItem(
+            tr("Meio-irmão materno do genitor"), SiblingKind.MATERNAL_HALF.value
+        )
+        self.create_missing = QCheckBox(tr("Autorizar criação do genitor de destino ausente"))
+        target_form.addRow(tr("Novo ramo"), self.target_branch)
+        target_form.addRow(tr("Vínculo do intermediário"), self.sibling_kind)
+        target_form.addRow(self.create_missing)
+        self.addPage(target_page)
+
+        impact_page = QWizardPage()
+        impact_page.setTitle(tr("3. Impacto e prévia"))
+        impact_layout = QVBoxLayout(impact_page)
+        self.impact = QLabel()
+        self.impact.setWordWrap(True)
+        self.preview = QGraphicsView()
+        self.preview.setMinimumHeight(360)
+        impact_layout.addWidget(self.impact)
+        impact_layout.addWidget(self.preview)
+        self.addPage(impact_page)
+
+        confirm_page = QWizardPage()
+        confirm_page.setTitle(tr("4. Confirmação"))
+        self.confirmation = QLabel()
+        self.confirmation.setWordWrap(True)
+        confirm_layout = QVBoxLayout(confirm_page)
+        confirm_layout.addWidget(self.confirmation)
+        confirm_layout.addStretch()
+        self.addPage(confirm_page)
+        self.currentIdChanged.connect(self._refresh)
+        self.target_branch.currentIndexChanged.connect(self._refresh)
+        self.sibling_kind.currentIndexChanged.connect(self._refresh)
+        self.create_missing.toggled.connect(self._refresh)
+        self._refresh()
+
+    def _refresh(self, *_args) -> None:
+        context = self.engine.collateral_context(
+            self.project, self.proband.id, self.relative.id
+        )
+        if context is None:
+            self.current_summary.setText(tr("O parentesco colateral não pôde ser determinado."))
+            self._plan = None
+            return
+        kind, branch_id, intermediary_id = context
+        people = {person.id: person for person in self.project.individuals}
+        self.current_summary.setText(
+            tr("Familiar")
+            + f": {self.relative.label}\n"
+            + tr("Tipo")
+            + f": {kind}\n"
+            + tr("Ramo atual")
+            + f": {people[branch_id].label}\n"
+            + tr("Intermediário")
+            + f": {people[intermediary_id].label}"
+        )
+        try:
+            self._plan = self.engine.plan_reassign_collateral_branch(
+                self.project,
+                self.proband.id,
+                self.relative.id,
+                GenderIdentity(self.target_branch.currentData()),
+                sibling_kind=SiblingKind(self.sibling_kind.currentData()),
+                create_missing_branch=self.create_missing.isChecked(),
+            )
+        except ValueError as error:
+            self._plan = None
+            self.impact.setText(tr(str(error)))
+            self.confirmation.setText(tr(str(error)))
+            return
+        self.impact.setText("\n".join(self._plan.notes))
+        preview_project = self._plan.after.model_copy(deep=True)
+        positions = PedigreeLayoutEngine().compute(preview_project, preserve_locked=False)
+        for person in preview_project.individuals:
+            person.layout.x, person.layout.y = positions[person.id]
+        scene = PedigreeScene()
+        scene.load_project(preview_project)
+        self.preview.setScene(scene)
+        self.preview.fitInView(
+            scene.pedigree_bounding_rect().adjusted(-80, -60, 80, 80),
+            Qt.AspectRatioMode.KeepAspectRatio,
+        )
+        self.confirmation.setText(
+            tr("A migração será aplicada como uma única operação reversível.")
+            + "\n\n"
+            + "\n".join(self._plan.notes)
+        )
+
+    def result_plan(self) -> KinshipPlan:
+        self._refresh()
+        if self._plan is None:
+            raise ValueError(self.impact.text())
+        return self._plan
+
+    def accept(self) -> None:
+        try:
+            self.result_plan()
+        except ValueError as error:
+            QMessageBox.warning(self, tr("Relação inválida"), tr(str(error)))
+            return
+        super().accept()
+
+
 class NewProjectDialog(QDialog):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)

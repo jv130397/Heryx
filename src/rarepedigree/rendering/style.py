@@ -17,6 +17,7 @@ class PedigreeRenderStyle:
     show_legend: bool = True
     legend_position: str = "bottom"
     identifier_size: int = 10
+    show_auxiliary_labels: bool = True
 
     @classmethod
     def from_settings(cls, settings: QSettings | None = None) -> "PedigreeRenderStyle":
@@ -30,6 +31,7 @@ class PedigreeRenderStyle:
             show_legend=settings.value("pedigree/show_legend", True, bool),
             legend_position=settings.value("pedigree/legend_position", "bottom", str),
             identifier_size=settings.value("pedigree/identifier_size", 10, int),
+            show_auxiliary_labels=settings.value("pedigree/show_auxiliary_labels", True, bool),
         )
 
     def category_color(self, gender: GenderIdentity) -> str:

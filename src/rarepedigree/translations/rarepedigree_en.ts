@@ -99,5 +99,22 @@
     <message><source>Irmandade ainda não esclarecida</source><translation>Sibling relationship not yet resolved</translation></message>
     <message><source>Irmandade adotiva ou social</source><translation>Adoptive or social sibling relationship</translation></message>
     <message><source>A operação será aplicada como uma única ação reversível.</source><translation>The operation will be applied as one reversible action.</translation></message>
+    <message><source>representante provisório</source><translation>provisional representative</translation></message>
+    <message><source>Núcleo parental</source><translation>Parental nucleus</translation></message>
+    <message><source>Núcleo parental selecionado</source><translation>Selected parental nucleus</translation></message>
+    <message><source>Genitores</source><translation>Parents</translation></message>
+    <message><source>Descendentes</source><translation>Descendants</translation></message>
+    <message><source>Corrigir ramo familiar</source><translation>Correct family branch</translation></message>
+    <message><source>Corrigir ramo de tio ou primo…</source><translation>Correct aunt/uncle or cousin branch…</translation></message>
+    <message><source>1. Parentesco atual</source><translation>1. Current kinship</translation></message>
+    <message><source>2. Ramo correto</source><translation>2. Correct branch</translation></message>
+    <message><source>3. Impacto e prévia</source><translation>3. Impact and preview</translation></message>
+    <message><source>4. Confirmação</source><translation>4. Confirmation</translation></message>
+    <message><source>Ramo paterno</source><translation>Paternal branch</translation></message>
+    <message><source>Ramo materno</source><translation>Maternal branch</translation></message>
+    <message><source>Novo ramo</source><translation>New branch</translation></message>
+    <message><source>Vínculo do intermediário</source><translation>Intermediary relationship</translation></message>
+    <message><source>Autorizar criação do genitor de destino ausente</source><translation>Authorize creation of the missing destination parent</translation></message>
+    <message><source>Mostrar rótulos auxiliares</source><translation>Show auxiliary labels</translation></message>
   </context>
 </TS>

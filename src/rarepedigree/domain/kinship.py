@@ -180,6 +180,123 @@ class KinshipEngine:
     def descendants(self, project: PedigreeProject, person_id: UUID) -> dict[UUID, int]:
         return self._walk(project, person_id, upward=False)
 
+    def collateral_context(
+        self, project: PedigreeProject, proband_id: UUID, relative_id: UUID
+    ) -> tuple[str, UUID, UUID] | None:
+        """Return ``(kind, branch_parent, intermediary)`` for aunt/uncle or cousin."""
+        self._person(project, proband_id)
+        self._person(project, relative_id)
+        biological = {ParentageKind.BIOLOGICAL}
+        for branch_parent in self.parents(project, proband_id, biological):
+            if self._biological_sibling_kind(project, branch_parent, relative_id) is not None:
+                return ("aunt_uncle", branch_parent, relative_id)
+            for intermediary in self.parents(project, relative_id, biological):
+                if self._biological_sibling_kind(project, branch_parent, intermediary) is not None:
+                    return ("cousin", branch_parent, intermediary)
+        return None
+
+    def plan_reassign_collateral_branch(
+        self,
+        project: PedigreeProject,
+        proband_id: UUID,
+        relative_id: UUID,
+        target_branch_gender: GenderIdentity,
+        *,
+        sibling_kind: SiblingKind = SiblingKind.FULL,
+        create_missing_branch: bool = False,
+    ) -> KinshipPlan:
+        """Move an aunt/uncle or cousin intermediary to another parental branch.
+
+        Only incoming biological edges of the collateral intermediary are
+        replaced. Descendants and all unrelated third-party edges are retained.
+        """
+        context = self.collateral_context(project, proband_id, relative_id)
+        if context is None:
+            raise ValueError("o indivíduo não é tio, tia, primo ou prima do probando")
+        relation_kind, current_branch, intermediary = context
+        after = project.model_copy(deep=True)
+        candidates = [
+            parent_id
+            for parent_id in self.parents(after, proband_id, {ParentageKind.BIOLOGICAL})
+            if self._person(after, parent_id).gender_identity == target_branch_gender
+        ]
+        created: list[UUID] = []
+        unknowns: list[UUID] = []
+        if not candidates:
+            if not create_missing_branch:
+                raise ValueError("o genitor do ramo de destino ainda não está definido")
+            branch_plan = self.plan_ancestor_path(
+                after,
+                proband_id,
+                [target_branch_gender],
+                create_missing_intermediates=True,
+            )
+            after = branch_plan.apply()
+            candidates = [branch_plan.created_ids[-1]]
+            created.extend(branch_plan.created_ids)
+            unknowns.extend(branch_plan.unknown_ids)
+        if len(candidates) != 1:
+            raise ValueError("o ramo de destino é ambíguo")
+        target_branch = candidates[0]
+        if target_branch == current_branch:
+            raise ValueError("o familiar já pertence ao ramo selecionado")
+        branch_parent_edges = [
+            edge
+            for edge in after.parentages
+            if edge.child_id == target_branch and edge.kind == ParentageKind.BIOLOGICAL
+        ]
+        required_genders = {
+            SiblingKind.FULL: (GenderIdentity.MAN, GenderIdentity.WOMAN),
+            SiblingKind.PATERNAL_HALF: (GenderIdentity.MAN,),
+            SiblingKind.MATERNAL_HALF: (GenderIdentity.WOMAN,),
+        }.get(sibling_kind, ())
+        existing_genders = {
+            self._person(after, edge.parent_id).gender_identity for edge in branch_parent_edges
+        }
+        for gender in required_genders:
+            if gender in existing_genders:
+                continue
+            ancestor = self._unknown(
+                after,
+                "ascendente estrutural autorizado pela migração de ramo",
+                gender,
+            )
+            after.individuals.append(ancestor)
+            after.parentages.append(
+                Parentage(
+                    parent_id=ancestor.id,
+                    child_id=target_branch,
+                    kind=ParentageKind.BIOLOGICAL,
+                    evidence_status=EvidenceStatus.PROVISIONAL,
+                    provenance="collateral branch migration",
+                )
+            )
+            created.append(ancestor.id)
+            unknowns.append(ancestor.id)
+            existing_genders.add(gender)
+        affected_children = self.children(after, intermediary)
+        changed = self.plan_change_sibling_kind(
+            after, target_branch, intermediary, sibling_kind
+        )
+        notes = [
+            f"Parentesco atual: {relation_kind}.",
+            f"Ramo removido: {self._person(project, current_branch).label}.",
+            f"Ramo criado: {self._person(changed.after, target_branch).label}.",
+            f"{len(affected_children)} descendente(s) do intermediário serão preservados.",
+            *changed.notes,
+        ]
+        result = KinshipPlan(
+            "Migrar ramo familiar",
+            project.model_copy(deep=True),
+            changed.after.model_copy(deep=True),
+            created_ids=[*created, *changed.created_ids],
+            reused_ids=[target_branch, *changed.reused_ids],
+            unknown_ids=[*unknowns, *changed.unknown_ids],
+            notes=notes,
+        )
+        self.validator.require_valid(result.after)
+        return result
+
     def _walk(self, project: PedigreeProject, person_id: UUID, upward: bool) -> dict[UUID, int]:
         self._person(project, person_id)
         found: dict[UUID, int] = {}
