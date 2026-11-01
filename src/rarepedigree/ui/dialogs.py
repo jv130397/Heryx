@@ -1,5 +1,6 @@
 """Focused editing and project creation dialogs."""
 
+from pathlib import Path
 from typing import Any
 from uuid import UUID
 
@@ -11,6 +12,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QDialogButtonBox,
+    QFileDialog,
     QFormLayout,
     QGraphicsView,
     QHBoxLayout,
@@ -39,6 +41,132 @@ from rarepedigree.layout import PedigreeLayoutEngine
 from rarepedigree.rendering import PedigreeScene
 from rarepedigree.ui.components import NexusDialogHeader
 from rarepedigree.ui.i18n import language_manager, tr
+
+
+class ImportProjectDialog(QDialog):
+    """Proportional import surface; parsing remains in the repository layer."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("Importar projeto"))
+        self.setMinimumWidth(620)
+        layout = QVBoxLayout(self)
+        layout.addWidget(
+            NexusDialogHeader(
+                tr("Importar projeto"),
+                tr("Abra um projeto RarePedigree compatível"),
+            )
+        )
+        form = QFormLayout()
+        row = QWidget()
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        self.path_edit = QLineEdit()
+        self.path_edit.setPlaceholderText(tr("Selecione um arquivo .rps.json"))
+        browse = QPushButton(tr("Procurar…"))
+        browse.clicked.connect(self._browse)
+        row_layout.addWidget(self.path_edit, 1)
+        row_layout.addWidget(browse)
+        form.addRow(tr("Arquivo"), row)
+        self.note = QLabel(
+            tr("O conteúdo será validado antes de substituir o projeto aberto.")
+        )
+        self.note.setWordWrap(True)
+        self.note.setProperty("card", True)
+        form.addRow(self.note)
+        layout.addLayout(form)
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Open | QDialogButtonBox.StandardButton.Cancel
+        )
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        self.buttons.button(QDialogButtonBox.StandardButton.Open).setText(tr("Importar"))
+        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(tr("Cancelar"))
+        layout.addWidget(self.buttons)
+
+    def _browse(self) -> None:
+        filename, _ = QFileDialog.getOpenFileName(
+            self, tr("Importar projeto"), "", "RarePedigree (*.rps.json *.json)"
+        )
+        if filename:
+            self.path_edit.setText(filename)
+
+    def selected_path(self) -> Path | None:
+        value = self.path_edit.text().strip()
+        return Path(value) if value else None
+
+    def accept(self) -> None:
+        if self.selected_path() is None:
+            QMessageBox.warning(self, tr("Arquivo necessário"), tr("Selecione um projeto."))
+            return
+        super().accept()
+
+
+class ExportFigureDialog(QDialog):
+    """Presentation and export options without claiming unsupported formats."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("Exportar heredograma"))
+        self.setMinimumWidth(660)
+        settings = language_manager.settings
+        layout = QVBoxLayout(self)
+        layout.addWidget(
+            NexusDialogHeader(
+                tr("Exportar heredograma"),
+                tr("Escolha o formato e a apresentação da figura"),
+            )
+        )
+        form = QFormLayout()
+        self.format = QComboBox()
+        self.format.addItem("SVG — " + tr("vetorial"), "svg")
+        self.format.addItem("PNG — " + tr("imagem"), "png")
+        self.format.addItem("PDF — " + tr("documento"), "pdf")
+        self.path_edit = QLineEdit("heredograma.svg")
+        self.format.currentIndexChanged.connect(self._sync_suffix)
+        row = QWidget()
+        row_layout = QHBoxLayout(row)
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        browse = QPushButton(tr("Procurar…"))
+        browse.clicked.connect(self._browse)
+        row_layout.addWidget(self.path_edit, 1)
+        row_layout.addWidget(browse)
+        self.include_legend = QCheckBox(tr("Incluir legenda científica"))
+        self.include_legend.setChecked(settings.value("export/include_legend", True, bool))
+        self.monochrome = QCheckBox(tr("Modo científico monocromático"))
+        self.monochrome.setChecked(settings.value("export/monochrome", False, bool))
+        form.addRow(tr("Formato"), self.format)
+        form.addRow(tr("Destino"), row)
+        form.addRow(self.include_legend)
+        form.addRow(self.monochrome)
+        layout.addLayout(form)
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
+        )
+        self.buttons.accepted.connect(self.accept)
+        self.buttons.rejected.connect(self.reject)
+        self.buttons.button(QDialogButtonBox.StandardButton.Save).setText(tr("Exportar"))
+        self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(tr("Cancelar"))
+        layout.addWidget(self.buttons)
+
+    def _sync_suffix(self) -> None:
+        path = Path(self.path_edit.text())
+        self.path_edit.setText(str(path.with_suffix("." + self.format.currentData())))
+
+    def _browse(self) -> None:
+        extension = self.format.currentData()
+        filename, _ = QFileDialog.getSaveFileName(
+            self,
+            tr("Exportar heredograma"),
+            self.path_edit.text(),
+            f"{extension.upper()} (*.{extension})",
+        )
+        if filename:
+            self.path_edit.setText(filename)
+
+    def selected_path(self) -> Path | None:
+        value = self.path_edit.text().strip()
+        return Path(value).with_suffix("." + self.format.currentData()) if value else None
 
 
 class SymbolPreview(QWidget):

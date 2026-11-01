@@ -1,5 +1,5 @@
 import pytest
-from PySide6.QtCore import QSettings
+from PySide6.QtCore import QSettings, Qt
 from PySide6.QtWidgets import QDockWidget, QGraphicsItem, QGraphicsView, QMessageBox
 
 from rarepedigree.domain import GenderIdentity, Individual, KinshipEngine, PedigreeProject
@@ -147,9 +147,17 @@ def test_tool_rail_collapses_and_expands(qtbot) -> None:
     qtbot.addWidget(window)
     assert not window.rail_expanded
     assert window.tool_rail.width() == 60
+    assert all(
+        button.toolButtonStyle() == Qt.ToolButtonStyle.ToolButtonIconOnly
+        for button in window.rail_buttons
+    )
     window.toggle_tool_rail()
     assert window.rail_expanded
     assert window.tool_rail.width() == 210
+    assert all(
+        button.toolButtonStyle() == Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+        for button in window.rail_buttons
+    )
     window.toggle_tool_rail()
     assert not window.rail_expanded
     assert window.tool_rail.width() == 60

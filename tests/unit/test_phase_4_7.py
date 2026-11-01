@@ -6,7 +6,12 @@ from PySide6.QtWidgets import QFrame
 from rarepedigree.domain import GenderIdentity, Individual, ObservationStatus
 from rarepedigree.rendering import PedigreeRenderStyle, PedigreeScene
 from rarepedigree.rendering.exporters import ExportOptions, export_svg
-from rarepedigree.ui.dialogs import EditIndividualDialog, NewProjectDialog
+from rarepedigree.ui.dialogs import (
+    EditIndividualDialog,
+    ExportFigureDialog,
+    ImportProjectDialog,
+    NewProjectDialog,
+)
 from rarepedigree.ui.i18n import language_manager, tr
 from rarepedigree.ui.preferences import PreferencesDialog
 from rarepedigree.ui.startup import WelcomeDialog
@@ -107,6 +112,29 @@ def test_preferences_persist_colors_and_legend(qtbot) -> None:
     settings = QSettings()
     assert settings.value("pedigree/man_color") == "#112233"
     assert settings.value("pedigree/show_legend", True, bool) is False
+
+
+def test_preferences_persist_identifier_presentation_without_mutating_data(qtbot) -> None:
+    dialog = PreferencesDialog()
+    qtbot.addWidget(dialog)
+    dialog.identifier_mode.setCurrentIndex(dialog.identifier_mode.findData("genealogical"))
+    dialog._save()
+    assert QSettings().value("pedigree/identifier_mode") == "genealogical"
+    QSettings().setValue("pedigree/identifier_mode", "manual")
+
+
+def test_import_and_export_surfaces_are_proportional(qtbot, tmp_path: Path) -> None:
+    import_dialog = ImportProjectDialog()
+    export_dialog = ExportFigureDialog()
+    qtbot.addWidget(import_dialog)
+    qtbot.addWidget(export_dialog)
+    import_dialog.path_edit.setText(str(tmp_path / "family.rps.json"))
+    export_dialog.path_edit.setText(str(tmp_path / "figure"))
+    export_dialog.format.setCurrentIndex(export_dialog.format.findData("pdf"))
+    assert import_dialog.selected_path().suffix == ".json"
+    assert export_dialog.selected_path().suffix == ".pdf"
+    assert import_dialog.minimumWidth() <= 700
+    assert export_dialog.minimumWidth() <= 700
 
 
 def test_preferences_palette_preview_and_legend_position(qtbot) -> None:

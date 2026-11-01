@@ -52,6 +52,7 @@ class IndividualItem(QGraphicsObject):
         on_context_action: Callable[[IndividualItem, str], None] | None = None,
         context_actions: Callable[[IndividualItem], set[str]] | None = None,
         render_style: PedigreeRenderStyle | None = None,
+        display_label: str | None = None,
     ) -> None:
         super().__init__()
         self.person = person
@@ -60,19 +61,26 @@ class IndividualItem(QGraphicsObject):
         self._context_actions = context_actions
         self._drag_start = QPointF()
         self.render_style = render_style or PedigreeRenderStyle()
+        # Presentation-only. The persisted manual label and UUID remain on
+        # ``person`` and are never rewritten by genealogical numbering.
+        self.display_label = display_label or person.label
         self.setFlags(
             QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
             | QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges
         )
         self.setPos(person.layout.x, person.layout.y)
-        self.setToolTip(person.label)
+        self.setToolTip(
+            self.display_label
+            if self.display_label == person.label
+            else f"{self.display_label} · {person.label}"
+        )
         self.adopted = False
 
     def boundingRect(self) -> QRectF:
         # Identifiers are part of the scientific symbol, so their complete
         # width must participate in fitting/export bounds.  A fixed 68 px
         # label box clipped names in the relative-wizard preview.
-        label_width = max(70.0, min(220.0, len(self.person.label) * 8.5 + 16.0))
+        label_width = max(70.0, min(220.0, len(self.display_label) * 8.5 + 16.0))
         show_auxiliary = self.person.placeholder and self.render_style.show_auxiliary_labels
         auxiliary_height = 14.0 if show_auxiliary else 0.0
         return QRectF(-label_width / 2, -35, label_width, 88 + auxiliary_height)
@@ -149,11 +157,11 @@ class IndividualItem(QGraphicsObject):
         font.setBold(False)
         font.setPointSize(self.render_style.identifier_size)
         painter.setFont(font)
-        label_width = max(70.0, min(220.0, len(self.person.label) * 8.5 + 16.0))
+        label_width = max(70.0, min(220.0, len(self.display_label) * 8.5 + 16.0))
         painter.drawText(
             QRectF(-label_width / 2, 29, label_width, 20),
             Qt.AlignmentFlag.AlignCenter,
-            self.person.label,
+            self.display_label,
         )
         if self.person.placeholder and self.render_style.show_auxiliary_labels:
             # A provisional structural representative is not synonymous with

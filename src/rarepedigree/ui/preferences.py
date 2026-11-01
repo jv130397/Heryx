@@ -9,7 +9,9 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
+    QFrame,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QTabWidget,
     QVBoxLayout,
@@ -146,6 +148,18 @@ class PreferencesDialog(QDialog):
         self.identifier_size = QSpinBox()
         self.identifier_size.setRange(8, 18)
         self.identifier_size.setValue(self.settings.value("pedigree/identifier_size", 10, int))
+        self.identifier_mode = QComboBox()
+        self.identifier_mode.addItem("Identificador manual", "manual")
+        self.identifier_mode.addItem("Numeração genealógica (I-1, II-3)", "genealogical")
+        self.identifier_mode.addItem("Numeração e identificador manual", "both")
+        self.identifier_mode.setCurrentIndex(
+            max(
+                0,
+                self.identifier_mode.findData(
+                    self.settings.value("pedigree/identifier_mode", "manual", str)
+                ),
+            )
+        )
         self.minimum_zoom = QSpinBox()
         self.minimum_zoom.setRange(1, 100)
         self.minimum_zoom.setSuffix("%")
@@ -196,6 +210,7 @@ class PreferencesDialog(QDialog):
         form.addRow(self.show_auxiliary_labels)
         form.addRow("Posição da legenda", self.legend_position)
         form.addRow("Tamanho dos identificadores", self.identifier_size)
+        form.addRow("Rótulo dos indivíduos", self.identifier_mode)
         form.addRow("Zoom mínimo", self.minimum_zoom)
         form.addRow("Zoom máximo", self.maximum_zoom)
         form.addRow("Limite de legibilidade", self.readable_zoom)
@@ -209,7 +224,11 @@ class PreferencesDialog(QDialog):
         form.addRow(self.preview)
         form.addRow(self.reset_colors)
         self._update_preview()
-        return page
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setWidget(page)
+        return scroll
 
     def _export_tab(self) -> QWidget:
         page = QWidget()
@@ -268,6 +287,14 @@ class PreferencesDialog(QDialog):
             self.tabs.setTabText(index, tr(text))
         self.buttons.button(QDialogButtonBox.StandardButton.Save).setText(tr("Salvar"))
         self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(tr("Cancelar"))
+        for index, text in enumerate(
+            (
+                "Identificador manual",
+                "Numeração genealógica (I-1, II-3)",
+                "Numeração e identificador manual",
+            )
+        ):
+            self.identifier_mode.setItemText(index, tr(text))
 
     def _save(self) -> None:
         values = {
@@ -280,6 +307,7 @@ class PreferencesDialog(QDialog):
             "pedigree/show_auxiliary_labels": self.show_auxiliary_labels.isChecked(),
             "pedigree/legend_position": self.legend_position.currentData(),
             "pedigree/identifier_size": self.identifier_size.value(),
+            "pedigree/identifier_mode": self.identifier_mode.currentData(),
             "navigation/minimum_zoom": self.minimum_zoom.value(),
             "navigation/maximum_zoom": self.maximum_zoom.value(),
             "navigation/readable_zoom": self.readable_zoom.value(),

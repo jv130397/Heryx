@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from PySide6.QtCore import QPoint, QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QMouseEvent, QPainter
+from PySide6.QtGui import QColor, QMouseEvent, QPainter
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -57,7 +57,7 @@ class PedigreeMiniMap(QGraphicsView):
         painter.save()
         painter.setBrush(Qt.BrushStyle.NoBrush)
         pen = painter.pen()
-        pen.setColor(Qt.GlobalColor.cyan)
+        pen.setColor(QColor("#078FC2"))
         pen.setWidthF(2 / max(self.transform().m11(), 0.01))
         painter.setPen(pen)
         painter.drawRect(visible)

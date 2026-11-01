@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from PySide6.QtCore import QSettings
+
 from rarepedigree.domain import (
     FamilyService,
     GenderIdentity,
@@ -55,6 +57,28 @@ def test_parentage_connectors_and_generation_labels(qapp) -> None:
     metrics = measure_scene(scene)
     assert metrics.symbol_collisions == 0
     assert metrics.connector_symbol_intersections == 0
+
+
+def test_genealogical_numbering_is_presentation_only(qapp) -> None:
+    del qapp
+    settings = QSettings()
+    settings.setValue("pedigree/identifier_mode", "genealogical")
+    child = Individual(label="Manual")
+    project = PedigreeProject(individuals=[child])
+    project, parent_ids = FamilyService.add_parents(project, child.id)
+    positions = PedigreeLayoutEngine().compute(project, preserve_locked=False)
+    for person in project.individuals:
+        person.layout.x, person.layout.y = positions[person.id]
+    scene = PedigreeScene()
+    scene.load_project(project)
+    assert scene.person_items[child.id].display_label.startswith("II-")
+    assert scene.person_items[child.id].person.label == "Manual"
+    assert scene.person_items[child.id].person.id == child.id
+    assert all(
+        scene.person_items[parent_id].display_label.startswith("I-")
+        for parent_id in parent_ids
+    )
+    settings.setValue("pedigree/identifier_mode", "manual")
 
 
 def test_independent_grandparent_nuclei_use_distinct_connectors(qapp) -> None:

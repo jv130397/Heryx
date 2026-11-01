@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from uuid import UUID
 
-from PySide6.QtCore import QCoreApplication, QPointF, QRectF
+from PySide6.QtCore import QCoreApplication, QPointF, QRectF, QSettings
 from PySide6.QtGui import QColor, QFont, QTransform
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsSimpleTextItem, QMenu
 
@@ -47,8 +47,9 @@ class PedigreeScene(QGraphicsScene):
         self.twin_items.clear()
         self.generation_items.clear()
         self.legend_item = None
+        display_labels = self._display_labels(project)
         for person in project.individuals:
-            self.add_person(person)
+            self.add_person(person, display_labels[person.id])
         for edge in project.parentages:
             if edge.kind == ParentageKind.LEGAL:
                 self.person_items[edge.child_id].adopted = True
@@ -192,13 +193,32 @@ class PedigreeScene(QGraphicsScene):
             self.addItem(item)
             self.twin_items[group.id] = item
 
-    def add_person(self, person: Individual) -> IndividualItem:
+    def _display_labels(self, project: PedigreeProject) -> dict[UUID, str]:
+        mode = QSettings().value("pedigree/identifier_mode", "manual", str)
+        if mode == "manual":
+            return {person.id: person.label for person in project.individuals}
+        generations = PedigreeLayoutEngine().generations(project)
+        genealogical: dict[UUID, str] = {}
+        for generation in sorted(set(generations.values())):
+            members = sorted(
+                (person for person in project.individuals if generations[person.id] == generation),
+                key=lambda person: (person.layout.x, str(person.id)),
+            )
+            for index, person in enumerate(members, start=1):
+                number = f"{_roman(generation + 1)}-{index}"
+                genealogical[person.id] = (
+                    number if mode == "genealogical" else f"{number} · {person.label}"
+                )
+        return genealogical
+
+    def add_person(self, person: Individual, display_label: str | None = None) -> IndividualItem:
         item = IndividualItem(
             person,
             self._person_moved,
             self.on_context_action,
             self.context_actions,
             self.render_style,
+            display_label,
         )
         item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, self.interaction_mode == "move")
         self.addItem(item)

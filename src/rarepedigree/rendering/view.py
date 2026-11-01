@@ -59,7 +59,11 @@ class PedigreeView(QGraphicsView):
         super().drawBackground(painter, rect)
         if not self.grid_enabled:
             return
-        step = 40
+        scale = self.transform().m11()
+        # At overview zoom a dense grid competes with relationship lines.
+        if scale < 0.3:
+            return
+        step = 80 if scale < 0.65 else 40
         left = int(rect.left()) - (int(rect.left()) % step)
         top = int(rect.top()) - (int(rect.top()) % step)
         lines = [
@@ -68,7 +72,9 @@ class PedigreeView(QGraphicsView):
         lines += [
             QLineF(rect.left(), y, rect.right(), y) for y in range(top, int(rect.bottom()), step)
         ]
-        painter.setPen(QPen(QColor("#DDE2E6"), 0))
+        grid = QColor("#DDE2E6")
+        grid.setAlpha(150 if scale >= 0.65 else 105)
+        painter.setPen(QPen(grid, 0))
         painter.drawLines(lines)
 
     def wheelEvent(self, event: QWheelEvent) -> None:

@@ -23,6 +23,22 @@ COLORS = {
 SPACING = {"xs": 4, "sm": 8, "md": 12, "lg": 16, "xl": 24}
 RADII = {"control": 5, "card": 8, "overlay": 11}
 MOTION = {"fast": 120, "panel": 180, "toast": 200}
+TYPOGRAPHY = {
+    "caption": 11,
+    "label": 12,
+    "body": 14,
+    "section": 15,
+    "dialog_title": 17,
+    "window_title": 20,
+}
+ICONS = {"compact": 18, "default": 20, "brand": 30}
+CONTROLS = {"height": 36, "target": 44, "rail_compact": 60, "rail_expanded": 210}
+ELEVATION = {
+    "popover": (0, 6, 18, 45),
+    "drawer": (-5, 6, 28, 85),
+    "dialog": (0, 10, 32, 80),
+}
+BREAKPOINTS = {"compact": 1366, "desktop": 1920, "large": 2560}
 
 SCIENTIFIC_WORKSPACE_STYLESHEET = """
 * { font-family: "Inter", "Noto Sans", "Segoe UI", sans-serif; font-size: 14px; }
@@ -74,6 +90,7 @@ QScrollBar::handle { background: #B8C2CB; border-radius: 4px; min-height: 28px; 
 QScrollBar::handle:hover { background: #8D9AA5; }
 QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
 QFrame#tool-rail { background: #FFFFFF; border: 1px solid #D6DCE1; border-radius: 9px; }
+QFrame#rail-separator { color: #D6DCE1; background: #D6DCE1; max-height: 1px; margin: 5px 7px; }
 QFrame#properties-drawer { background: #FFFFFF; border: 1px solid #C9D1D8; border-radius: 10px; }
 QFrame#nexus-dialog-header { background: #1C293B; border-top-left-radius: 8px; border-top-right-radius: 8px; }
 QFrame#nexus-dialog-header QLabel#nexus-dialog-title { color: #FFFFFF; font-size: 16px; font-weight: 700; }

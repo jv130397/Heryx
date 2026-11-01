@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -51,6 +52,8 @@ class NexusDialogHeader(QFrame):
     def __init__(self, title: str, subtitle: str = "", parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("nexus-dialog-header")
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self.setFixedHeight(66)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 10, 16, 10)
         layout.setSpacing(2)

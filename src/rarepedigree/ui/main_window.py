@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from PySide6.QtCore import QPointF, QRectF, QSettings, QSize, Qt
+from PySide6.QtCore import QEasingCurve, QPointF, QRectF, QSettings, QSize, Qt, QVariantAnimation
 from PySide6.QtGui import (
     QAction,
     QActionGroup,
@@ -75,6 +75,8 @@ from rarepedigree.ui.dialogs import (
     AddSiblingDialog,
     EditIndividualDialog,
     EditSiblingRelationshipDialog,
+    ExportFigureDialog,
+    ImportProjectDialog,
     NewProjectDialog,
     ReassignBranchWizard,
 )
@@ -235,6 +237,8 @@ class MainWindow(QMainWindow):
             self.zoom_in_action: "zoom_in",
             self.edit_action: "person",
             self.move_action: "move",
+            self.select_action: "select",
+            self.focus_proband_action: "person",
         }
         for action, name in action_icons.items():
             action.setIcon(icon(name))
@@ -369,7 +373,7 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(logo)
         brand = QLabel("RAREPEDIGREE")
         brand.setStyleSheet(
-            "font-weight: 800; color: #67E8F9; letter-spacing: 1px; padding-right: 10px;"
+            "font-weight: 800; color: #078FC2; letter-spacing: 1px; padding-right: 10px;"
         )
         toolbar.addWidget(brand)
         toolbar.addSeparator()
@@ -391,7 +395,7 @@ class MainWindow(QMainWindow):
         self.project_title_label.setStyleSheet("font-weight: 600; padding: 0 8px;")
         toolbar.addWidget(self.project_title_label)
         self.dirty_label = QLabel("SALVO")
-        self.dirty_label.setStyleSheet("color: #94A3B8; font-size: 10px; padding: 3px 6px;")
+        self.dirty_label.setStyleSheet("color: #66737F; font-size: 11px; padding: 3px 6px;")
         toolbar.addWidget(self.dirty_label)
         toolbar.addSeparator()
         self.view_mode_control = ViewModeControl()
@@ -441,6 +445,12 @@ class MainWindow(QMainWindow):
         layout.setSpacing(5)
         self.rail_buttons: list[QToolButton] = []
         self.rail_expanded = False
+        self.rail_animation = QVariantAnimation(self)
+        self.rail_animation.setDuration(160)
+        self.rail_animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self.rail_animation.valueChanged.connect(
+            lambda value: panel.setFixedWidth(round(float(value)))
+        )
         self.collapse_action = QAction("»", self)
         self.collapse_action.triggered.connect(self.toggle_tool_rail)
         self.collapse_button = ToolRailButton(self.collapse_action, "fit", expanded=False)
@@ -448,6 +458,9 @@ class MainWindow(QMainWindow):
         select_button = ToolRailButton(self.select_action, "select", expanded=False)
         self.rail_buttons.append(select_button)
         layout.addWidget(select_button)
+        move_button = ToolRailButton(self.move_action, "move", expanded=False)
+        self.rail_buttons.append(move_button)
+        layout.addWidget(move_button)
         self.person_button = QToolButton()
         person_button = self.person_button
         person_button.setIcon(icon("person"))
@@ -497,17 +510,23 @@ class MainWindow(QMainWindow):
         family_button.setAccessibleName("Adicionar familiar")
         layout.addWidget(family_button)
         self.rail_buttons.extend([person_button, family_button])
+        relation_button = ToolRailButton(self.relationship_action, "link", expanded=False)
+        self.rail_buttons.append(relation_button)
+        layout.addWidget(relation_button)
+        separator = QFrame()
+        separator.setFrameShape(QFrame.Shape.HLine)
+        separator.setObjectName("rail-separator")
+        layout.addWidget(separator)
         for action, icon_name in [
-            (self.relationship_action, "link"),
-            (self.move_action, "move"),
             (self.auto_layout_action, "layout"),
+            (self.fit_action, "fit"),
             (self.focus_proband_action, "person"),
         ]:
             button = ToolRailButton(action, icon_name, expanded=False)
             self.rail_buttons.append(button)
             layout.addWidget(button)
         layout.addStretch()
-        for action, icon_name in [(self.fit_action, "fit"), (self.delete_action, "delete")]:
+        for action, icon_name in [(self.delete_action, "delete")]:
             button = ToolRailButton(action, icon_name, expanded=False)
             self.rail_buttons.append(button)
             layout.addWidget(button)
@@ -631,7 +650,16 @@ class MainWindow(QMainWindow):
 
     def toggle_tool_rail(self) -> None:
         self.rail_expanded = not self.rail_expanded
-        self.tool_rail.setFixedWidth(210 if self.rail_expanded else 60)
+        scale = self.settings.value("ui/scale", 100, int) / 100
+        target_width = round((210 if self.rail_expanded else 60) * scale)
+        reduced = self.settings.value("ui/reduce_motion", False, bool)
+        if self.isVisible() and not reduced:
+            self.rail_animation.stop()
+            self.rail_animation.setStartValue(self.tool_rail.width())
+            self.rail_animation.setEndValue(target_width)
+            self.rail_animation.start()
+        else:
+            self.tool_rail.setFixedWidth(target_width)
         style = (
             Qt.ToolButtonStyle.ToolButtonTextBesideIcon
             if self.rail_expanded
@@ -1211,11 +1239,11 @@ class MainWindow(QMainWindow):
     def open_project(self) -> None:
         if not self._may_discard_changes():
             return
-        filename, _ = QFileDialog.getOpenFileName(
-            self, "Abrir projeto", "", "RarePedigree (*.rps.json *.json)"
-        )
-        if filename:
-            self.load_from(Path(filename))
+        dialog = ImportProjectDialog(self)
+        if dialog.exec() == dialog.DialogCode.Accepted:
+            path = dialog.selected_path()
+            if path is not None:
+                self.load_from(path)
 
     def load_from(self, path: Path) -> bool:
         try:
@@ -1232,26 +1260,23 @@ class MainWindow(QMainWindow):
         return True
 
     def export_figure(self) -> None:
-        filename, selected_filter = QFileDialog.getSaveFileName(
-            self,
-            "Exportar figura",
-            "heredograma.svg",
-            "SVG vetorial (*.svg);;PNG (*.png);;PDF (*.pdf)",
-        )
-        if not filename:
+        dialog = ExportFigureDialog(self)
+        if dialog.exec() != dialog.DialogCode.Accepted:
             return
-        path = Path(filename)
+        path = dialog.selected_path()
+        if path is None:
+            return
         options = ExportOptions(
             png_scale=self.settings.value("export/png_scale", 2, int),
             margin=self.settings.value("export/margin", 30, int),
             landscape=self.settings.value("export/landscape", True, bool),
-            include_legend=self.settings.value("export/include_legend", True, bool),
-            monochrome=self.settings.value("export/monochrome", False, bool),
+            include_legend=dialog.include_legend.isChecked(),
+            monochrome=dialog.monochrome.isChecked(),
         )
         try:
-            if "PNG" in selected_filter or path.suffix.lower() == ".png":
+            if path.suffix.lower() == ".png":
                 export_png(self.scene, path, options)
-            elif "PDF" in selected_filter or path.suffix.lower() == ".pdf":
+            elif path.suffix.lower() == ".pdf":
                 export_pdf(self.scene, path, options)
             else:
                 export_svg(self.scene, path, options)
@@ -1354,6 +1379,9 @@ class MainWindow(QMainWindow):
         self.empty_state.retranslate_ui()
         self.properties.retranslate_ui()
         self.properties_drawer.title.setText(tr("Propriedades do indivíduo"))
+        self.toast.hide()
+        if hasattr(self, "message_status"):
+            self.message_status.setText(tr("Pronto"))
         self.scene.apply_render_style(self.scene.render_style)
         self._update_title()
         self._update_workspace_state()

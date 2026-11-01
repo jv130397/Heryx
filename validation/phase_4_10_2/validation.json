@@ -1,0 +1,30 @@
+{
+  "platform": "offscreen",
+  "real_display": false,
+  "note": "Real Qt widgets rendered offscreen; no mockups or compositing.",
+  "checks": {
+    "compact_rail_icon_only": true,
+    "drawer_overlay": true,
+    "minimap_not_in_scene": true,
+    "scientific_scene_unchanged": true
+  },
+  "evidence": {
+    "workspace_1920": "specifications/assets/phase_4_10_2/01_workspace_1920x1080.png",
+    "workspace_1366": "specifications/assets/phase_4_10_2/02_workspace_1366x768.png",
+    "rail_compact": "specifications/assets/phase_4_10_2/03_rail_compact.png",
+    "rail_expanded": "specifications/assets/phase_4_10_2/04_rail_expanded.png",
+    "dropdown": "specifications/assets/phase_4_10_2/05_family_dropdown.png",
+    "context_menu": "specifications/assets/phase_4_10_2/06_context_menu.png",
+    "inspector": "specifications/assets/phase_4_10_2/07_inspector.png",
+    "edit_modal": "specifications/assets/phase_4_10_2/08_edit_modal.png",
+    "relative_modal": "specifications/assets/phase_4_10_2/09_relative_modal.png",
+    "import_modal": "specifications/assets/phase_4_10_2/10_import_modal.png",
+    "export_modal": "specifications/assets/phase_4_10_2/11_export_modal.png",
+    "preferences": "specifications/assets/phase_4_10_2/12_preferences_labels.png",
+    "minimap": "specifications/assets/phase_4_10_2/13_minimap.png",
+    "four_generations": "specifications/assets/phase_4_10_2/14_four_generations.png",
+    "family_50": "specifications/assets/phase_4_10_2/15_family_50.png",
+    "family_100": "specifications/assets/phase_4_10_2/16_family_100.png",
+    "english": "specifications/assets/phase_4_10_2/17_workspace_en.png"
+  }
+}
