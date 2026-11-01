@@ -2,32 +2,33 @@
 """Central visual tokens and QSS for RarePedigree Scientific Workspace."""
 
 COLORS = {
-    "background": "#0A0F1C",
-    "panel": "#151E30",
-    "surface": "#202D45",
-    "accent": "#3B82F6",
+    "background": "#090E1B",
+    "panel": "#111B2E",
+    "surface": "#17233B",
+    "interactive": "#22324F",
+    "accent": "#38BDF8",
     "violet": "#8B5CF6",
     "text": "#F8FAFC",
-    "muted": "#A8B6CC",
-    "canvas": "#F7F9FD",
-    "border": "#2B3750",
+    "muted": "#94A3B8",
+    "canvas": "#F7FAFF",
+    "border": "#30415F",
     "danger": "#F43F5E",
 }
 
 SCIENTIFIC_WORKSPACE_STYLESHEET = """
 * { font-family: "Inter", "Noto Sans", "Segoe UI", sans-serif; font-size: 14px; }
-QMainWindow, QDialog { background: #0A0F1C; color: #F8FAFC; }
-QMenuBar { background: #0A0F1C; color: #A8B6CC; padding: 2px 8px; }
+QMainWindow, QDialog { background: #090E1B; color: #F8FAFC; }
+QMenuBar { background: #090E1B; color: #94A3B8; padding: 3px 10px; }
 QMenuBar::item { padding: 5px 9px; border-radius: 4px; }
 QMenuBar::item:selected, QMenu::item:selected { background: #164E63; color: #F8FAFC; }
-QMenu { background: #151E30; color: #F8FAFC; border: 1px solid #2B3750; padding: 7px; }
+QMenu { background: #111B2E; color: #F8FAFC; border: 1px solid #30415F; padding: 7px; }
 QMenu::item { padding: 7px 28px 7px 10px; border-radius: 4px; }
-QToolBar { background: #10192B; border: 0; border-bottom: 1px solid #2B3750; spacing: 5px; padding: 7px 12px; }
+QToolBar { background: #111B2E; border: 0; border-bottom: 1px solid #30415F; spacing: 5px; padding: 8px 14px; }
 QToolBar::separator { background: #334155; width: 1px; margin: 5px 8px; }
 QToolButton { color: #E2E8F0; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 6px; }
-QToolButton:hover { background: #1E3A4F; border-color: #475569; }
+QToolButton:hover { background: #22324F; border-color: #38BDF8; }
 QToolButton:focus { border: 2px solid #22D3EE; }
-QToolButton:pressed, QToolButton:checked { background: #1D4ED8; border-color: #22D3EE; }
+QToolButton:pressed, QToolButton:checked { background: #22324F; border-color: #38BDF8; }
 QToolButton[railButton="true"] { min-width: 42px; min-height: 42px; }
 QDockWidget { color: #F8FAFC; }
 QDockWidget::title { background: #151E30; padding: 11px 14px; border-bottom: 1px solid #2B3750; font-weight: 600; }
@@ -52,14 +53,20 @@ QGraphicsView { border: 0; background: #F8FAFC; }
 QScrollBar { background: transparent; width: 9px; height: 9px; }
 QScrollBar::handle { background: #94A3B8; border-radius: 4px; min-height: 28px; }
 QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
-QFrame#tool-rail { background: #151E30; border: 1px solid #2B3750; border-radius: 10px; }
-QFrame#properties-drawer { background: #151E30; border: 1px solid #30415F; border-radius: 12px; }
+QFrame#tool-rail { background: #111B2E; border: 1px solid #30415F; border-radius: 10px; }
+QFrame#properties-drawer { background: #111B2E; border: 1px solid #30415F; border-radius: 12px; }
 QFrame#empty-state { background: rgba(255,255,255,235); border: 1px solid #CBD5E1; border-radius: 12px; }
 QFrame#empty-state QLabel { color: #475569; }
 QLabel#empty-title { color: #0F172A; font-size: 18px; font-weight: 700; }
 QLabel#empty-mark { color: #0891B2; font-size: 38px; }
 QWidget#zoom-control { background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 7px; }
 QWidget#zoom-control QLabel, QWidget#zoom-control QToolButton { color: #334155; background: transparent; }
+QWidget#view-mode-control { background: #17233B; border: 1px solid #30415F; border-radius: 7px; }
+QFrame#individual-search { background: #111B2E; border: 1px solid #38BDF8; border-radius: 10px; }
+QFrame#individual-search QListWidget { background: #17233B; color: #F8FAFC; border: 1px solid #30415F; border-radius: 6px; }
+QFrame#individual-search QListWidget::item { padding: 8px; border-radius: 4px; }
+QFrame#individual-search QListWidget::item:selected { background: #22324F; color: #F8FAFC; }
+QGraphicsView#pedigree-minimap { background: #F7FAFF; border: 2px solid #30415F; border-radius: 9px; }
 QPushButton[symbolCard="true"] { font-size: 28px; min-width: 62px; min-height: 52px; }
 QPushButton[symbolCard="true"]:checked { background: #1D4ED8; border: 2px solid #22D3EE; }
 QDialog#welcome-dialog { background: #10192B; }

@@ -231,6 +231,8 @@ class IndividualItem(QGraphicsObject):
         for label, key in [
             ("✎  Editar indivíduo", "edit_dialog"),
             ("Abrir propriedades", "edit"),
+            ("Focar no indivíduo", "focus"),
+            ("Centralizar", "center"),
             ("⌫  Excluir indivíduo", "delete"),
         ]:
             if key in allowed:

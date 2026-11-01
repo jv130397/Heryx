@@ -6,6 +6,7 @@ from PySide6.QtGui import QIcon, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 
 PATHS = {
+    "logo": "M12 2l8 5v10l-8 5-8-5V7z M12 7l4 2.5v5L12 17l-4-2.5v-5z",
     "new": "M12 5v14M5 12h14",
     "open": "M3 7h7l2 2h9l-2 10H5z",
     "save": "M5 4h12l2 2v14H5z M8 4v6h8V4 M8 16h8",

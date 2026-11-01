@@ -1,0 +1,75 @@
+{
+  "environment": {
+    "platform": "Linux",
+    "machine": "x86_64",
+    "qt_platform": "offscreen",
+    "measurement": "perf_counter around synchronous Qt operations; peak RSS is process-wide"
+  },
+  "evidence": {
+    "workspace_empty_selection": "specifications/assets/phase_4_10/01_workspace_no_selection.png",
+    "selected_and_inspector": "specifications/assets/phase_4_10/02_selected_inspector.png",
+    "search": "specifications/assets/phase_4_10/03_search.png",
+    "focus_proband": "specifications/assets/phase_4_10/04_focus_proband.png",
+    "maternal_branch": "specifications/assets/phase_4_10/05_maternal_branch.png",
+    "paternal_branch": "specifications/assets/phase_4_10/06_paternal_branch.png",
+    "minimap": "specifications/assets/phase_4_10/07_live_minimap.png",
+    "overview_50": "specifications/assets/phase_4_10/08_overview_50.png",
+    "focused_50": "specifications/assets/phase_4_10/09_focused_50.png",
+    "scientific": "specifications/assets/phase_4_10/10_scientific_view.png",
+    "pt_1366": "specifications/assets/phase_4_10/11_pt_1366x768.png",
+    "pt_1920": "specifications/assets/phase_4_10/12_pt_1920x1080.png",
+    "en_1366": "specifications/assets/phase_4_10/13_en_1366x768.png",
+    "en_1920": "specifications/assets/phase_4_10/14_en_1920x1080.png",
+    "collapsed_rail": "specifications/assets/phase_4_10/15_collapsed_rail.png"
+  },
+  "performance": [
+    {
+      "individuals": 10,
+      "startup_ms": 26.274,
+      "layout_ms": 1.741,
+      "load_ms": 7.27,
+      "fit_ms": 0.857,
+      "selection_ms": 3.323,
+      "search_ms": 0.218,
+      "minimap_refresh_ms": 0.119,
+      "zoom_percent_after_fit": 29,
+      "peak_rss_kib_process": 289204
+    },
+    {
+      "individuals": 50,
+      "startup_ms": 24.629,
+      "layout_ms": 1.845,
+      "load_ms": 7.839,
+      "fit_ms": 0.975,
+      "selection_ms": 3.69,
+      "search_ms": 0.241,
+      "minimap_refresh_ms": 0.112,
+      "zoom_percent_after_fit": 24,
+      "peak_rss_kib_process": 293940
+    },
+    {
+      "individuals": 100,
+      "startup_ms": 27.395,
+      "layout_ms": 5.721,
+      "load_ms": 19.863,
+      "fit_ms": 1.012,
+      "selection_ms": 7.289,
+      "search_ms": 0.274,
+      "minimap_refresh_ms": 0.166,
+      "zoom_percent_after_fit": 6,
+      "peak_rss_kib_process": 303540
+    },
+    {
+      "individuals": 200,
+      "startup_ms": 25.159,
+      "layout_ms": 20.039,
+      "load_ms": 49.64,
+      "fit_ms": 1.375,
+      "selection_ms": 22.933,
+      "search_ms": 0.449,
+      "minimap_refresh_ms": 0.363,
+      "zoom_percent_after_fit": 2,
+      "peak_rss_kib_process": 315444
+    }
+  ]
+}

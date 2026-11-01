@@ -6,8 +6,8 @@ from collections.abc import Callable
 from uuid import UUID
 
 from PySide6.QtCore import QCoreApplication, QPointF, QRectF
-from PySide6.QtGui import QColor, QFont
-from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsSimpleTextItem
+from PySide6.QtGui import QColor, QFont, QTransform
+from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsSimpleTextItem, QMenu
 
 from rarepedigree.domain import Individual, ParentageKind, PedigreeProject, Relationship
 from rarepedigree.layout import PedigreeLayoutEngine
@@ -35,6 +35,7 @@ class PedigreeScene(QGraphicsScene):
         self.on_person_moved: Callable[[IndividualItem, QPointF, QPointF], None] | None = None
         self.on_context_action: Callable[[IndividualItem, str], None] | None = None
         self.context_actions: Callable[[IndividualItem], set[str]] | None = None
+        self.on_empty_context_action: Callable[[str, QPointF], None] | None = None
         self.interaction_mode = "select"
 
     def load_project(self, project: PedigreeProject) -> None:
@@ -266,6 +267,26 @@ class PedigreeScene(QGraphicsScene):
             if item is not self.legend_item and item.isVisible():
                 bounds = bounds.united(item.sceneBoundingRect())
         return bounds
+
+    def contextMenuEvent(self, event) -> None:
+        transform = self.views()[0].transform() if self.views() else QTransform()
+        if self.itemAt(event.scenePos(), transform):
+            return super().contextMenuEvent(event)
+        if self.on_empty_context_action is None:
+            return super().contextMenuEvent(event)
+        menu = QMenu()
+        actions = {
+            menu.addAction(QCoreApplication.translate("RarePedigree", "Adicionar indivíduo")): (
+                "add"
+            ),
+            menu.addAction(QCoreApplication.translate("RarePedigree", "Ajustar à tela")): "fit",
+            menu.addAction(
+                QCoreApplication.translate("RarePedigree", "Organização automática")
+            ): "layout",
+        }
+        selected = menu.exec(event.screenPos())
+        if selected in actions:
+            self.on_empty_context_action(actions[selected], event.scenePos())
 
 
 def _roman(number: int) -> str:

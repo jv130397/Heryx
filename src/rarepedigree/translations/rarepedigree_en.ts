@@ -116,5 +116,34 @@
     <message><source>Vínculo do intermediário</source><translation>Intermediary relationship</translation></message>
     <message><source>Autorizar criação do genitor de destino ausente</source><translation>Authorize creation of the missing destination parent</translation></message>
     <message><source>Mostrar rótulos auxiliares</source><translation>Show auxiliary labels</translation></message>
+    <message><source>Zoom para seleção</source><translation>Zoom to selection</translation></message>
+    <message><source>Restaurar 100%</source><translation>Restore 100%</translation></message>
+    <message><source>Buscar indivíduo…</source><translation>Find individual…</translation></message>
+    <message><source>Buscar indivíduo, parentesco ou UUID…</source><translation>Search individual, kinship or UUID…</translation></message>
+    <message><source>Buscar indivíduos</source><translation>Search individuals</translation></message>
+    <message><source>Busca de indivíduos</source><translation>Individual search</translation></message>
+    <message><source>Focar no probando</source><translation>Focus on proband</translation></message>
+    <message><source>Limpar foco</source><translation>Clear focus</translation></message>
+    <message><source>Mostrar minimapa</source><translation>Show minimap</translation></message>
+    <message><source>Minimapa do heredograma</source><translation>Pedigree minimap</translation></message>
+    <message><source>Visão</source><translation>View</translation></message>
+    <message><source>Geral</source><translation>Overview</translation></message>
+    <message><source>Focada</source><translation>Focused</translation></message>
+    <message><source>Científica</source><translation>Scientific</translation></message>
+    <message><source>Ramos</source><translation>Branches</translation></message>
+    <message><source>Ascendentes</source><translation>Ancestors</translation></message>
+    <message><source>Irmãos e meio-irmãos</source><translation>Siblings and half-siblings</translation></message>
+    <message><source>Familiares desconhecidos</source><translation>Unknown relatives</translation></message>
+    <message><source>Visão geral abaixo do limite de legibilidade; use busca ou foco.</source><translation>Overview is below the readability threshold; use search or focus.</translation></message>
+    <message><source>Defina um probando para usar o foco.</source><translation>Define a proband to use focus.</translation></message>
+    <message><source>probando</source><translation>proband</translation></message>
+    <message><source>genitor</source><translation>parent</translation></message>
+    <message><source>ascendente</source><translation>ancestor</translation></message>
+    <message><source>descendente</source><translation>descendant</translation></message>
+    <message><source>afetado</source><translation>affected</translation></message>
+    <message><source>não afetado</source><translation>unaffected</translation></message>
+    <message><source>desconhecido</source><translation>unknown</translation></message>
+    <message><source>Validação: sem erros</source><translation>Validation: no errors</translation></message>
+    <message><source>Validação: erros</source><translation>Validation: errors</translation></message>
   </context>
 </TS>

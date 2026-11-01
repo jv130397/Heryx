@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from PySide6.QtCore import QPointF, QSettings, QSize, Qt
+from PySide6.QtCore import QPointF, QRectF, QSettings, QSize, Qt
 from PySide6.QtGui import (
     QAction,
     QActionGroup,
@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QStackedLayout,
     QToolBar,
@@ -82,6 +83,7 @@ from rarepedigree.ui.icons import icon
 from rarepedigree.ui.preferences import PreferencesDialog
 from rarepedigree.ui.properties import PropertiesPanel
 from rarepedigree.ui.theme import SCIENTIFIC_WORKSPACE_STYLESHEET
+from rarepedigree.ui.workspace import IndividualSearch, PedigreeMiniMap, ViewModeControl
 
 
 class MainWindow(QMainWindow):
@@ -97,6 +99,7 @@ class MainWindow(QMainWindow):
         self.layout_engine = PedigreeLayoutEngine()
         self.kinship_engine = KinshipEngine()
         self.settings = QSettings()
+        self._navigation_history: list[tuple[QPointF, int]] = []
         self.setStyleSheet(SCIENTIFIC_WORKSPACE_STYLESHEET)
         language_manager.languageChanged.connect(self.retranslate_ui)
         self._create_actions()
@@ -105,6 +108,7 @@ class MainWindow(QMainWindow):
         self.scene.on_person_moved = self._on_person_moved
         self.scene.on_context_action = self._context_action
         self.scene.context_actions = self._available_context_actions
+        self.scene.on_empty_context_action = self._empty_context_action
         self.scene.selectionChanged.connect(self._selection_changed)
         self.view = PedigreeView(self.scene)
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -125,6 +129,15 @@ class MainWindow(QMainWindow):
         self.canvas_stack.addWidget(self.view)
         self.canvas_stack.addWidget(self.empty_overlay)
         self.toast = Toast(canvas)
+        self.canvas = canvas
+        self.search_panel = IndividualSearch(canvas)
+        self.search_panel.hide()
+        self.search_panel.personActivated.connect(self.navigate_to_person)
+        self.search_panel.close_button.clicked.connect(self.search_panel.hide)
+        self.minimap = PedigreeMiniMap(self.scene, self.view, canvas)
+        self.minimap.navigationRequested.connect(self.view.center_smoothly)
+        self.view.viewportChanged.connect(self.minimap.viewport().update)
+        self.view.viewportChanged.connect(self._position_canvas_overlays)
         self.central_shell = QWidget()
         self.central_layout = QHBoxLayout(self.central_shell)
         self.central_layout.setContentsMargins(0, 0, 0, 0)
@@ -181,6 +194,14 @@ class MainWindow(QMainWindow):
         self.delete_action = QAction("Excluir", self, shortcut=QKeySequence.StandardKey.Delete)
         self.auto_layout_action = QAction("Organização automática", self, shortcut="Ctrl+L")
         self.fit_action = QAction("Ajustar à tela", self, shortcut="Ctrl+0")
+        self.zoom_selection_action = QAction("Zoom para seleção", self, shortcut="Ctrl+2")
+        self.reset_zoom_action = QAction("Restaurar 100%", self, shortcut="Ctrl+1")
+        self.search_action = QAction("Buscar indivíduo…", self, shortcut="Ctrl+F")
+        self.focus_proband_action = QAction("Focar no probando", self, shortcut="Ctrl+P")
+        self.clear_focus_action = QAction("Limpar foco", self, shortcut="Escape")
+        self.toggle_minimap_action = QAction("Mostrar minimapa", self)
+        self.toggle_minimap_action.setCheckable(True)
+        self.toggle_minimap_action.setChecked(True)
         self.preferences_action = QAction("Preferências…", self)
         self.move_action = QAction("Mover", self)
         self.move_action.setCheckable(True)
@@ -254,6 +275,14 @@ class MainWindow(QMainWindow):
         self.delete_action.triggered.connect(lambda: self._context_for_selected("delete"))
         self.auto_layout_action.triggered.connect(self.auto_layout)
         self.fit_action.triggered.connect(self.fit_pedigree)
+        self.zoom_selection_action.triggered.connect(self.zoom_to_selection)
+        self.reset_zoom_action.triggered.connect(lambda: self.view.reset_zoom())
+        self.search_action.triggered.connect(self.toggle_search)
+        self.focus_proband_action.triggered.connect(self.focus_on_proband)
+        self.clear_focus_action.triggered.connect(self.clear_focus)
+        self.toggle_minimap_action.toggled.connect(
+            lambda visible: self.minimap.setVisible(visible)
+        )
         self.preferences_action.triggered.connect(self.open_preferences)
         self.twins_mz_action.triggered.connect(
             lambda: self._set_selected_twins(TwinZygosity.MONOZYGOTIC)
@@ -315,13 +344,29 @@ class MainWindow(QMainWindow):
         )
         self.view_menu = self.menuBar().addMenu("Exibir")
         self.view_menu.addActions([self.zoom_in_action, self.zoom_out_action])
-        self.view_menu.addActions([self.fit_action, self.auto_layout_action])
+        self.view_menu.addActions(
+            [
+                self.reset_zoom_action,
+                self.zoom_selection_action,
+                self.fit_action,
+                self.auto_layout_action,
+                self.search_action,
+                self.focus_proband_action,
+                self.clear_focus_action,
+                self.toggle_minimap_action,
+            ]
+        )
 
     def _create_toolbar(self) -> None:
         toolbar = QToolBar("Ferramentas principais", self)
+        self.main_toolbar = toolbar
         toolbar.setObjectName("main-toolbar")
         toolbar.setIconSize(QSize(19, 19))
         toolbar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        logo = QLabel()
+        logo.setPixmap(icon("logo", "#38BDF8", 30).pixmap(30, 30))
+        logo.setAccessibleName("RarePedigree Studio — Genomic Nexus")
+        toolbar.addWidget(logo)
         brand = QLabel("RAREPEDIGREE")
         brand.setStyleSheet(
             "font-weight: 800; color: #67E8F9; letter-spacing: 1px; padding-right: 10px;"
@@ -348,6 +393,43 @@ class MainWindow(QMainWindow):
         self.dirty_label = QLabel("SALVO")
         self.dirty_label.setStyleSheet("color: #94A3B8; font-size: 10px; padding: 3px 6px;")
         toolbar.addWidget(self.dirty_label)
+        toolbar.addSeparator()
+        self.view_mode_control = ViewModeControl()
+        self.view_mode_control.modeChanged.connect(self.set_view_mode)
+        toolbar.addWidget(self.view_mode_control)
+        self.branch_button = QToolButton()
+        self.branch_button.setText("Ramos")
+        self.branch_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        branch_menu = QMenu(self.branch_button)
+        self.branch_actions = []
+        for label, branch in (
+            ("Ramo materno", "maternal"),
+            ("Ramo paterno", "paternal"),
+            ("Ascendentes", "ancestors"),
+            ("Descendentes", "descendants"),
+            ("Irmãos e meio-irmãos", "siblings"),
+            ("Familiares desconhecidos", "unknown"),
+        ):
+            action = branch_menu.addAction(label)
+            action.setData(label)
+            self.branch_actions.append(action)
+            action.triggered.connect(lambda _checked=False, value=branch: self.focus_branch(value))
+        focus_menu = branch_menu.addMenu("Alcance do foco")
+        for label, depth in (
+            ("Núcleo familiar", 1),
+            ("Até duas gerações", 2),
+            ("Até três gerações", 3),
+            ("Todos os parentes conhecidos", None),
+        ):
+            action = focus_menu.addAction(label)
+            action.triggered.connect(
+                lambda _checked=False, value=depth: self.focus_on_proband(value)
+            )
+        branch_menu.addSeparator()
+        self.return_navigation_action = branch_menu.addAction("Retornar à visão anterior")
+        self.return_navigation_action.triggered.connect(self.return_navigation)
+        self.branch_button.setMenu(branch_menu)
+        toolbar.addWidget(self.branch_button)
         self.addToolBar(toolbar)
 
     def _create_toolbox(self) -> QFrame:
@@ -417,6 +499,7 @@ class MainWindow(QMainWindow):
             (self.relationship_action, "link"),
             (self.move_action, "move"),
             (self.auto_layout_action, "layout"),
+            (self.focus_proband_action, "person"),
         ]:
             button = ToolRailButton(action, icon_name, expanded=True)
             self.rail_buttons.append(button)
@@ -568,6 +651,7 @@ class MainWindow(QMainWindow):
         self.count_status = QLabel()
         self.generation_status = QLabel()
         self.save_status = QLabel("Salvo")
+        self.validation_status = QLabel()
         self.message_status = QLabel("Pronto")
         self.zoom_control = ZoomControl()
         self.floating_zoom = ZoomControl(self.view.viewport())
@@ -584,6 +668,7 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(self.count_status)
         self.statusBar().addPermanentWidget(self.generation_status)
         self.statusBar().addPermanentWidget(self.save_status)
+        self.statusBar().addPermanentWidget(self.validation_status)
         self.statusBar().addPermanentWidget(self.zoom_control)
 
     def new_project(self) -> None:
@@ -626,7 +711,37 @@ class MainWindow(QMainWindow):
                 return
         self._context_action(selected[0], action)
 
+    def _empty_context_action(self, action: str, position: QPointF) -> None:
+        if action == "fit":
+            self.fit_pedigree()
+        elif action == "layout":
+            self.auto_layout()
+        elif action == "add":
+            person = self.add_person(GenderIdentity.UNKNOWN)
+            person.layout.x = position.x()
+            person.layout.y = position.y()
+            self.scene.person_items[person.id].setPos(position)
+
     def _context_action(self, item: IndividualItem, action: str) -> None:
+        if action == "center":
+            self.view.center_smoothly(item.scenePos())
+            return
+        if action == "focus":
+            self.scene.clearSelection()
+            item.setSelected(True)
+            relevant = {item.person.id}
+            relevant |= set(self.kinship_engine.ancestors(self.project, item.person.id))
+            relevant |= set(self.kinship_engine.descendants(self.project, item.person.id))
+            relevant |= {
+                person.id
+                for person in self.project.individuals
+                if self.kinship_engine.sibling_kind(
+                    self.project, item.person.id, person.id
+                ) is not None
+            }
+            self._apply_focus(relevant)
+            self.view_mode_control.set_mode("focused")
+            return
         if action == "edit":
             self.scene.clearSelection()
             item.setSelected(True)
@@ -739,6 +854,8 @@ class MainWindow(QMainWindow):
             "edit_dialog",
             "edit",
             "delete",
+            "focus",
+            "center",
         }
         if len(parents) < 2:
             if not any(parent.gender_identity == GenderIdentity.MAN for parent in parents):
@@ -783,6 +900,208 @@ class MainWindow(QMainWindow):
         if not rect.isEmpty():
             self.view.fitInView(rect, Qt.AspectRatioMode.KeepAspectRatio)
             self.view.zoomChanged.emit(self.view.zoom_percent)
+            self.minimap.refresh()
+            readable = self.settings.value("navigation/readable_zoom", 45, int)
+            if self.view.zoom_percent < readable:
+                self.toast.show_message(
+                    tr("Visão geral abaixo do limite de legibilidade; use busca ou foco."),
+                    "warning",
+                )
+
+    def zoom_to_selection(self) -> None:
+        selected = self.scene.selectedItems()
+        if not selected:
+            return
+        rect = QRectF()
+        for item in selected:
+            rect = rect.united(item.sceneBoundingRect())
+        self.view.fitInView(rect.adjusted(-90, -90, 90, 90), Qt.AspectRatioMode.KeepAspectRatio)
+        self.view.zoomChanged.emit(self.view.zoom_percent)
+        self.view.viewportChanged.emit()
+
+    def toggle_search(self) -> None:
+        visible = not self.search_panel.isVisible()
+        self.search_panel.setVisible(visible)
+        if visible:
+            self.search_panel.raise_()
+            self.search_panel.query.setFocus()
+            self.search_panel.query.selectAll()
+
+    def navigate_to_person(self, person_id: UUID) -> None:
+        item = self.scene.person_items.get(person_id)
+        if item is None:
+            return
+        self.scene.clearSelection()
+        item.setSelected(True)
+        if self.view.zoom_percent < 70:
+            self.view.set_zoom(75, item.scenePos())
+        self.view.center_smoothly(item.scenePos())
+        self.search_panel.hide()
+
+    def _proband(self) -> Individual | None:
+        return next((person for person in self.project.individuals if person.proband), None)
+
+    def _kinship_label(self, person: Individual) -> str:
+        if not hasattr(self, "_kinship_index"):
+            self._kinship_index = self._build_kinship_index()
+        return self._kinship_index.get(person.id, "")
+
+    def _build_kinship_index(self) -> dict[UUID, str]:
+        proband = self._proband()
+        if proband is None:
+            return {}
+        result = {proband.id: tr("probando")}
+        biological = [
+            edge for edge in self.project.parentages if edge.kind == ParentageKind.BIOLOGICAL
+        ]
+        parents_by_child: dict[UUID, set[UUID]] = {}
+        for edge in biological:
+            parents_by_child.setdefault(edge.child_id, set()).add(edge.parent_id)
+        parents = parents_by_child.get(proband.id, set())
+        for person_id in parents:
+            result[person_id] = tr("genitor")
+        ancestors = self.kinship_engine.ancestors(self.project, proband.id)
+        descendants = self.kinship_engine.descendants(self.project, proband.id)
+        for person_id in ancestors:
+            result.setdefault(person_id, tr("ascendente"))
+        for person_id in descendants:
+            result.setdefault(person_id, tr("descendente"))
+        for person in self.project.individuals:
+            if person.id in result:
+                continue
+            shared = parents & parents_by_child.get(person.id, set())
+            if len(shared) >= 2:
+                result[person.id] = tr(SiblingKind.FULL.value)
+            elif shared:
+                result[person.id] = tr("meio-irmão")
+        for person in self.project.individuals:
+            if person.id in result:
+                continue
+            context = self.kinship_engine.collateral_context(
+                self.project, proband.id, person.id
+            )
+            if context is not None:
+                result[person.id] = tr(context[0])
+        return result
+
+    def focus_on_proband(self, generations: int | None = 2) -> None:
+        proband = self._proband()
+        if proband is None:
+            self.toast.show_message(tr("Defina um probando para usar o foco."), "warning")
+            return
+        self._remember_navigation()
+        relevant = {proband.id}
+        adjacency: dict[UUID, set[UUID]] = {person.id: set() for person in self.project.individuals}
+        for edge in self.project.parentages:
+            adjacency[edge.parent_id].add(edge.child_id)
+            adjacency[edge.child_id].add(edge.parent_id)
+        frontier = {proband.id}
+        depth = 0
+        limit = generations if generations is not None else len(self.project.individuals)
+        while frontier and depth < limit:
+            frontier = {near for person_id in frontier for near in adjacency[person_id]} - relevant
+            relevant.update(frontier)
+            depth += 1
+        self._apply_focus(relevant)
+        self.navigate_to_person(proband.id)
+        self.view_mode_control.set_mode("focused")
+
+    def focus_branch(self, branch: str) -> None:
+        proband = self._proband()
+        if proband is None:
+            return
+        self._remember_navigation()
+        relevant = {proband.id}
+        parents = self.kinship_engine.parents(self.project, proband.id, {ParentageKind.BIOLOGICAL})
+        people = {person.id: person for person in self.project.individuals}
+        if branch in {"maternal", "paternal"}:
+            gender = GenderIdentity.WOMAN if branch == "maternal" else GenderIdentity.MAN
+            roots = {
+                person_id
+                for person_id in parents
+                if people[person_id].gender_identity == gender
+            }
+            relevant |= roots
+            for root in roots:
+                relevant |= set(self.kinship_engine.ancestors(self.project, root))
+        elif branch == "ancestors":
+            relevant |= set(self.kinship_engine.ancestors(self.project, proband.id))
+        elif branch == "descendants":
+            relevant |= set(self.kinship_engine.descendants(self.project, proband.id))
+        elif branch == "siblings":
+            relevant |= {
+                person.id
+                for person in self.project.individuals
+                if self.kinship_engine.sibling_kind(self.project, proband.id, person.id) is not None
+            }
+        elif branch == "unknown":
+            relevant |= {person.id for person in self.project.individuals if person.placeholder}
+        self._apply_focus(relevant)
+        bounds = QRectF()
+        for person_id in relevant:
+            if person_id in self.scene.person_items:
+                bounds = bounds.united(self.scene.person_items[person_id].sceneBoundingRect())
+        if not bounds.isEmpty():
+            self.view.fitInView(
+                bounds.adjusted(-100, -100, 100, 100),
+                Qt.AspectRatioMode.KeepAspectRatio,
+            )
+            self.view.zoomChanged.emit(self.view.zoom_percent)
+        self.view_mode_control.set_mode("focused")
+
+    def _remember_navigation(self) -> None:
+        center = self.view.mapToScene(self.view.viewport().rect().center())
+        state = (center, self.view.zoom_percent)
+        if not self._navigation_history or self._navigation_history[-1] != state:
+            self._navigation_history.append(state)
+        self._navigation_history = self._navigation_history[-20:]
+
+    def return_navigation(self) -> None:
+        if not self._navigation_history:
+            return
+        center, zoom = self._navigation_history.pop()
+        self.clear_focus()
+        self.view.set_zoom(zoom, center)
+
+    def _apply_focus(self, relevant: set[UUID]) -> None:
+        for person_id, item in self.scene.person_items.items():
+            item.setOpacity(1.0 if person_id in relevant else 0.18)
+        for item in self.scene.relationship_items.values():
+            item.setOpacity(
+                1.0
+                if {item.relationship.member_a, item.relationship.member_b} <= relevant
+                else 0.12
+            )
+        for item in set(self.scene.parentage_items.values()):
+            represented = {edge.parent_id for edge in item.edges} | {
+                edge.child_id for edge in item.edges
+            }
+            item.setOpacity(1.0 if represented <= relevant else 0.12)
+
+    def clear_focus(self) -> None:
+        for item in self.scene.items():
+            item.setOpacity(1.0)
+        if hasattr(self, "view_mode_control") and self.view_mode_control.combo.currentData() in {
+            "focused",
+            "scientific",
+        }:
+            self.view_mode_control.set_mode("overview")
+
+    def set_view_mode(self, mode: str) -> None:
+        scientific = mode == "scientific"
+        self.tool_rail.setVisible(not scientific)
+        self.main_toolbar.setVisible(not scientific)
+        self.menuBar().setVisible(not scientific)
+        self.statusBar().setVisible(not scientific)
+        self.floating_zoom.setVisible(not scientific)
+        self.minimap.setVisible(not scientific and self.toggle_minimap_action.isChecked())
+        if scientific:
+            self.toast.hide()
+        self.view.grid_enabled = not scientific and self.settings.value("pedigree/grid", True, bool)
+        if mode == "overview":
+            self.clear_focus()
+            self.fit_pedigree()
+        self.view.viewport().update()
 
     def add_person(self, gender: GenderIdentity) -> Individual:
         count = len(self.project.individuals)
@@ -953,9 +1272,19 @@ class MainWindow(QMainWindow):
         drawer_width = round(390 * scale)
         self.properties_drawer.setMinimumWidth(round(330 * scale))
         self.properties_drawer.setFixedWidth(drawer_width)
+        self.properties_drawer.animation.setDuration(
+            0 if self.settings.value("ui/reduce_motion", False, bool) else 180
+        )
         self.properties_drawer.sync_geometry()
         self.tool_rail.setFixedWidth(round((210 if self.rail_expanded else 60) * scale))
         self.view.grid_enabled = self.settings.value("pedigree/grid", True, bool)
+        self.view.minimum_zoom = self.settings.value("navigation/minimum_zoom", 5, int)
+        self.view.maximum_zoom = self.settings.value("navigation/maximum_zoom", 500, int)
+        minimap_width = self.settings.value("navigation/minimap_width", 220, int)
+        self.minimap.setFixedSize(minimap_width, round(minimap_width * 0.68))
+        show_minimap = self.settings.value("navigation/show_minimap", True, bool)
+        self.toggle_minimap_action.setChecked(show_minimap)
+        self.minimap.setVisible(show_minimap)
         self.scene.apply_render_style(PedigreeRenderStyle.from_settings(self.settings))
         self.view.viewport().update()
         self._update_workspace_state()
@@ -993,6 +1322,12 @@ class MainWindow(QMainWindow):
             self.fit_action: "Ajustar à tela",
             self.zoom_in_action: "Ampliar",
             self.zoom_out_action: "Reduzir",
+            self.zoom_selection_action: "Zoom para seleção",
+            self.reset_zoom_action: "Restaurar 100%",
+            self.search_action: "Buscar indivíduo…",
+            self.focus_proband_action: "Focar no probando",
+            self.clear_focus_action: "Limpar foco",
+            self.toggle_minimap_action: "Mostrar minimapa",
         }
         for action, source in mapping.items():
             action.setText(tr(source))
@@ -1004,6 +1339,11 @@ class MainWindow(QMainWindow):
         self.view_menu.setTitle(tr("Exibir"))
         self.person_button.setText(tr("Adicionar indivíduo"))
         self.family_button.setText(tr("Adicionar familiar"))
+        self.branch_button.setText(tr("Ramos"))
+        for action in self.branch_actions:
+            action.setText(tr(action.data()))
+        self.search_panel.retranslate_ui()
+        self.view_mode_control.retranslate_ui()
         self.empty_state.retranslate_ui()
         self.properties.retranslate_ui()
         self.properties_drawer.title.setText(tr("Propriedades do indivíduo"))
@@ -1027,6 +1367,10 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "empty_state"):
             return
         count = len(self.project.individuals)
+        if hasattr(self, "_kinship_index"):
+            del self._kinship_index
+        self.search_panel.set_project(self.project, self._kinship_label)
+        self.minimap.refresh()
         self.empty_overlay.setVisible(count == 0)
         self.canvas_stack.setCurrentWidget(self.empty_overlay if count == 0 else self.view)
         if hasattr(self, "count_status"):
@@ -1039,6 +1383,13 @@ class MainWindow(QMainWindow):
             self.generation_status.setText(f"{total} {unit}")
             self.save_status.setText(
                 tr("Alterado") if not self.undo_stack.isClean() else tr("Salvo")
+            )
+            issues = self.kinship_engine.validator.validate(self.project)
+            errors = [issue for issue in issues if issue.severity.value == "error"]
+            self.validation_status.setText(
+                tr("Validação: sem erros")
+                if not errors
+                else tr("Validação: erros") + f" ({len(errors)})"
             )
 
     def _may_discard_changes(self) -> bool:
@@ -1060,3 +1411,16 @@ class MainWindow(QMainWindow):
         super().resizeEvent(event)
         if hasattr(self, "properties_drawer"):
             self.properties_drawer.sync_geometry()
+        self._position_canvas_overlays()
+
+    def _position_canvas_overlays(self) -> None:
+        if hasattr(self, "minimap"):
+            self.minimap.move(
+                max(18, self.canvas.width() - self.minimap.width() - 18),
+                max(18, self.canvas.height() - self.minimap.height() - 18),
+            )
+            self.minimap.raise_()
+        if hasattr(self, "search_panel"):
+            width = min(520, max(320, self.canvas.width() - 48))
+            self.search_panel.setFixedWidth(width)
+            self.search_panel.move(max(24, (self.canvas.width() - width) // 2), 18)

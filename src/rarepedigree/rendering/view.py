@@ -1,12 +1,13 @@
 """Interactive scientific canvas with non-exportable navigation aids."""
 
-from PySide6.QtCore import QLineF, QRectF, Qt, Signal
+from PySide6.QtCore import QLineF, QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPen, QWheelEvent
 from PySide6.QtWidgets import QGraphicsView
 
 
 class PedigreeView(QGraphicsView):
     zoomChanged = Signal(int)
+    viewportChanged = Signal()
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -19,6 +20,10 @@ class PedigreeView(QGraphicsView):
         self._middle_panning = False
         self.grid_enabled = True
         self.floating_control = None
+        self.minimum_zoom = 5
+        self.maximum_zoom = 500
+        self.horizontalScrollBar().valueChanged.connect(self.viewportChanged)
+        self.verticalScrollBar().valueChanged.connect(self.viewportChanged)
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
@@ -26,16 +31,29 @@ class PedigreeView(QGraphicsView):
             control = self.floating_control
             control.adjustSize()
             control.move(self.viewport().width() - control.width() - 18, 18)
+        self.viewportChanged.emit()
 
     @property
     def zoom_percent(self) -> int:
         return round(self.transform().m11() * 100)
 
-    def set_zoom(self, percent: int) -> None:
-        target = max(20, min(500, percent)) / 100
+    def set_zoom(self, percent: int, focal_point: QPointF | None = None) -> None:
+        """Set zoom while preserving either the requested focal point or view center."""
+        target = max(self.minimum_zoom, min(self.maximum_zoom, percent)) / 100
+        focal = focal_point or self.mapToScene(self.viewport().rect().center())
         current = self.transform().m11()
         self.scale(target / current, target / current)
+        self.centerOn(focal)
         self.zoomChanged.emit(self.zoom_percent)
+        self.viewportChanged.emit()
+
+    def reset_zoom(self) -> None:
+        self.set_zoom(100)
+
+    def center_smoothly(self, point: QPointF) -> None:
+        """Navigation hook kept deterministic when reduced motion is active."""
+        self.centerOn(point)
+        self.viewportChanged.emit()
 
     def drawBackground(self, painter: QPainter, rect: QRectF) -> None:
         super().drawBackground(painter, rect)
@@ -57,9 +75,10 @@ class PedigreeView(QGraphicsView):
         if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
             factor = 1.15 if event.angleDelta().y() > 0 else 1 / 1.15
             next_scale = self.transform().m11() * factor
-            if 0.2 <= next_scale <= 5.0:
+            if self.minimum_zoom / 100 <= next_scale <= self.maximum_zoom / 100:
                 self.scale(factor, factor)
                 self.zoomChanged.emit(self.zoom_percent)
+                self.viewportChanged.emit()
             event.accept()
             return
         super().wheelEvent(event)
@@ -93,5 +112,6 @@ class PedigreeView(QGraphicsView):
             super().mouseReleaseEvent(synthetic)
             self._middle_panning = False
             self.setDragMode(QGraphicsView.DragMode.RubberBandDrag)
+            self.viewportChanged.emit()
             return
         super().mouseReleaseEvent(event)
