@@ -118,6 +118,13 @@ QFrame#toast { background: #1C293B; color: #FFFFFF; border: 1px solid #2D425B; b
 QFrame#toast QLabel { color: #FFFFFF; padding: 5px; }
 QFrame#toast[level="warning"] { border-color: #D58B16; }
 QFrame#toast[level="error"] { border-color: #C93C55; }
+QFrame#context-family-bar { background: #FFFFFF; border: 1px solid #BFC8D0; border-radius: 9px; }
+QFrame#context-family-bar QLabel#context-person-label { color: #17233B; font-weight: 700; padding-left: 4px; }
+QToolButton[connectionPoint="true"] { min-width: 38px; min-height: 38px; border: 2px solid #38BDF8; border-radius: 20px; color: #17233B; font-size: 17px; background: #F7FAFF; }
+QToolButton[connectionPoint="true"]:hover { background: #E8F6FA; border-color: #8B5CF6; }
+QFrame#floating-individual-editor { background: #FFFFFF; border: 1px solid #BFC8D0; border-radius: 10px; }
+QFrame#floating-editor-header { background: #17233B; border-top-left-radius: 9px; border-top-right-radius: 9px; }
+QFrame#floating-editor-header QLabel, QFrame#floating-editor-header QToolButton { color: #FFFFFF; font-weight: 700; }
 QWizard { background: #FFFFFF; }
 QWizardPage { background: #FFFFFF; }
 QTableView, QTableWidget { background: #FFFFFF; alternate-background-color: #F7F9FA; color: #1F2933; gridline-color: #E2E7EB; border: 1px solid #D6DCE1; }

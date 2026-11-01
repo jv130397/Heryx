@@ -163,14 +163,15 @@ def test_tool_rail_collapses_and_expands(qtbot) -> None:
     assert window.tool_rail.width() == 60
 
 
-def test_selecting_person_opens_overlay_drawer(qtbot) -> None:
+def test_selecting_person_opens_contextual_family_bar(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
     window.add_person(GenderIdentity.MAN)
-    assert not window.properties_drawer.isHidden()
-    assert window.properties_drawer._open
-    window.properties_drawer.close_panel()
-    assert not window.properties_drawer._open
+    assert not window.context_bar.isHidden()
+    assert window._context_item is not None
+    assert window.properties_drawer.isHidden()
+    window._close_context_surfaces()
+    assert window.context_bar.isHidden()
 
 
 def test_new_parents_are_above_proband_without_overlap(qtbot) -> None:
@@ -289,19 +290,17 @@ def test_ui_scale_changes_workspace_geometry(qtbot, scale, expected) -> None:
     settings.setValue("ui/scale", 100)
 
 
-def test_properties_use_only_floating_slide_over_without_dock(qtbot) -> None:
+def test_individual_selection_uses_contextual_surface_without_dock(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
     window.resize(1366, 768)
     window.show()
     window.add_person(GenderIdentity.MAN)
-    qtbot.waitUntil(
-        lambda: window.properties_drawer.geometry().right() < window.central_shell.width()
-    )
-    geometry = window.properties_drawer.geometry()
+    qtbot.waitUntil(lambda: window.context_bar.isVisible())
     assert window.findChildren(QDockWidget) == []
-    assert geometry.top() == window.properties_drawer.MARGIN
-    assert geometry.right() < window.central_shell.width()
-    assert geometry.bottom() < window.central_shell.height()
+    assert not window.properties_drawer.isVisible()
+    assert window.context_bar.parent() is window.canvas
+    assert window.context_bar.geometry().right() < window.canvas.width()
+    assert window.context_bar.geometry().bottom() < window.canvas.height()
     window.undo_stack.setClean()
     window.close()

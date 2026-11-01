@@ -67,7 +67,8 @@ def test_search_finds_label_and_uuid_and_navigates(qtbot) -> None:
     assert window.search_panel.results.count() == 1
     window.search_panel.results.itemActivated.emit(window.search_panel.results.item(0))
     assert window.scene.person_items[person.id].isSelected()
-    assert window.properties_drawer._open
+    assert not window.context_bar.isHidden()
+    assert not window.properties_drawer._open
 
 
 def test_focus_on_proband_uses_graph_and_dims_unrelated_people(qtbot) -> None:

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtCore import QPointF, QRectF, QSettings, Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -167,6 +167,74 @@ class ExportFigureDialog(QDialog):
     def selected_path(self) -> Path | None:
         value = self.path_edit.text().strip()
         return Path(value).with_suffix("." + self.format.currentData()) if value else None
+
+
+class LabelConfigurationDialog(QDialog):
+    """Presentation-only label configuration; never rewrites individuals."""
+
+    applied = Signal()
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.settings = QSettings()
+        self.setWindowTitle(tr("Configurar rótulos"))
+        self.setMinimumWidth(560)
+        layout = QVBoxLayout(self)
+        layout.addWidget(
+            NexusDialogHeader(
+                tr("Configurar rótulos"),
+                tr("Escolha como identificar os indivíduos no canvas"),
+            )
+        )
+        form = QFormLayout()
+        self.mode = QComboBox()
+        self.mode.addItem(tr("Identificador manual"), "manual")
+        self.mode.addItem(tr("Numeração genealógica (I-1, II-3)"), "genealogical")
+        self.mode.addItem(tr("Numeração e identificador manual"), "both")
+        self.mode.setCurrentIndex(
+            max(
+                0,
+                self.mode.findData(
+                    self.settings.value("pedigree/identifier_mode", "manual", str)
+                ),
+            )
+        )
+        self.auxiliary = QCheckBox(tr("Mostrar rótulos auxiliares"))
+        self.auxiliary.setChecked(
+            self.settings.value("pedigree/show_auxiliary_labels", True, bool)
+        )
+        self.preview = QLabel()
+        self.preview.setProperty("card", True)
+        self.preview.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        form.addRow(tr("Rótulo principal"), self.mode)
+        form.addRow(self.auxiliary)
+        form.addRow(tr("Prévia"), self.preview)
+        layout.addLayout(form)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.button(QDialogButtonBox.StandardButton.Save).setText(tr("Aplicar"))
+        buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(tr("Cancelar"))
+        buttons.accepted.connect(self._apply)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+        self.mode.currentIndexChanged.connect(self._update_preview)
+        self._update_preview()
+
+    def _update_preview(self) -> None:
+        examples = {
+            "manual": "João",
+            "genealogical": "III-2",
+            "both": "III-2 · João",
+        }
+        self.preview.setText(examples[self.mode.currentData()])
+
+    def _apply(self) -> None:
+        self.settings.setValue("pedigree/identifier_mode", self.mode.currentData())
+        self.settings.setValue("pedigree/show_auxiliary_labels", self.auxiliary.isChecked())
+        self.settings.sync()
+        self.applied.emit()
+        self.accept()
 
 
 class SymbolPreview(QWidget):

@@ -73,15 +73,20 @@ from rarepedigree.ui.components import (
 from rarepedigree.ui.dialogs import (
     AddRelativeWizard,
     AddSiblingDialog,
-    EditIndividualDialog,
     EditSiblingRelationshipDialog,
     ExportFigureDialog,
     ImportProjectDialog,
+    LabelConfigurationDialog,
     NewProjectDialog,
     ReassignBranchWizard,
 )
 from rarepedigree.ui.i18n import language_manager, tr
 from rarepedigree.ui.icons import icon
+from rarepedigree.ui.interaction import (
+    ContextualFamilyBar,
+    FloatingIndividualEditor,
+    RelationPreview,
+)
 from rarepedigree.ui.preferences import PreferencesDialog
 from rarepedigree.ui.properties import PropertiesPanel
 from rarepedigree.ui.theme import SCIENTIFIC_WORKSPACE_STYLESHEET
@@ -132,6 +137,15 @@ class MainWindow(QMainWindow):
         self.canvas_stack.addWidget(self.empty_overlay)
         self.toast = Toast(canvas)
         self.canvas = canvas
+        self.relation_preview = RelationPreview(self.scene)
+        self.context_bar = ContextualFamilyBar(canvas)
+        self.context_bar.actionRequested.connect(self._request_contextual_action)
+        self.context_bar.previewRequested.connect(self._preview_contextual_action)
+        self.context_bar.previewCancelled.connect(self.relation_preview.clear)
+        self.context_bar.closeRequested.connect(self._close_context_surfaces)
+        self.floating_editor = FloatingIndividualEditor(canvas)
+        self.floating_editor.saveRequested.connect(self._save_floating_editor)
+        self._context_item: IndividualItem | None = None
         self.search_panel = IndividualSearch(canvas)
         self.search_panel.hide()
         self.search_panel.personActivated.connect(self.navigate_to_person)
@@ -205,6 +219,7 @@ class MainWindow(QMainWindow):
         self.toggle_minimap_action.setCheckable(True)
         self.toggle_minimap_action.setChecked(True)
         self.preferences_action = QAction("Preferências…", self)
+        self.label_configuration_action = QAction("Configurar rótulos…", self)
         self.move_action = QAction("Mover", self)
         self.move_action.setCheckable(True)
         self.twins_mz_action = QAction("Marcar selecionados como gêmeos monozigóticos", self)
@@ -288,6 +303,7 @@ class MainWindow(QMainWindow):
             lambda visible: self.minimap.setVisible(visible)
         )
         self.preferences_action.triggered.connect(self.open_preferences)
+        self.label_configuration_action.triggered.connect(self.open_label_configuration)
         self.twins_mz_action.triggered.connect(
             lambda: self._set_selected_twins(TwinZygosity.MONOZYGOTIC)
         )
@@ -358,6 +374,7 @@ class MainWindow(QMainWindow):
                 self.focus_proband_action,
                 self.clear_focus_action,
                 self.toggle_minimap_action,
+                self.label_configuration_action,
             ]
         )
 
@@ -725,6 +742,8 @@ class MainWindow(QMainWindow):
             self.fit_pedigree()
 
     def _apply_project(self, project: PedigreeProject) -> None:
+        self._close_context_surfaces()
+        self._context_item = None
         self.project = project
         self.scene.load_project(project)
         self._update_workspace_state()
@@ -780,17 +799,11 @@ class MainWindow(QMainWindow):
         if action == "edit":
             self.scene.clearSelection()
             item.setSelected(True)
+            self.properties_drawer.open_panel()
             self.properties.label_edit.setFocus()
             return
         if action == "edit_dialog":
-            dialog = EditIndividualDialog(item.person, self)
-            if dialog.exec() == dialog.DialogCode.Accepted:
-                values = dialog.values()
-                old_values = {field: getattr(item.person, field) for field in values}
-                if values != old_values:
-                    self.undo_stack.push(UpdateIndividualCommand(item, old_values, values))
-                    self.properties.set_item(item, self.project)
-                    self.message_status.setText("Indivíduo atualizado")
+            self._open_floating_editor(item)
             return
         before = self.project.model_copy(deep=True)
         try:
@@ -1185,8 +1198,18 @@ class MainWindow(QMainWindow):
             return
         self.properties.set_item(selected[0] if len(selected) == 1 else None, self.project)
         if len(selected) == 1:
-            self.properties_drawer.open_panel()
+            self._context_item = selected[0]
+            allowed = self._available_context_actions(selected[0])
+            self.context_bar.set_person(selected[0].person, allowed)
+            self._position_context_surfaces()
+            self.context_bar.reveal(
+                self.settings.value("ui/reduce_motion", False, bool)
+            )
+            self.properties_drawer.close_panel()
         else:
+            self.context_bar.hide()
+            self.relation_preview.clear()
+            self._context_item = None
             connectors = [
                 item
                 for item in self.scene.selectedItems()
@@ -1197,6 +1220,53 @@ class MainWindow(QMainWindow):
                 self.properties_drawer.open_panel()
             else:
                 self.properties_drawer.close_panel()
+
+    def _preview_contextual_action(self, action: str) -> None:
+        if self._context_item is not None:
+            self.relation_preview.show(self._context_item, action)
+
+    def _request_contextual_action(self, action: str) -> None:
+        item = self._context_item
+        if item is None:
+            return
+        if action == "edit_float":
+            self._open_floating_editor(item)
+            return
+        self.relation_preview.show(item, action)
+        answer = QMessageBox.question(
+            self,
+            tr("Confirmar relação"),
+            tr("Adicionar este familiar na posição indicada?"),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Yes,
+        )
+        self.relation_preview.clear()
+        if answer == QMessageBox.StandardButton.Yes:
+            mapped = "parents" if action == "parents" else action
+            self._context_action(item, mapped)
+
+    def _open_floating_editor(self, item: IndividualItem) -> None:
+        self._context_item = item
+        self.floating_editor.set_person(item.person)
+        self._position_context_surfaces()
+        self.floating_editor.reveal(
+            self.settings.value("ui/reduce_motion", False, bool)
+        )
+
+    def _save_floating_editor(self, values: dict[str, Any]) -> None:
+        item = self._context_item
+        if item is None:
+            return
+        old_values = {field: getattr(item.person, field) for field in values}
+        if values != old_values:
+            self.undo_stack.push(UpdateIndividualCommand(item, old_values, values))
+            self.properties.set_item(item, self.project)
+            self.message_status.setText(tr("Indivíduo atualizado"))
+
+    def _close_context_surfaces(self) -> None:
+        self.context_bar.hide()
+        self.floating_editor.hide()
+        self.relation_preview.clear()
 
     def _apply_properties(self, item: IndividualItem, new_values: dict[str, Any]) -> None:
         old_values = {field: getattr(item.person, field) for field in new_values}
@@ -1291,6 +1361,11 @@ class MainWindow(QMainWindow):
         dialog.applied.connect(self.apply_preferences)
         dialog.exec()
 
+    def open_label_configuration(self) -> None:
+        dialog = LabelConfigurationDialog(self)
+        dialog.applied.connect(self.apply_preferences)
+        dialog.exec()
+
     def apply_preferences(self) -> None:
         font_size = self.settings.value("ui/font_size", 14, int)
         scale = self.settings.value("ui/scale", 100, int) / 100
@@ -1317,6 +1392,8 @@ class MainWindow(QMainWindow):
         show_minimap = self.settings.value("navigation/show_minimap", True, bool)
         self.toggle_minimap_action.setChecked(show_minimap)
         self.minimap.setVisible(show_minimap)
+        self._close_context_surfaces()
+        self._context_item = None
         self.scene.apply_render_style(PedigreeRenderStyle.from_settings(self.settings))
         self.view.viewport().update()
         self._update_workspace_state()
@@ -1360,6 +1437,7 @@ class MainWindow(QMainWindow):
             self.focus_proband_action: "Focar no probando",
             self.clear_focus_action: "Limpar foco",
             self.toggle_minimap_action: "Mostrar minimapa",
+            self.label_configuration_action: "Configurar rótulos…",
         }
         for action, source in mapping.items():
             action.setText(tr(source))
@@ -1459,3 +1537,36 @@ class MainWindow(QMainWindow):
             width = min(460, max(320, self.canvas.width() - 48))
             self.search_panel.setFixedWidth(width)
             self.search_panel.move(max(24, (self.canvas.width() - width) // 2), 18)
+        self._position_context_surfaces()
+
+    def _position_context_surfaces(self) -> None:
+        if not hasattr(self, "context_bar") or self._context_item is None:
+            return
+        try:
+            scene_position = self._context_item.scenePos()
+        except RuntimeError:
+            self._context_item = None
+            self.context_bar.hide()
+            self.floating_editor.hide()
+            return
+        viewport_point = self.view.mapFromScene(scene_position)
+        anchor = self.view.mapTo(self.canvas, viewport_point)
+        bar_x = min(
+            max(12, anchor.x() - self.context_bar.width() // 2),
+            max(12, self.canvas.width() - self.context_bar.width() - 12),
+        )
+        below = anchor.y() + 48
+        bar_y = (
+            below
+            if below + self.context_bar.height() < self.canvas.height() - 12
+            else max(12, anchor.y() - self.context_bar.height() - 48)
+        )
+        self.context_bar.move(bar_x, bar_y)
+        editor_x = bar_x + self.context_bar.width() + 12
+        if editor_x + self.floating_editor.width() > self.canvas.width() - 12:
+            editor_x = max(12, bar_x - self.floating_editor.width() - 12)
+        editor_y = min(
+            max(12, anchor.y() - 80),
+            max(12, self.canvas.height() - self.floating_editor.height() - 12),
+        )
+        self.floating_editor.move(editor_x, editor_y)

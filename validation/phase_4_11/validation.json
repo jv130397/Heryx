@@ -1,0 +1,23 @@
+{
+  "platform": "offscreen",
+  "real_display": false,
+  "note": "Real Qt widgets rendered offscreen; no mockups or compositing.",
+  "checks": {
+    "context_bar_over_canvas": true,
+    "floating_editor_over_canvas": true,
+    "legacy_drawer_hidden_on_person_selection": true,
+    "preview_is_not_domain_data": true,
+    "four_generations_rendered": true
+  },
+  "evidence": {
+    "workspace_pt_1920": "assets/phase_4_11/01_workspace_pt_1920x1080.png",
+    "workspace_pt_1366": "assets/phase_4_11/02_workspace_pt_1366x768.png",
+    "family_bar": "assets/phase_4_11/03_contextual_family_bar.png",
+    "preview": "assets/phase_4_11/04_relation_preview.png",
+    "editor_personal": "assets/phase_4_11/05_editor_personal.png",
+    "editor_clinical": "assets/phase_4_11/06_editor_clinical.png",
+    "labels": "assets/phase_4_11/07_label_configuration.png",
+    "export": "assets/phase_4_11/08_scientific_export.png",
+    "workspace_en": "assets/phase_4_11/09_workspace_en.png"
+  }
+}

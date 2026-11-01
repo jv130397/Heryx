@@ -79,6 +79,33 @@ CATALOG = {
         "Numeração genealógica (I-1, II-3)": "Genealogical numbering (I-1, II-3)",
         "Numeração e identificador manual": "Numbering and manual identifier",
         "Rótulo dos indivíduos": "Individual labels",
+        "Configurar rótulos…": "Configure labels…",
+        "Configurar rótulos": "Configure labels",
+        "Escolha como identificar os indivíduos no canvas": (
+            "Choose how to identify individuals on the canvas"
+        ),
+        "Rótulo principal": "Primary label",
+        "Mostrar rótulos auxiliares": "Show auxiliary labels",
+        "Prévia": "Preview",
+        "ações familiares": "family actions",
+        "Adicionar ascendentes": "Add ancestors",
+        "Adicionar descendente": "Add descendant",
+        "Confirmar relação": "Confirm relationship",
+        "Adicionar este familiar na posição indicada?": (
+            "Add this relative at the indicated position?"
+        ),
+        "Pessoal": "Personal",
+        (
+            "Condições, HPO e resultados genéticos serão habilitados "
+            "quando o modelo clínico os suportar."
+        ): (
+            "Conditions, HPO and genetic results will be enabled when supported "
+            "by the clinical model."
+        ),
+        "Descartar alterações?": "Discard changes?",
+        "Há alterações não salvas neste indivíduo.": (
+            "There are unsaved changes for this individual."
+        ),
         "indivíduo": "individual",
         "indivíduos": "individuals",
         "geração": "generation",
