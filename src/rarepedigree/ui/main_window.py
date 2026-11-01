@@ -76,7 +76,6 @@ from rarepedigree.ui.dialogs import (
     EditSiblingRelationshipDialog,
     ExportFigureDialog,
     ImportProjectDialog,
-    LabelConfigurationDialog,
     NewProjectDialog,
     ReassignBranchWizard,
 )
@@ -163,12 +162,9 @@ class MainWindow(QMainWindow):
         self.central_layout.addWidget(canvas, 1)
         self.setCentralWidget(self.central_shell)
 
-        self.properties = PropertiesPanel(self._apply_properties)
-        self.properties.editRequested.connect(lambda: self._context_for_selected("edit_dialog"))
+        self.properties = PropertiesPanel()
         self.properties_drawer = SlidingPanel(self.properties, self.central_shell)
         self.properties_drawer.closeRequested.connect(self.scene.clearSelection)
-        # Compatibility alias for callers that previously adjusted the dock.
-        self.properties_dock = self.properties_drawer
 
         self._create_menus()
         self._create_toolbar()
@@ -302,7 +298,7 @@ class MainWindow(QMainWindow):
         self.toggle_minimap_action.toggled.connect(
             lambda visible: self.minimap.setVisible(visible)
         )
-        self.preferences_action.triggered.connect(self.open_preferences)
+        self.preferences_action.triggered.connect(lambda: self.open_preferences())
         self.label_configuration_action.triggered.connect(self.open_label_configuration)
         self.twins_mz_action.triggered.connect(
             lambda: self._set_selected_twins(TwinZygosity.MONOZYGOTIC)
@@ -401,7 +397,6 @@ class MainWindow(QMainWindow):
                 self.save_action,
                 self.undo_action,
                 self.redo_action,
-                self.auto_layout_action,
                 self.export_action,
                 self.preferences_action,
                 self.language_action,
@@ -505,10 +500,6 @@ class MainWindow(QMainWindow):
             FamilyMenu(
                 [
                     self.add_relative_action,
-                    self.add_parents_action,
-                    self.add_partner_action,
-                    self.add_child_action,
-                    self.add_sibling_action,
                     self.edit_kinship_action,
                     self.reconcile_action,
                     self.reassign_branch_action,
@@ -537,7 +528,6 @@ class MainWindow(QMainWindow):
         for action, icon_name in [
             (self.auto_layout_action, "layout"),
             (self.fit_action, "fit"),
-            (self.focus_proband_action, "person"),
         ]:
             button = ToolRailButton(action, icon_name, expanded=False)
             self.rail_buttons.append(button)
@@ -796,12 +786,6 @@ class MainWindow(QMainWindow):
             self._apply_focus(relevant)
             self.view_mode_control.set_mode("focused")
             return
-        if action == "edit":
-            self.scene.clearSelection()
-            item.setSelected(True)
-            self.properties_drawer.open_panel()
-            self.properties.label_edit.setFocus()
-            return
         if action == "edit_dialog":
             self._open_floating_editor(item)
             return
@@ -900,7 +884,6 @@ class MainWindow(QMainWindow):
             "adopted_child",
             "sibling",
             "edit_dialog",
-            "edit",
             "delete",
             "focus",
             "center",
@@ -1268,11 +1251,6 @@ class MainWindow(QMainWindow):
         self.floating_editor.hide()
         self.relation_preview.clear()
 
-    def _apply_properties(self, item: IndividualItem, new_values: dict[str, Any]) -> None:
-        old_values = {field: getattr(item.person, field) for field in new_values}
-        if old_values != new_values:
-            self.undo_stack.push(UpdateIndividualCommand(item, old_values, new_values))
-
     def _sync_layout(self) -> None:
         for item in self.scene.person_items.values():
             item.person.layout.x = item.pos().x()
@@ -1356,15 +1334,15 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Figura exportada para {path}", 5000)
         self.toast.show_message(tr("Exportação concluída"))
 
-    def open_preferences(self) -> None:
+    def open_preferences(self, tab_index: int | None = None) -> None:
         dialog = PreferencesDialog(self)
+        if tab_index is not None:
+            dialog.tabs.setCurrentIndex(tab_index)
         dialog.applied.connect(self.apply_preferences)
         dialog.exec()
 
     def open_label_configuration(self) -> None:
-        dialog = LabelConfigurationDialog(self)
-        dialog.applied.connect(self.apply_preferences)
-        dialog.exec()
+        self.open_preferences(2)
 
     def apply_preferences(self) -> None:
         font_size = self.settings.value("ui/font_size", 14, int)
@@ -1456,7 +1434,7 @@ class MainWindow(QMainWindow):
         self.view_mode_control.retranslate_ui()
         self.empty_state.retranslate_ui()
         self.properties.retranslate_ui()
-        self.properties_drawer.title.setText(tr("Propriedades do indivíduo"))
+        self.properties_drawer.title.setText(tr("Inspector de relações"))
         self.toast.hide()
         if hasattr(self, "message_status"):
             self.message_status.setText(tr("Pronto"))

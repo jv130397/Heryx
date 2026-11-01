@@ -223,22 +223,8 @@ class IndividualItem(QGraphicsObject):
         )
         menu = QMenu()
         actions = {}
-        entries = [
-            ("□  Adicionar pai", "father"),
-            ("○  Adicionar mãe", "mother"),
-            ("Adicionar pais desconhecidos", "unknown_parents"),
-            ("◇  Adicionar parceiro", "partner"),
-            ("○  Adicionar filho", "child"),
-            ("Adicionar filho adotivo", "adopted_child"),
-            ("□  Adicionar irmão", "sibling"),
-        ]
-        for label, key in entries:
-            if key in allowed:
-                actions[menu.addAction(QCoreApplication.translate("RarePedigree", label))] = key
-        menu.addSeparator()
         for label, key in [
             ("✎  Editar indivíduo", "edit_dialog"),
-            ("Abrir propriedades", "edit"),
             ("Focar no indivíduo", "focus"),
             ("Centralizar", "center"),
             ("⌫  Excluir indivíduo", "delete"),

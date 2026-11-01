@@ -197,7 +197,7 @@ class SlidingPanel(QFrame):
         header.setObjectName("drawer-header")
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(16, 10, 8, 8)
-        self.title = QLabel(tr("Propriedades do indivíduo"))
+        self.title = QLabel(tr("Inspector de relações"))
         self.title.setStyleSheet("font-weight: 700;")
         close = QToolButton(text="✕")
         close.setAccessibleName(tr("Fechar"))

@@ -35,6 +35,10 @@ CATALOG = {
         "SALVO": "SAVED",
         "NÃO SALVO": "UNSAVED",
         "Propriedades do indivíduo": "Individual properties",
+        "Inspector de relações": "Relationship inspector",
+        "Selecione uma conexão para inspecionar suas relações.": (
+            "Select a connection to inspect its relationships."
+        ),
         "Homem/menino": "Male",
         "Mulher/menina": "Female",
         "Gênero diverso": "Gender diverse",

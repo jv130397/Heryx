@@ -147,7 +147,7 @@ def test_navigation_preferences_are_applied(qtbot) -> None:
     assert not window.toggle_minimap_action.isChecked()
 
 
-def test_context_menu_exposes_navigation_without_invalid_parent_actions(qtbot) -> None:
+def test_context_menu_exposes_only_nonredundant_person_actions(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
     person = window.add_person(GenderIdentity.UNKNOWN)
@@ -156,9 +156,7 @@ def test_context_menu_exposes_navigation_without_invalid_parent_actions(qtbot) -
     menu, actions = item.build_context_menu()
     del menu
     values = set(actions.values())
-    assert {"focus", "center", "child", "sibling"} <= values
-    assert "father" not in values
-    assert "mother" not in values
+    assert values == {"edit_dialog", "focus", "center", "delete"}
 
 
 def test_search_stays_responsive_for_two_hundred_people(qtbot) -> None:

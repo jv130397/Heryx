@@ -1,9 +1,9 @@
-from PySide6.QtCore import QSettings, Qt
-from PySide6.QtWidgets import QMessageBox
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLineEdit, QMessageBox, QPushButton
 
 from rarepedigree.domain import GenderIdentity
-from rarepedigree.ui.dialogs import LabelConfigurationDialog
 from rarepedigree.ui.main_window import MainWindow
+from rarepedigree.ui.preferences import PreferencesDialog
 
 
 def test_selection_opens_context_points_and_escape_closes(qtbot) -> None:
@@ -89,12 +89,34 @@ def test_context_surfaces_remain_inside_canvas_after_navigation(qtbot) -> None:
     window.close()
 
 
-def test_label_configuration_changes_only_presentation_preferences(qtbot) -> None:
-    settings = QSettings()
-    settings.setValue("pedigree/identifier_mode", "manual")
-    dialog = LabelConfigurationDialog()
-    qtbot.addWidget(dialog)
-    dialog.mode.setCurrentIndex(dialog.mode.findData("both"))
-    dialog._apply()
-    assert settings.value("pedigree/identifier_mode") == "both"
-    settings.setValue("pedigree/identifier_mode", "manual")
+def test_label_configuration_uses_single_preferences_source(qtbot, monkeypatch) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    opened_tabs: list[int] = []
+
+    def record_tab(dialog) -> int:
+        opened_tabs.append(dialog.tabs.currentIndex())
+        return 0
+
+    monkeypatch.setattr(PreferencesDialog, "exec", record_tab)
+    window.open_label_configuration()
+    assert opened_tabs == [2]
+
+
+def test_relationship_inspector_contains_no_editing_controls(qtbot) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    assert window.properties.findChildren(QLineEdit) == []
+    assert window.properties.findChildren(QPushButton) == []
+    assert not hasattr(window, "properties_dock")
+
+
+def test_family_rail_keeps_only_advanced_family_operations(qtbot) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    actions = set(window.family_button.menu().actions())
+    assert window.add_relative_action in actions
+    assert window.add_parents_action not in actions
+    assert window.add_partner_action not in actions
+    assert window.add_child_action not in actions
+    assert window.add_sibling_action not in actions

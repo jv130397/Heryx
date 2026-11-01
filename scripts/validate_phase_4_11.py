@@ -13,9 +13,10 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 from validate_phase_4_9_1 import ancestor_family, apply_layout
 
-from rarepedigree.ui.dialogs import ExportFigureDialog, LabelConfigurationDialog
+from rarepedigree.ui.dialogs import ExportFigureDialog
 from rarepedigree.ui.i18n import language_manager
 from rarepedigree.ui.main_window import MainWindow
+from rarepedigree.ui.preferences import PreferencesDialog
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "assets" / "phase_4_11"
@@ -69,8 +70,10 @@ def main() -> None:
     window.floating_editor.tabs.setCurrentIndex(1)
     evidence["editor_clinical"] = capture(window, "06_editor_clinical")
     window.floating_editor.hide()
+    preferences = PreferencesDialog(window)
+    preferences.tabs.setCurrentIndex(2)
     evidence["labels"] = show_dialog(
-        LabelConfigurationDialog(window), "07_label_configuration", (620, 420)
+        preferences, "07_label_configuration", (800, 720)
     )
     evidence["export"] = show_dialog(
         ExportFigureDialog(window), "08_scientific_export", (700, 360)
