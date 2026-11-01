@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import QSettings
+from PySide6.QtWidgets import QFrame
 
 from rarepedigree.domain import GenderIdentity, Individual, ObservationStatus
 from rarepedigree.rendering import PedigreeRenderStyle, PedigreeScene
@@ -74,6 +75,14 @@ def test_edit_dialog_produces_validated_values(qtbot) -> None:
     values = dialog.values()
     assert values["label"] == "II-2"
     assert values["proband"] is True
+
+
+def test_model_driven_dialog_has_semantic_header(qtbot) -> None:
+    dialog = EditIndividualDialog(Individual(label="I-1"))
+    qtbot.addWidget(dialog)
+    header = dialog.findChild(QFrame, "nexus-dialog-header")
+    assert header is not None
+    assert header.objectName() == "nexus-dialog-header"
 
 
 def test_new_project_assistant_creates_only_synthetic_metadata(qtbot) -> None:

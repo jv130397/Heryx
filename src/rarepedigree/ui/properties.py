@@ -66,10 +66,11 @@ class PropertiesPanel(QWidget):
         self.apply_button.clicked.connect(self._apply)
 
         self.summary = QWidget()
+        self.summary.setProperty("card", True)
         summary_layout = QVBoxLayout(self.summary)
         self.summary_symbol = QLabel("◇")
         self.summary_symbol.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.summary_symbol.setStyleSheet("font-size: 34px; color: #22D3EE;")
+        self.summary_symbol.setStyleSheet("font-size: 34px; color: #078FC2;")
         self.summary_name = QLabel()
         self.summary_name.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.summary_state = QLabel()
@@ -119,6 +120,8 @@ class PropertiesPanel(QWidget):
             self.warnings_label,
         ):
             widget.setWordWrap(True)
+            widget.setProperty("card", True)
+            widget.setMargin(10)
             relation_layout.addWidget(widget)
         relation_layout.addStretch()
         self.tabs.addTab(relations, "Relações")
@@ -209,10 +212,15 @@ class PropertiesPanel(QWidget):
             for relation in self._project.relationships
             if person_id in {relation.member_a, relation.member_b}
         ]
-        self.parents_label.setText(f"Pais: {', '.join(parents) if parents else 'não registrados'}")
+        none_registered = tr("não registrados")
+        none_found = tr("nenhum")
+        self.parents_label.setText(
+            f"{tr('Pais')}: {', '.join(parents) if parents else none_registered}"
+        )
         self.unknown_parents_label.setText(
-            "Genitores desconhecidos: "
-            + (", ".join(unknown_parents) if unknown_parents else "nenhum")
+            tr("Genitores desconhecidos")
+            + ": "
+            + (", ".join(unknown_parents) if unknown_parents else none_found)
         )
         full: list[str] = []
         half: list[str] = []
@@ -225,18 +233,18 @@ class PropertiesPanel(QWidget):
             elif kind in {SiblingKind.PATERNAL_HALF, SiblingKind.MATERNAL_HALF}:
                 half.append(other.label)
         self.siblings_label.setText(
-            f"Irmãos completos: {', '.join(full) if full else 'nenhum'}\n"
-            f"Meio-irmãos: {', '.join(half) if half else 'nenhum'}"
+            f"{tr('Irmãos completos')}: {', '.join(full) if full else none_found}\n"
+            f"{tr('Meio-irmãos')}: {', '.join(half) if half else none_found}"
         )
-        partner_text = ", ".join(partners) if partners else "não registrados"
-        child_text = ", ".join(children) if children else "não registrados"
-        self.partners_label.setText(f"Parceiros: {partner_text}")
-        self.children_label.setText(f"Filhos: {child_text}")
+        partner_text = ", ".join(partners) if partners else none_registered
+        child_text = ", ".join(children) if children else none_registered
+        self.partners_label.setText(f"{tr('Parceiros')}: {partner_text}")
+        self.children_label.setText(f"{tr('Filhos')}: {child_text}")
         probands = [person for person in self._project.individuals if person.proband]
         relationship = "não calculado"
         if len(probands) == 1:
             relationship = self._kinship_with_proband(engine, probands[0].id, person_id)
-        self.kinship_label.setText(f"Parentesco com o probando: {relationship}")
+        self.kinship_label.setText(f"{tr('Parentesco com o probando')}: {tr(relationship)}")
         issues = [
             issue.message
             for issue in engine.validator.validate(self._project)
@@ -244,7 +252,9 @@ class PropertiesPanel(QWidget):
             and issue.severity in {KinshipSeverity.ERROR, KinshipSeverity.AMBIGUITY}
         ]
         self.warnings_label.setText(
-            "Avisos: " + ("; ".join(issues) if issues else "nenhuma ambiguidade detectada")
+            tr("Avisos")
+            + ": "
+            + ("; ".join(issues) if issues else tr("nenhuma ambiguidade detectada"))
         )
 
     def _kinship_with_proband(self, engine: KinshipEngine, proband_id, person_id) -> str:

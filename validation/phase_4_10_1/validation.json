@@ -1,0 +1,15 @@
+{
+  "platform": "offscreen",
+  "note": "Real Qt widgets rendered offscreen; no mockups or compositing.",
+  "evidence": {
+    "workspace_pt": "specifications/assets/phase_4_10_1/01_workspace_pt.png",
+    "inspector": "specifications/assets/phase_4_10_1/02_inspector_drawer.png",
+    "search_popover": "specifications/assets/phase_4_10_1/03_search_popover.png",
+    "family_dropdown": "specifications/assets/phase_4_10_1/04_family_dropdown.png",
+    "edit_modal": "specifications/assets/phase_4_10_1/05_edit_individual_modal.png",
+    "relative_modal": "specifications/assets/phase_4_10_1/06_add_sibling_modal.png",
+    "new_project": "specifications/assets/phase_4_10_1/07_new_project_modal.png",
+    "preferences": "specifications/assets/phase_4_10_1/08_preferences.png",
+    "workspace_en": "specifications/assets/phase_4_10_1/09_workspace_en.png"
+  }
+}

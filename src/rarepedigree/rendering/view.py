@@ -68,7 +68,7 @@ class PedigreeView(QGraphicsView):
         lines += [
             QLineF(rect.left(), y, rect.right(), y) for y in range(top, int(rect.bottom()), step)
         ]
-        painter.setPen(QPen(QColor("#E5EAF0"), 0))
+        painter.setPen(QPen(QColor("#DDE2E6"), 0))
         painter.drawLines(lines)
 
     def wheelEvent(self, event: QWheelEvent) -> None:

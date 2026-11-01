@@ -37,6 +37,7 @@ from rarepedigree.domain import (
 )
 from rarepedigree.layout import PedigreeLayoutEngine
 from rarepedigree.rendering import PedigreeScene
+from rarepedigree.ui.components import NexusDialogHeader
 from rarepedigree.ui.i18n import language_manager, tr
 
 
@@ -53,9 +54,9 @@ class SymbolPreview(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = QRectF(self.width() / 2 - 28, 26, 56, 56)
-        painter.setPen(QPen(QColor("#22D3EE"), 4))
+        painter.setPen(QPen(QColor("#078FC2"), 4))
         painter.setBrush(
-            QColor("#111827") if self.status == ObservationStatus.PRESENT else QColor("white")
+            QColor("#1C293B") if self.status == ObservationStatus.PRESENT else QColor("white")
         )
         if self.gender == GenderIdentity.MAN:
             painter.drawRect(rect)
@@ -84,7 +85,15 @@ class EditIndividualDialog(QDialog):
         self.person = person
         self.setWindowTitle(tr("Editar indivíduo"))
         self.setMinimumWidth(560)
-        root = QHBoxLayout(self)
+        root = QVBoxLayout(self)
+        root.addWidget(
+            NexusDialogHeader(
+                tr("Editar indivíduo"),
+                tr("Identificação e representação científica"),
+            )
+        )
+        body = QWidget()
+        body_layout = QHBoxLayout(body)
         form_widget = QWidget()
         form = QFormLayout(form_widget)
         self.form = form
@@ -129,8 +138,9 @@ class EditIndividualDialog(QDialog):
         self.buttons.rejected.connect(self.reject)
         form.addRow(self.buttons)
         self.preview = SymbolPreview()
-        root.addWidget(form_widget, 2)
-        root.addWidget(self.preview, 1)
+        body_layout.addWidget(form_widget, 2)
+        body_layout.addWidget(self.preview, 1)
+        root.addWidget(body)
         self.symbol_group.buttonClicked.connect(self._update_preview)
         self.phenotype.currentIndexChanged.connect(self._update_preview)
         self.deceased.toggled.connect(self._update_preview)
@@ -180,6 +190,12 @@ class AddSiblingDialog(QDialog):
         self.setWindowTitle(tr("Adicionar irmão ou irmã"))
         self.setMinimumWidth(540)
         self.form = QFormLayout(self)
+        self.form.addRow(
+            NexusDialogHeader(
+                tr("Adicionar irmão ou irmã"),
+                tr("Defina explicitamente o núcleo parental compartilhado"),
+            )
+        )
         self.name = QLineEdit()
         self.name.setPlaceholderText(tr("Identificador exibido"))
         self.kind = QComboBox()
@@ -493,6 +509,12 @@ class EditSiblingRelationshipDialog(QDialog):
         self.setWindowTitle(tr("Editar parentesco entre irmãos"))
         self.setMinimumWidth(620)
         layout = QVBoxLayout(self)
+        layout.addWidget(
+            NexusDialogHeader(
+                tr("Editar parentesco entre irmãos"),
+                tr("Revise o impacto antes de confirmar a alteração"),
+            )
+        )
         self.description = QLabel(tr(f"Alterar o vínculo entre {first.label} e {second.label}."))
         self.kind = QComboBox()
         for text, value in (
@@ -687,7 +709,7 @@ class ReassignBranchWizard(QWizard):
 class NewProjectDialog(QDialog):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Novo projeto")
+        self.setWindowTitle(tr("Novo projeto"))
         self.setMinimumWidth(500)
         self.name = QLineEdit("Família sem título")
         self.family_id = QLineEdit("RP-001")
@@ -707,6 +729,12 @@ class NewProjectDialog(QDialog):
         self.buttons.accepted.connect(self.accept)
         self.buttons.rejected.connect(self.reject)
         self.form = QFormLayout(self)
+        self.form.addRow(
+            NexusDialogHeader(
+                tr("Novo projeto"),
+                tr("Configure o espaço clínico e científico inicial"),
+            )
+        )
         self.form.addRow("Nome do projeto", self.name)
         self.form.addRow("Identificador familiar", self.family_id)
         self.form.addRow("Descrição opcional", self.description)

@@ -435,17 +435,17 @@ class MainWindow(QMainWindow):
     def _create_toolbox(self) -> QFrame:
         panel = QFrame()
         panel.setObjectName("tool-rail")
-        panel.setFixedWidth(210)
+        panel.setFixedWidth(60)
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(7, 10, 7, 10)
         layout.setSpacing(5)
         self.rail_buttons: list[QToolButton] = []
-        self.rail_expanded = True
-        self.collapse_action = QAction("«", self)
+        self.rail_expanded = False
+        self.collapse_action = QAction("»", self)
         self.collapse_action.triggered.connect(self.toggle_tool_rail)
-        self.collapse_button = ToolRailButton(self.collapse_action, "fit", expanded=True)
+        self.collapse_button = ToolRailButton(self.collapse_action, "fit", expanded=False)
         layout.addWidget(self.collapse_button)
-        select_button = ToolRailButton(self.select_action, "select", expanded=True)
+        select_button = ToolRailButton(self.select_action, "select", expanded=False)
         self.rail_buttons.append(select_button)
         layout.addWidget(select_button)
         self.person_button = QToolButton()
@@ -453,7 +453,8 @@ class MainWindow(QMainWindow):
         person_button.setIcon(icon("person"))
         person_button.setText("Adicionar indivíduo")
         person_button.setFixedHeight(46)
-        person_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        person_button.setFixedWidth(44)
+        person_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         person_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         person_menu = FamilyMenu(
             [self.add_man_action, self.add_woman_action, self.add_unspecified_action],
@@ -465,7 +466,8 @@ class MainWindow(QMainWindow):
         family_button = self.family_button
         family_button.setIcon(icon("family"))
         family_button.setFixedHeight(46)
-        family_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        family_button.setFixedWidth(44)
+        family_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         family_button.setText("Adicionar familiar")
         family_button.setProperty("railButton", True)
         family_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
@@ -501,12 +503,12 @@ class MainWindow(QMainWindow):
             (self.auto_layout_action, "layout"),
             (self.focus_proband_action, "person"),
         ]:
-            button = ToolRailButton(action, icon_name, expanded=True)
+            button = ToolRailButton(action, icon_name, expanded=False)
             self.rail_buttons.append(button)
             layout.addWidget(button)
         layout.addStretch()
         for action, icon_name in [(self.fit_action, "fit"), (self.delete_action, "delete")]:
-            button = ToolRailButton(action, icon_name, expanded=True)
+            button = ToolRailButton(action, icon_name, expanded=False)
             self.rail_buttons.append(button)
             layout.addWidget(button)
         return panel
@@ -637,6 +639,11 @@ class MainWindow(QMainWindow):
         )
         for button in self.rail_buttons:
             button.setToolButtonStyle(style)
+            if self.rail_expanded:
+                button.setMinimumWidth(0)
+                button.setMaximumWidth(16777215)
+            else:
+                button.setFixedWidth(44)
         self.collapse_action.setText("«" if self.rail_expanded else "»")
 
     def _set_interaction_mode(self, mode: str) -> None:
@@ -1421,6 +1428,6 @@ class MainWindow(QMainWindow):
             )
             self.minimap.raise_()
         if hasattr(self, "search_panel"):
-            width = min(520, max(320, self.canvas.width() - 48))
+            width = min(460, max(320, self.canvas.width() - 48))
             self.search_panel.setFixedWidth(width)
             self.search_panel.move(max(24, (self.canvas.width() - width) // 2), 18)

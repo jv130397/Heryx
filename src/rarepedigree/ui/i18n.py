@@ -70,6 +70,32 @@ CATALOG = {
         "Cancelar": "Cancel",
         "Confirmar": "Confirm",
         "Editar indivíduo": "Edit individual",
+        "Identificação e representação científica": "Identity and scientific representation",
+        "Adicionar irmão ou irmã": "Add brother or sister",
+        "Defina explicitamente o núcleo parental compartilhado": (
+            "Explicitly define the shared parental unit"
+        ),
+        "Editar parentesco entre irmãos": "Edit sibling relationship",
+        "Revise o impacto antes de confirmar a alteração": (
+            "Review the impact before confirming the change"
+        ),
+        "Novo projeto": "New project",
+        "Configure o espaço clínico e científico inicial": (
+            "Configure the initial clinical and scientific workspace"
+        ),
+        "Pais": "Parents",
+        "Genitores desconhecidos": "Unknown parents",
+        "Irmãos completos": "Full siblings",
+        "Meio-irmãos": "Half-siblings",
+        "Parceiros": "Partners",
+        "Filhos": "Children",
+        "Parentesco com o probando": "Relationship to proband",
+        "Avisos": "Warnings",
+        "nenhum": "none",
+        "não registrados": "not registered",
+        "não calculado": "not calculated",
+        "não determinado": "not determined",
+        "nenhuma ambiguidade detectada": "no ambiguity detected",
         "Identificador exibido": "Displayed identifier",
         "Símbolo/gênero": "Symbol/gender",
         "Estado fenotípico": "Phenotype status",

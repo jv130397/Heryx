@@ -23,7 +23,7 @@ from rarepedigree.rendering.style import PedigreeRenderStyle
 class PedigreeScene(QGraphicsScene):
     def __init__(self) -> None:
         super().__init__(QRectF(-2000, -1400, 4000, 2800))
-        self.setBackgroundBrush(QColor("#f7f9fb"))
+        self.setBackgroundBrush(QColor("#f1f3f5"))
         self.person_items: dict[UUID, IndividualItem] = {}
         self.relationship_items: dict[UUID, RelationshipItem] = {}
         self.parentage_items: dict[UUID, ParentageConnectorItem] = {}

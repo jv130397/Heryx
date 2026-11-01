@@ -145,11 +145,14 @@ def test_move_mode_controls_item_mobility(qtbot) -> None:
 def test_tool_rail_collapses_and_expands(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
-    window.toggle_tool_rail()
     assert not window.rail_expanded
     assert window.tool_rail.width() == 60
     window.toggle_tool_rail()
     assert window.rail_expanded
+    assert window.tool_rail.width() == 210
+    window.toggle_tool_rail()
+    assert not window.rail_expanded
+    assert window.tool_rail.width() == 60
 
 
 def test_selecting_person_opens_overlay_drawer(qtbot) -> None:

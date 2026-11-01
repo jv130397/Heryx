@@ -151,7 +151,7 @@ def main() -> None:
         app, family, "15_collapsed_rail", setup=lambda window: window.toggle_tool_rail()
     )
 
-    metrics = [performance_case(app, size) for size in (10, 50, 100, 200)]
+    metrics = [performance_case(app, size) for size in (4, 20, 50, 100, 200)]
     result = {
         "environment": {
             "platform": os.uname().sysname,

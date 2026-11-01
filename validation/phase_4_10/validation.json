@@ -24,52 +24,64 @@
   },
   "performance": [
     {
-      "individuals": 10,
-      "startup_ms": 26.274,
-      "layout_ms": 1.741,
-      "load_ms": 7.27,
-      "fit_ms": 0.857,
-      "selection_ms": 3.323,
-      "search_ms": 0.218,
+      "individuals": 4,
+      "startup_ms": 29.247,
+      "layout_ms": 1.777,
+      "load_ms": 7.279,
+      "fit_ms": 0.814,
+      "selection_ms": 3.421,
+      "search_ms": 0.243,
+      "minimap_refresh_ms": 0.115,
+      "zoom_percent_after_fit": 33,
+      "peak_rss_kib_process": 292968
+    },
+    {
+      "individuals": 20,
+      "startup_ms": 29.743,
+      "layout_ms": 1.621,
+      "load_ms": 9.669,
+      "fit_ms": 0.948,
+      "selection_ms": 3.808,
+      "search_ms": 0.249,
       "minimap_refresh_ms": 0.119,
-      "zoom_percent_after_fit": 29,
-      "peak_rss_kib_process": 289204
+      "zoom_percent_after_fit": 33,
+      "peak_rss_kib_process": 298216
     },
     {
       "individuals": 50,
-      "startup_ms": 24.629,
-      "layout_ms": 1.845,
-      "load_ms": 7.839,
-      "fit_ms": 0.975,
-      "selection_ms": 3.69,
-      "search_ms": 0.241,
-      "minimap_refresh_ms": 0.112,
-      "zoom_percent_after_fit": 24,
-      "peak_rss_kib_process": 293940
+      "startup_ms": 29.629,
+      "layout_ms": 1.727,
+      "load_ms": 9.179,
+      "fit_ms": 0.902,
+      "selection_ms": 3.692,
+      "search_ms": 0.221,
+      "minimap_refresh_ms": 0.11,
+      "zoom_percent_after_fit": 27,
+      "peak_rss_kib_process": 307048
     },
     {
       "individuals": 100,
-      "startup_ms": 27.395,
-      "layout_ms": 5.721,
-      "load_ms": 19.863,
-      "fit_ms": 1.012,
-      "selection_ms": 7.289,
-      "search_ms": 0.274,
-      "minimap_refresh_ms": 0.166,
+      "startup_ms": 27.74,
+      "layout_ms": 5.372,
+      "load_ms": 17.213,
+      "fit_ms": 0.869,
+      "selection_ms": 7.049,
+      "search_ms": 0.248,
+      "minimap_refresh_ms": 0.15,
       "zoom_percent_after_fit": 6,
-      "peak_rss_kib_process": 303540
+      "peak_rss_kib_process": 316904
     },
     {
       "individuals": 200,
-      "startup_ms": 25.159,
-      "layout_ms": 20.039,
-      "load_ms": 49.64,
-      "fit_ms": 1.375,
-      "selection_ms": 22.933,
-      "search_ms": 0.449,
-      "minimap_refresh_ms": 0.363,
+      "startup_ms": 28.621,
+      "layout_ms": 18.649,
+      "load_ms": 49.214,
+      "fit_ms": 1.244,
+      "selection_ms": 21.48,
+      "search_ms": 0.351,
+      "minimap_refresh_ms": 0.279,
       "zoom_percent_after_fit": 2,
-      "peak_rss_kib_process": 315444
+      "peak_rss_kib_process": 328936
     }
   ]
 }

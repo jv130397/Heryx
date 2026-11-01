@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMenu,
     QPushButton,
+    QScrollArea,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -42,6 +43,24 @@ class SectionHeader(QLabel):
     def __init__(self, text: str, parent=None) -> None:
         super().__init__(text.upper(), parent)
         self.setProperty("sectionHeader", True)
+
+
+class NexusDialogHeader(QFrame):
+    """Compact in-content header matching the model's navy modal bars."""
+
+    def __init__(self, title: str, subtitle: str = "", parent=None) -> None:
+        super().__init__(parent)
+        self.setObjectName("nexus-dialog-header")
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 10, 16, 10)
+        layout.setSpacing(2)
+        self.title = QLabel(title)
+        self.title.setObjectName("nexus-dialog-title")
+        self.subtitle = QLabel(subtitle)
+        self.subtitle.setObjectName("nexus-dialog-subtitle")
+        self.subtitle.setVisible(bool(subtitle))
+        layout.addWidget(self.title)
+        layout.addWidget(self.subtitle)
 
 
 class EmptyState(QFrame):
@@ -162,7 +181,7 @@ class SlidingPanel(QFrame):
         shadow = QGraphicsDropShadowEffect(self)
         shadow.setBlurRadius(28)
         shadow.setOffset(-5, 6)
-        shadow.setColor(QColor(3, 8, 20, 145))
+        shadow.setColor(QColor(31, 41, 51, 85))
         self.setGraphicsEffect(shadow)
         self._open = False
         self.animation = QPropertyAnimation(self, b"geometry", self)
@@ -172,6 +191,7 @@ class SlidingPanel(QFrame):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         header = QWidget()
+        header.setObjectName("drawer-header")
         header_layout = QHBoxLayout(header)
         header_layout.setContentsMargins(16, 10, 8, 8)
         self.title = QLabel(tr("Propriedades do indivíduo"))
@@ -183,7 +203,12 @@ class SlidingPanel(QFrame):
         header_layout.addStretch()
         header_layout.addWidget(close)
         root.addWidget(header)
-        root.addWidget(content, 1)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setWidget(content)
+        root.addWidget(scroll, 1)
         self.hide()
 
     def open_panel(self) -> None:
