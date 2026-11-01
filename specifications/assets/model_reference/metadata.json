@@ -1,0 +1,62 @@
+{
+  "source": "Modelos/heredograma_linkedin.mp4",
+  "duration_ms": 46100,
+  "file_size_bytes": 1208437,
+  "codec": "h264",
+  "pixel_format": "yuv420p",
+  "video_resolution": [
+    1280,
+    720
+  ],
+  "average_frame_rate": "30/1",
+  "frames": [
+    {
+      "position_ms": 0,
+      "path": "specifications/assets/model_reference/frame_00_000000ms.png",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "position_ms": 5767,
+      "path": "specifications/assets/model_reference/frame_01_005767ms.png",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "position_ms": 11533,
+      "path": "specifications/assets/model_reference/frame_02_011533ms.png",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "position_ms": 17300,
+      "path": "specifications/assets/model_reference/frame_03_017300ms.png",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "position_ms": 23033,
+      "path": "specifications/assets/model_reference/frame_04_023033ms.png",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "position_ms": 28800,
+      "path": "specifications/assets/model_reference/frame_05_028800ms.png",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "position_ms": 34567,
+      "path": "specifications/assets/model_reference/frame_06_034567ms.png",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "position_ms": 40333,
+      "path": "specifications/assets/model_reference/frame_07_040333ms.png",
+      "width": 1280,
+      "height": 720
+    }
+  ]
+}
