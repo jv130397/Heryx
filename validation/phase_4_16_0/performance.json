@@ -1,0 +1,17 @@
+{
+  "method": "QT_QPA_PLATFORM=offscreen, fresh Python process, QApplication + import + MainWindow + show + processEvents",
+  "baseline": {
+    "process_to_visible_ms": 395.43,
+    "construct_main_window_ms": 88.62,
+    "rss_mib": 106.74
+  },
+  "phase_4_16_0": {
+    "process_to_visible_ms": 329.16,
+    "construct_main_window_ms": 79.25,
+    "rss_mib": 107.41,
+    "home_interactive_when_visible": true,
+    "enter_editor_ms": 14.25,
+    "open_project_ms": 17.65
+  },
+  "interpretation": "The integrated Home adds about 0.67 MiB while reducing measured time to first visible interactive window by 16.8%."
+}

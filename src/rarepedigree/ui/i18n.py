@@ -64,6 +64,30 @@ CATALOG = {
         "Selecione um arquivo .rps.json": "Select an .rps.json file",
         "Procurar…": "Browse…",
         "Arquivo": "File",
+        "Tela inicial": "Home screen",
+        "Genética • Família • Descoberta": "Genetics • Family • Discovery",
+        "Privacidade por padrão: seus projetos permanecem neste computador.": (
+            "Privacy by default: your projects stay on this computer."
+        ),
+        "Bem-vindo ao seu espaço científico": "Welcome to your scientific workspace",
+        "Crie, documente e explore heredogramas clínicos com clareza.": (
+            "Create, document and explore clinical pedigrees with clarity."
+        ),
+        "Nova família": "New family",
+        "Inicie um heredograma com o assistente de projeto.": (
+            "Start a pedigree with the project assistant."
+        ),
+        "Abrir projeto": "Open project",
+        "Carregue um arquivo RarePedigree existente.": (
+            "Load an existing RarePedigree file."
+        ),
+        "Projetos recentes": "Recent projects",
+        "Retome rapidamente um trabalho local.": "Quickly resume local work.",
+        "Nenhum projeto recente": "No recent projects",
+        "Limpar lista": "Clear list",
+        "Remover da lista": "Remove from list",
+        "indisponível": "unavailable",
+        "Ilustração científica de heredograma": "Scientific pedigree illustration",
         "O conteúdo será validado antes de substituir o projeto aberto.": (
             "The contents will be validated before replacing the open project."
         ),

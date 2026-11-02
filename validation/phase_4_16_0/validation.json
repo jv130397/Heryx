@@ -1,0 +1,38 @@
+{
+  "platform": "offscreen",
+  "real_display": false,
+  "note": "Real PySide6 widgets rendered offscreen; no composed mockups.",
+  "checks": {
+    "home_is_main_window_page": true,
+    "actions_interactive_during_animation": true,
+    "recent_metadata_contains_no_clinical_data": true,
+    "reduced_motion_final_progress": 1.0,
+    "languages": [
+      "pt_BR",
+      "en"
+    ],
+    "themes": [
+      "midnight",
+      "light"
+    ],
+    "sizes": [
+      "1366x768",
+      "1600x900",
+      "1920x1080"
+    ]
+  },
+  "performance": {
+    "construct_main_window_ms": 90.15,
+    "construct_to_visible_ms": 45.12,
+    "enter_editor_ms": 14.25,
+    "open_project_ms": 17.65,
+    "rss_mib": 122.09
+  },
+  "evidence": {
+    "pt_midnight_1920": "assets/phase_4_16_0/01_welcome_pt_midnight_1920x1080.png",
+    "pt_midnight_1366": "assets/phase_4_16_0/02_welcome_pt_midnight_1366x768.png",
+    "recent_projects": "assets/phase_4_16_0/03_recent_projects_pt_1600x900.png",
+    "en_light_1600": "assets/phase_4_16_0/04_welcome_en_light_1600x900.png",
+    "reduced_motion": "assets/phase_4_16_0/05_welcome_reduced_motion_1920x1080.png"
+  }
+}

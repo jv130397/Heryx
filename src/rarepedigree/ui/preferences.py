@@ -104,8 +104,12 @@ class PreferencesDialog(QDialog):
     def _appearance_tab(self) -> QWidget:
         page = QWidget()
         form = QFormLayout(page)
-        self.theme = QPushButton("Midnight Genomics")
-        self.theme.setEnabled(False)
+        self.theme = QComboBox()
+        self.theme.addItem("Midnight Genomics", "midnight")
+        self.theme.addItem("Claro científico", "light")
+        self.theme.setCurrentIndex(
+            max(0, self.theme.findData(self.settings.value("ui/welcome_theme", "midnight", str)))
+        )
         self.font_size = QSpinBox()
         self.font_size.setRange(12, 20)
         self.font_size.setValue(self.settings.value("ui/font_size", 14, int))
@@ -113,7 +117,7 @@ class PreferencesDialog(QDialog):
         self.ui_scale.setRange(80, 160)
         self.ui_scale.setSuffix("%")
         self.ui_scale.setValue(self.settings.value("ui/scale", 100, int))
-        form.addRow("Tema", self.theme)
+        form.addRow("Tema da tela inicial", self.theme)
         form.addRow("Tamanho da fonte", self.font_size)
         form.addRow("Escala da interface", self.ui_scale)
         return page
@@ -348,6 +352,7 @@ class PreferencesDialog(QDialog):
         values = {
             "ui/font_size": self.font_size.value(),
             "ui/scale": self.ui_scale.value(),
+            "ui/welcome_theme": self.theme.currentData(),
             "pedigree/grid": self.grid.isChecked(),
             "pedigree/monochrome": self.monochrome.isChecked(),
             "pedigree/show_legend": self.show_legend.isChecked(),

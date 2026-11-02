@@ -82,6 +82,7 @@ from rarepedigree.ui.dialogs import (
     NewProjectDialog,
     ReassignBranchWizard,
 )
+from rarepedigree.ui.home import RecentProjectsStore, WelcomeScreen
 from rarepedigree.ui.i18n import language_manager, tr
 from rarepedigree.ui.icons import icon
 from rarepedigree.ui.interaction import (
@@ -161,7 +162,19 @@ class MainWindow(QMainWindow):
         self.tool_rail = self._create_toolbox()
         self.central_layout.addWidget(self.tool_rail)
         self.central_layout.addWidget(canvas, 1)
-        self.setCentralWidget(self.central_shell)
+        self.recent_projects = RecentProjectsStore(self.settings)
+        self.welcome_screen = WelcomeScreen(self.recent_projects)
+        self.welcome_screen.newRequested.connect(self.new_project)
+        self.welcome_screen.openRequested.connect(self.open_project)
+        self.welcome_screen.recentRequested.connect(self.open_recent_project)
+        self.page_container = QWidget()
+        self.page_container.setObjectName("application-pages")
+        self.page_stack = QStackedLayout(self.page_container)
+        self.page_stack.setContentsMargins(0, 0, 0, 0)
+        self.page_stack.setStackingMode(QStackedLayout.StackingMode.StackAll)
+        self.page_stack.addWidget(self.welcome_screen)
+        self.page_stack.addWidget(self.central_shell)
+        self.setCentralWidget(self.page_container)
 
         self.properties = PropertiesPanel()
         self.properties_drawer = SlidingPanel(self.properties, self.central_shell)
@@ -175,6 +188,7 @@ class MainWindow(QMainWindow):
         self._update_workspace_state()
         self.apply_preferences()
         self.retranslate_ui()
+        self.show_home(force=True)
 
     def _create_actions(self) -> None:
         self.new_action = QAction("Novo", self, shortcut=QKeySequence.StandardKey.New)
@@ -206,6 +220,7 @@ class MainWindow(QMainWindow):
         self.focus_proband_action = QAction("Focar no probando", self, shortcut="Ctrl+P")
         self.clear_focus_action = QAction("Limpar foco", self, shortcut="Escape")
         self.preferences_action = QAction("Preferências…", self)
+        self.home_action = QAction("Tela inicial", self, shortcut="Ctrl+Shift+H")
         self.hpo_manager_action = QAction("Gerenciar ontologia HPO…", self)
         self.phenotype_comparison_action = QAction("Comparação fenotípica familiar…", self)
         self.label_configuration_action = QAction("Configurar rótulos…", self)
@@ -282,6 +297,7 @@ class MainWindow(QMainWindow):
         self.focus_proband_action.triggered.connect(self.focus_on_proband)
         self.clear_focus_action.triggered.connect(self.clear_focus)
         self.preferences_action.triggered.connect(lambda: self.open_preferences())
+        self.home_action.triggered.connect(self.show_home)
         self.hpo_manager_action.triggered.connect(self.open_hpo_manager)
         self.phenotype_comparison_action.triggered.connect(self.open_phenotype_comparison)
         self.label_configuration_action.triggered.connect(self.open_label_configuration)
@@ -306,6 +322,7 @@ class MainWindow(QMainWindow):
         self.file_menu = self.menuBar().addMenu("Arquivo")
         self.file_menu.addActions(
             [
+                self.home_action,
                 self.new_action,
                 self.open_action,
                 self.save_action,
@@ -649,12 +666,12 @@ class MainWindow(QMainWindow):
         self.statusBar().addPermanentWidget(self.save_status)
         self.statusBar().addPermanentWidget(self.validation_status)
 
-    def new_project(self) -> None:
+    def new_project(self) -> bool:
         if not self._may_discard_changes():
-            return
+            return False
         dialog = NewProjectDialog(self)
         if self.isVisible() and dialog.exec() != dialog.DialogCode.Accepted:
-            return
+            return False
         self.project = dialog.create_project() if self.isVisible() else PedigreeProject()
         if self.project.individuals:
             positions = self.layout_engine.compute(self.project)
@@ -666,6 +683,8 @@ class MainWindow(QMainWindow):
         self._update_workspace_state()
         if self.project.individuals:
             self.fit_pedigree()
+        self.show_workspace()
+        return True
 
     def _apply_project(self, project: PedigreeProject) -> None:
         self._close_context_surfaces()
@@ -1117,6 +1136,8 @@ class MainWindow(QMainWindow):
             self.view_mode_control.set_mode("overview")
 
     def set_view_mode(self, mode: str) -> None:
+        if self.page_stack.currentWidget() is self.welcome_screen:
+            self.show_workspace()
         scientific = mode == "scientific"
         self.tool_rail.setVisible(not scientific)
         self.main_toolbar.setVisible(not scientific)
@@ -1132,6 +1153,8 @@ class MainWindow(QMainWindow):
         self.view.viewport().update()
 
     def add_person(self, gender: GenderIdentity) -> Individual:
+        if self.page_stack.currentWidget() is self.welcome_screen:
+            self.show_workspace()
         count = len(self.project.individuals)
         center = self.view.mapToScene(self.view.viewport().rect().center())
         person = Individual(
@@ -1318,16 +1341,23 @@ class MainWindow(QMainWindow):
         self._update_workspace_state()
         self.statusBar().showMessage(f"Projeto salvo em {path}", 5000)
         self.toast.show_message("Projeto salvo")
+        self.recent_projects.add(path, self.project.title)
         return True
 
-    def open_project(self) -> None:
+    def open_project(self) -> bool:
         if not self._may_discard_changes():
-            return
+            return False
         dialog = ImportProjectDialog(self)
         if dialog.exec() == dialog.DialogCode.Accepted:
             path = dialog.selected_path()
             if path is not None:
-                self.load_from(path)
+                return self.load_from(path)
+        return False
+
+    def open_recent_project(self, path: Path) -> bool:
+        if not self._may_discard_changes():
+            return False
+        return self.load_from(path)
 
     def load_from(self, path: Path) -> bool:
         try:
@@ -1341,7 +1371,31 @@ class MainWindow(QMainWindow):
         self.scene.load_project(project)
         self.undo_stack.setClean()
         self._update_workspace_state()
+        self.recent_projects.add(path, project.title)
+        self.show_workspace()
         return True
+
+    def show_home(self, _checked: bool = False, *, force: bool = False) -> bool:
+        """Return to Home without creating, clearing, or mutating a project."""
+        if not force and self.page_stack.currentWidget() is self.central_shell:
+            if not self._may_discard_changes():
+                return False
+        self._close_context_surfaces()
+        self.welcome_screen.refresh_recent_projects()
+        self.page_stack.setCurrentWidget(self.welcome_screen)
+        self.main_toolbar.hide()
+        self.statusBar().hide()
+        self.welcome_screen.start_animation(
+            self.settings.value("ui/reduce_motion", False, bool)
+        )
+        return True
+
+    def show_workspace(self) -> None:
+        self.welcome_screen.stop_animation()
+        self.page_stack.setCurrentWidget(self.central_shell)
+        self.main_toolbar.show()
+        self.statusBar().show()
+        self._position_canvas_overlays()
 
     def export_figure(self) -> None:
         dialog = ExportFigureDialog(self)
@@ -1431,6 +1485,9 @@ class MainWindow(QMainWindow):
         self._close_context_surfaces()
         self._context_item = None
         self.scene.apply_render_style(PedigreeRenderStyle.from_settings(self.settings))
+        self.welcome_screen.set_theme(
+            self.settings.value("ui/welcome_theme", "midnight", str)
+        )
         self.view.viewport().update()
         self._update_workspace_state()
 
@@ -1449,6 +1506,7 @@ class MainWindow(QMainWindow):
             self.auto_layout_action: "Organização automática",
             self.export_action: "Exportar figura…",
             self.preferences_action: "Preferências…",
+            self.home_action: "Tela inicial",
             self.delete_action: "Excluir",
             self.select_action: "Selecionar",
             self.move_action: "Mover",
@@ -1547,6 +1605,12 @@ class MainWindow(QMainWindow):
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         super().resizeEvent(event)
+        # Keep the inactive editor page laid out as well. Besides avoiding a
+        # visible geometry jump when leaving Home, this makes resize/HiDPI
+        # validation deterministic while the welcome page is active.
+        if hasattr(self, "page_stack") and self.page_stack.currentWidget() is self.welcome_screen:
+            self.central_shell.setGeometry(self.page_container.rect())
+            self.central_layout.activate()
         if hasattr(self, "properties_drawer"):
             self.properties_drawer.sync_geometry()
         self._position_canvas_overlays()
