@@ -15,6 +15,7 @@ from PySide6.QtGui import (
     QPolygonF,
 )
 from PySide6.QtWidgets import (
+    QGraphicsDropShadowEffect,
     QGraphicsItem,
     QGraphicsLineItem,
     QGraphicsObject,
@@ -27,6 +28,7 @@ from PySide6.QtWidgets import (
 )
 
 from rarepedigree.domain import (
+    CanvasAnnotation,
     GenderIdentity,
     Individual,
     ObservationStatus,
@@ -40,6 +42,107 @@ from rarepedigree.domain import (
 from rarepedigree.rendering.style import PedigreeRenderStyle
 
 SYMBOL_SIZE = 48.0
+
+
+class AnnotationItem(QGraphicsObject):
+    """Movable/resizable user note that never participates in pedigree semantics."""
+
+    def __init__(self, note: CanvasAnnotation, on_action: Callable | None = None) -> None:
+        super().__init__()
+        self.note = note
+        self.on_action = on_action
+        self._start = (note.x, note.y, note.width, note.height)
+        self._resizing = False
+        self.setPos(note.x, note.y)
+        self.setFlags(
+            QGraphicsItem.GraphicsItemFlag.ItemIsMovable
+            | QGraphicsItem.GraphicsItemFlag.ItemIsSelectable
+            | QGraphicsItem.GraphicsItemFlag.ItemIsFocusable
+        )
+        self.setZValue(30)
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(18)
+        shadow.setOffset(0, 4)
+        shadow.setColor(QColor(15, 23, 42, 52))
+        self.setGraphicsEffect(shadow)
+
+    def boundingRect(self) -> QRectF:
+        return QRectF(0, 0, self.note.width, self.note.height)
+
+    def paint(self, painter, option, widget=None) -> None:
+        del option, widget
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(QColor("#D6B85E"), 2))
+        painter.setBrush(QColor(self.note.color))
+        painter.drawRoundedRect(self.boundingRect(), 8, 8)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor("#F4DA7A"))
+        painter.drawRoundedRect(QRectF(1, 1, self.note.width - 2, 34), 7, 7)
+        painter.setPen(QColor("#4B3D1A"))
+        font = painter.font()
+        font.setBold(True)
+        painter.setFont(font)
+        painter.drawText(QRectF(12, 7, self.note.width - 24, 22), self.note.title)
+        font.setBold(False)
+        painter.setFont(font)
+        painter.drawText(
+            QRectF(12, 44, self.note.width - 24, self.note.height - 58),
+            Qt.TextFlag.TextWordWrap,
+            self.note.text,
+        )
+        if self.isSelected():
+            painter.setPen(QPen(QColor("#8B5CF6"), 2, Qt.PenStyle.DashLine))
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.drawRoundedRect(self.boundingRect().adjusted(-2, -2, 2, 2), 9, 9)
+            painter.setBrush(QColor("#8B5CF6"))
+            painter.drawRect(QRectF(self.note.width - 12, self.note.height - 12, 10, 10))
+
+    def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+        self._start = (self.pos().x(), self.pos().y(), self.note.width, self.note.height)
+        self._resizing = (
+            event.pos().x() >= self.note.width - 18
+            and event.pos().y() >= self.note.height - 18
+        )
+        if self._resizing:
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+        if self._resizing:
+            self.prepareGeometryChange()
+            self.note.width = max(140, min(600, event.pos().x()))
+            self.note.height = max(100, min(500, event.pos().y()))
+            self.update()
+            event.accept()
+            return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+        if self._resizing:
+            self._resizing = False
+            event.accept()
+        else:
+            super().mouseReleaseEvent(event)
+        self.note.x, self.note.y = self.pos().x(), self.pos().y()
+        current = (self.note.x, self.note.y, self.note.width, self.note.height)
+        if current != self._start and self.on_action:
+            self.on_action(self, "geometry", self._start)
+
+    def mouseDoubleClickEvent(self, event) -> None:
+        if self.on_action:
+            self.on_action(self, "edit", None)
+        event.accept()
+
+    def contextMenuEvent(self, event) -> None:
+        menu = QMenu()
+        edit = menu.addAction(QCoreApplication.translate("RarePedigree", "Editar anotação"))
+        duplicate = menu.addAction(QCoreApplication.translate("RarePedigree", "Duplicar anotação"))
+        delete = menu.addAction(QCoreApplication.translate("RarePedigree", "Excluir anotação"))
+        selected = menu.exec(event.screenPos())
+        action = {edit: "edit", duplicate: "duplicate", delete: "delete"}.get(selected)
+        if action and self.on_action:
+            self.on_action(self, action, None)
 
 
 class IndividualItem(QGraphicsObject):
@@ -108,15 +211,15 @@ class IndividualItem(QGraphicsObject):
         del option, widget
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         selected = self.isSelected()
-        normal_color = self.render_style.category_color(self.person.gender_identity)
+        normal_color = self.render_style.outline_color
         pen = QPen(QColor("#22D3EE") if selected else QColor(normal_color), 4 if selected else 3)
+        if not selected:
+            pen.setWidth(self.render_style.outline_width)
         if self.person.placeholder:
             pen.setStyle(Qt.PenStyle.DashLine)
         painter.setPen(pen)
         status = self.person.phenotype_status
-        brush_color = (
-            QColor("#20262e") if status == ObservationStatus.PRESENT else QColor("#ffffff")
-        )
+        brush_color = QColor(self.render_style.phenotype_fill(status))
         painter.setBrush(QBrush(brush_color))
         painter.drawPath(self.shape())
         half = SYMBOL_SIZE / 2

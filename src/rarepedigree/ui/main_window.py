@@ -40,6 +40,7 @@ from rarepedigree.application import (
     UpdateIndividualCommand,
 )
 from rarepedigree.domain import (
+    CanvasAnnotation,
     FamilyService,
     GenderIdentity,
     Individual,
@@ -55,6 +56,7 @@ from rarepedigree.domain import (
 from rarepedigree.layout import PedigreeLayoutEngine
 from rarepedigree.persistence import JsonProjectRepository
 from rarepedigree.rendering import (
+    AnnotationItem,
     IndividualItem,
     ParentageConnectorItem,
     PedigreeScene,
@@ -72,6 +74,7 @@ from rarepedigree.ui.components import (
 from rarepedigree.ui.dialogs import (
     AddRelativeWizard,
     AddSiblingDialog,
+    AnnotationEditorDialog,
     EditSiblingRelationshipDialog,
     ExportFigureDialog,
     ImportProjectDialog,
@@ -114,6 +117,7 @@ class MainWindow(QMainWindow):
         self.scene.on_context_action = self._context_action
         self.scene.context_actions = self._available_context_actions
         self.scene.on_empty_context_action = self._empty_context_action
+        self.scene.on_annotation_action = self._annotation_action
         self.scene.selectionChanged.connect(self._selection_changed)
         self.view = PedigreeView(self.scene)
         self.view.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -179,6 +183,7 @@ class MainWindow(QMainWindow):
             "Salvar como…", self, shortcut=QKeySequence.StandardKey.SaveAs
         )
         self.export_action = QAction("Exportar figura…", self, shortcut="Ctrl+E")
+        self.add_annotation_action = QAction("Adicionar anotação", self, shortcut="Ctrl+Shift+N")
         self.quit_action = QAction("Sair", self, shortcut=QKeySequence.StandardKey.Quit)
         self.undo_action = self.undo_stack.createUndoAction(self, "Desfazer")
         self.redo_action = self.undo_stack.createRedoAction(self, "Refazer")
@@ -245,6 +250,10 @@ class MainWindow(QMainWindow):
         self.save_action.triggered.connect(self.save_project)
         self.save_as_action.triggered.connect(self.save_project_as)
         self.export_action.triggered.connect(self.export_figure)
+        self.add_annotation_action.triggered.connect(
+            lambda: self._add_annotation(self.view.mapToScene(self.view.viewport().rect().center()))
+        )
+        self.addAction(self.add_annotation_action)
         self.quit_action.triggered.connect(self.close)
         self.relationship_action.triggered.connect(
             lambda: self.add_relationship(RelationshipKind.PARTNERSHIP)
@@ -679,6 +688,80 @@ class MainWindow(QMainWindow):
             self.fit_pedigree()
         elif action == "layout":
             self.auto_layout()
+        elif action == "note":
+            self._add_annotation(_position)
+
+    def _add_annotation(self, position: QPointF) -> None:
+        note = CanvasAnnotation(x=position.x(), y=position.y())
+        if self.isVisible():
+            dialog = AnnotationEditorDialog(note, self)
+            if dialog.exec() != dialog.DialogCode.Accepted:
+                return
+            for field, value in dialog.values().items():
+                setattr(note, field, value)
+        before = self.project.model_copy(deep=True)
+        after = self.project.model_copy(deep=True)
+        after.annotations.append(note)
+        self.undo_stack.push(
+            ReplaceProjectCommand("Adicionar anotação", before, after, self._apply_project)
+        )
+        item = self.scene.annotation_items.get(note.id)
+        if item is not None:
+            item.setSelected(True)
+            self.scene.animate_annotation_entry(
+                note.id, QSettings().value("ui/reduce_motion", False, bool)
+            )
+
+    def _annotation_action(self, item: AnnotationItem, action: str, payload) -> None:
+        note_id = item.note.id
+        if action == "geometry":
+            before = self.project.model_copy(deep=True)
+            old_x, old_y, old_width, old_height = payload
+            old = next(note for note in before.annotations if note.id == note_id)
+            old.x, old.y, old.width, old.height = old_x, old_y, old_width, old_height
+            after = self.project.model_copy(deep=True)
+            self.undo_stack.push(
+                ReplaceProjectCommand("Mover anotação", before, after, self._apply_project)
+            )
+            return
+        before = self.project.model_copy(deep=True)
+        after = self.project.model_copy(deep=True)
+        note = next(note for note in after.annotations if note.id == note_id)
+        if action == "edit":
+            dialog = AnnotationEditorDialog(note, self)
+            if dialog.exec() != dialog.DialogCode.Accepted:
+                return
+            for field, value in dialog.values().items():
+                setattr(note, field, value)
+        elif action == "duplicate":
+            duplicate = note.model_copy(
+                update={"id": CanvasAnnotation().id, "x": note.x + 28, "y": note.y + 28}
+            )
+            after.annotations.append(duplicate)
+        elif action == "delete":
+            if self.isVisible() and QMessageBox.question(
+                self,
+                tr("Excluir anotação"),
+                tr("Excluir esta anotação?"),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Cancel,
+            ) != QMessageBox.StandardButton.Yes:
+                return
+            after.annotations = [entry for entry in after.annotations if entry.id != note_id]
+        else:
+            return
+        self.undo_stack.push(
+            ReplaceProjectCommand(
+                {
+                    "edit": "Editar anotação",
+                    "duplicate": "Duplicar anotação",
+                    "delete": "Excluir anotação",
+                }[action],
+                before,
+                after,
+                self._apply_project,
+            )
+        )
 
     def _context_action(self, item: IndividualItem, action: str) -> None:
         if action == "center":
@@ -1235,6 +1318,7 @@ class MainWindow(QMainWindow):
             landscape=self.settings.value("export/landscape", True, bool),
             include_legend=dialog.include_legend.isChecked(),
             monochrome=dialog.monochrome.isChecked(),
+            include_annotations=dialog.include_annotations.isChecked(),
         )
         try:
             if path.suffix.lower() == ".png":

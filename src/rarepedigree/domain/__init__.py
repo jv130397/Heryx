@@ -10,6 +10,8 @@ from rarepedigree.domain.kinship import (
     SiblingKind,
 )
 from rarepedigree.domain.models import (
+    AnnotationType,
+    CanvasAnnotation,
     DeclaredKinship,
     DeclaredKinshipKind,
     EvidenceStatus,
@@ -28,6 +30,8 @@ from rarepedigree.domain.models import (
 from rarepedigree.domain.states import EvidenceState, ObservationStatus
 
 __all__ = [
+    "AnnotationType",
+    "CanvasAnnotation",
     "DeclaredKinship",
     "DeclaredKinshipKind",
     "EvidenceState",

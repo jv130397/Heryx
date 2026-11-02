@@ -1,7 +1,7 @@
 """Persistent, non-clinical workspace preferences."""
 
-from PySide6.QtCore import QPointF, QSettings, Signal
-from PySide6.QtGui import QColor, QPainter, QPen, QPolygonF
+from PySide6.QtCore import QSettings, Signal
+from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (
     QCheckBox,
     QColorDialog,
@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFormLayout,
     QFrame,
+    QLabel,
     QPushButton,
     QScrollArea,
     QSpinBox,
@@ -50,7 +51,7 @@ class PalettePreview(QWidget):
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.colors = ("#3B82F6", "#F472B6", "#94A3B8")
+        self.colors = ("#20262E", "#FFFFFF", "#FFFFFF")
         self.monochrome = False
         self.setMinimumHeight(86)
 
@@ -63,20 +64,15 @@ class PalettePreview(QWidget):
         del event
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        colors = ("#20262E",) * 3 if self.monochrome else self.colors
+        colors = ("#20262E", "#FFFFFF", "#FFFFFF") if self.monochrome else self.colors
         centers = [self.width() * value / 4 for value in (1, 2, 3)]
         for index, (x, color) in enumerate(zip(centers, colors, strict=True)):
-            painter.setPen(QPen(QColor(color), 3))
-            painter.setBrush(QColor("#20262E") if index == 1 else QColor("#FFFFFF"))
-            if index == 0:
-                painter.drawRect(int(x - 21), 20, 42, 42)
-            elif index == 1:
-                painter.drawEllipse(int(x - 21), 20, 42, 42)
-            else:
-                polygon = QPolygonF()
-                for point in ((x, 18), (x + 23, 41), (x, 64), (x - 23, 41)):
-                    polygon.append(QPointF(*point))
-                painter.drawPolygon(polygon)
+            painter.setPen(QPen(QColor("#20262E"), 3))
+            painter.setBrush(QColor(color))
+            painter.drawEllipse(int(x - 21), 15, 42, 42)
+            if index == 2:
+                painter.drawText(int(x - 8), 43, "?")
+            painter.drawText(int(x - 30), 77, 60, 16, 0x84, ("A", "N", "?")[index])
 
 
 class PreferencesDialog(QDialog):
@@ -135,8 +131,6 @@ class PreferencesDialog(QDialog):
         form = QFormLayout(page)
         self.grid = QCheckBox("Mostrar grade")
         self.grid.setChecked(self.settings.value("pedigree/grid", True, bool))
-        self.category_colors = QCheckBox("Colorir contornos por categoria")
-        self.category_colors.setChecked(self.settings.value("pedigree/category_colors", True, bool))
         self.monochrome = QCheckBox("Modo científico monocromático")
         self.monochrome.setChecked(self.settings.value("pedigree/monochrome", False, bool))
         self.show_legend = QCheckBox("Mostrar legenda")
@@ -175,19 +169,38 @@ class PreferencesDialog(QDialog):
         self.reduce_motion = QCheckBox("Reduzir movimento")
         self.reduce_motion.setChecked(self.settings.value("ui/reduce_motion", False, bool))
         self.palette = QComboBox()
-        self.palette.addItem("Scientific", "scientific")
-        self.palette.addItem("Colorblind safe", "colorblind")
-        self.palette.addItem("High contrast", "contrast")
-        self.man_color = ColorButton(self.settings.value("pedigree/man_color", "#3B82F6", str))
-        self.woman_color = ColorButton(self.settings.value("pedigree/woman_color", "#F472B6", str))
-        self.unspecified_color = ColorButton(
-            self.settings.value("pedigree/unspecified_color", "#94A3B8", str)
+        self.palette.addItem("Clássico científico", "scientific")
+        self.palette.addItem("Clínico contemporâneo", "clinical")
+        self.palette.addItem("Alto contraste", "contrast")
+        self.palette.addItem("Acessível a daltonismo (legado)", "colorblind")
+        self.affected_color = ColorButton(
+            self.settings.value("phenotype/affected_color", "#20262E", str)
         )
+        self.unaffected_color = ColorButton(
+            self.settings.value("phenotype/unaffected_color", "#FFFFFF", str)
+        )
+        self.unknown_color = ColorButton(
+            self.settings.value("phenotype/unknown_color", "#FFFFFF", str)
+        )
+        self.outline_color = ColorButton(
+            self.settings.value("phenotype/outline_color", "#20262E", str)
+        )
+        # Compatibility alias for integrations written before the neutral
+        # scientific palette. It controls phenotype fill, never sex/gender.
+        self.man_color = self.affected_color
+        self.outline_width = QSpinBox()
+        self.outline_width.setRange(1, 6)
+        self.outline_width.setValue(self.settings.value("phenotype/outline_width", 3, int))
         self.preview = PalettePreview()
         self.reset_colors = QPushButton("Restaurar cores padrão")
         self.reset_colors.clicked.connect(self._reset_colors)
         self.palette.currentIndexChanged.connect(self._apply_palette)
-        for button in (self.man_color, self.woman_color, self.unspecified_color):
+        for button in (
+            self.affected_color,
+            self.unaffected_color,
+            self.unknown_color,
+            self.outline_color,
+        ):
             button.colorChanged.connect(self._update_preview)
         self.monochrome.toggled.connect(self._update_preview)
         self.legend_position = QComboBox()
@@ -198,7 +211,9 @@ class PreferencesDialog(QDialog):
             self.settings.value("pedigree/legend_position", "bottom", str)
         )))
         form.addRow(self.grid)
-        form.addRow(self.category_colors)
+        section = QLabel("REPRESENTAÇÃO FENOTÍPICA")
+        section.setProperty("sectionHeader", True)
+        form.addRow(section)
         form.addRow(self.monochrome)
         form.addRow(self.show_legend)
         form.addRow(self.show_auxiliary_labels)
@@ -210,9 +225,11 @@ class PreferencesDialog(QDialog):
         form.addRow("Limite de legibilidade", self.readable_zoom)
         form.addRow(self.reduce_motion)
         form.addRow("Paleta", self.palette)
-        form.addRow("Masculino / quadrado", self.man_color)
-        form.addRow("Feminino / círculo", self.woman_color)
-        form.addRow("Não especificado / losango", self.unspecified_color)
+        form.addRow("Afetado", self.affected_color)
+        form.addRow("Não afetado", self.unaffected_color)
+        form.addRow("Desconhecido", self.unknown_color)
+        form.addRow("Contorno neutro", self.outline_color)
+        form.addRow("Espessura do contorno", self.outline_width)
         form.addRow(self.preview)
         form.addRow(self.reset_colors)
         self._update_preview()
@@ -241,35 +258,54 @@ class PreferencesDialog(QDialog):
         self.export_legend.setChecked(self.settings.value("export/include_legend", True, bool))
         self.export_monochrome = QCheckBox("Exportar em modo monocromático")
         self.export_monochrome.setChecked(self.settings.value("export/monochrome", False, bool))
+        self.export_annotations = QCheckBox("Incluir anotações visíveis")
+        self.export_annotations.setChecked(
+            self.settings.value("export/include_annotations", False, bool)
+        )
         form.addRow("Escala PNG", self.png_scale)
         form.addRow("Margem", self.margin)
         form.addRow("Orientação PDF", self.orientation)
         form.addRow(self.export_legend)
         form.addRow(self.export_monochrome)
+        form.addRow(self.export_annotations)
         return page
 
     def _reset_colors(self) -> None:
-        self.man_color.set_color("#3B82F6")
-        self.woman_color.set_color("#F472B6")
-        self.unspecified_color.set_color("#94A3B8")
+        self.affected_color.set_color("#20262E")
+        self.unaffected_color.set_color("#FFFFFF")
+        self.unknown_color.set_color("#FFFFFF")
+        self.outline_color.set_color("#20262E")
+        self.outline_width.setValue(3)
         self.palette.setCurrentIndex(0)
 
     def _apply_palette(self) -> None:
         palettes = {
-            "scientific": ("#3B82F6", "#F472B6", "#94A3B8"),
-            "colorblind": ("#0072B2", "#D55E00", "#7A7A7A"),
-            "contrast": ("#0057FF", "#D00070", "#111111"),
+            "scientific": ("#20262E", "#FFFFFF", "#FFFFFF", "#20262E"),
+            "clinical": ("#A43A3A", "#FFFFFF", "#FFFFFF", "#303740"),
+            "contrast": ("#000000", "#FFFFFF", "#FFFFFF", "#000000"),
+            "colorblind": ("#0072B2", "#FFFFFF", "#FFFFFF", "#20262E"),
         }
         colors = palettes[self.palette.currentData()]
         for button, color in zip(
-            (self.man_color, self.woman_color, self.unspecified_color), colors, strict=True
+            (
+                self.affected_color,
+                self.unaffected_color,
+                self.unknown_color,
+                self.outline_color,
+            ),
+            colors,
+            strict=True,
         ):
             button.set_color(color)
 
     def _update_preview(self, _value=None) -> None:
         if hasattr(self, "preview"):
             self.preview.set_palette(
-                (self.man_color.color, self.woman_color.color, self.unspecified_color.color),
+                (
+                    self.affected_color.color,
+                    self.unaffected_color.color,
+                    self.unknown_color.color,
+                ),
                 self.monochrome.isChecked(),
             )
 
@@ -293,7 +329,6 @@ class PreferencesDialog(QDialog):
             "ui/font_size": self.font_size.value(),
             "ui/scale": self.ui_scale.value(),
             "pedigree/grid": self.grid.isChecked(),
-            "pedigree/category_colors": self.category_colors.isChecked(),
             "pedigree/monochrome": self.monochrome.isChecked(),
             "pedigree/show_legend": self.show_legend.isChecked(),
             "pedigree/show_auxiliary_labels": self.show_auxiliary_labels.isChecked(),
@@ -304,14 +339,18 @@ class PreferencesDialog(QDialog):
             "navigation/maximum_zoom": self.maximum_zoom.value(),
             "navigation/readable_zoom": self.readable_zoom.value(),
             "ui/reduce_motion": self.reduce_motion.isChecked(),
-            "pedigree/man_color": self.man_color.color,
-            "pedigree/woman_color": self.woman_color.color,
-            "pedigree/unspecified_color": self.unspecified_color.color,
+            "phenotype/affected_color": self.affected_color.color,
+            "phenotype/unaffected_color": self.unaffected_color.color,
+            "phenotype/unknown_color": self.unknown_color.color,
+            "phenotype/outline_color": self.outline_color.color,
+            "phenotype/outline_width": self.outline_width.value(),
+            "pedigree/man_color": self.affected_color.color,
             "export/png_scale": self.png_scale.value(),
             "export/margin": self.margin.value(),
             "export/landscape": self.orientation.currentData(),
             "export/include_legend": self.export_legend.isChecked(),
             "export/monochrome": self.export_monochrome.isChecked(),
+            "export/include_annotations": self.export_annotations.isChecked(),
         }
         for key, value in values.items():
             self.settings.setValue(key, value)

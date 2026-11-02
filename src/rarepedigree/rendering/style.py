@@ -4,41 +4,57 @@ from dataclasses import dataclass
 
 from PySide6.QtCore import QSettings
 
-from rarepedigree.domain import GenderIdentity
-
 
 @dataclass
 class PedigreeRenderStyle:
-    category_colors: bool = True
     monochrome: bool = False
-    man_color: str = "#3B82F6"
-    woman_color: str = "#F472B6"
-    unspecified_color: str = "#94A3B8"
+    affected_color: str = "#20262E"
+    unaffected_color: str = "#FFFFFF"
+    unknown_color: str = "#FFFFFF"
+    outline_color: str = "#20262E"
+    outline_width: int = 3
+    # Legacy preference fields are retained for API/project compatibility only.
+    # They no longer encode sex or affect rendering.
+    man_color: str = "#20262E"
+    woman_color: str = "#20262E"
+    unspecified_color: str = "#20262E"
     show_legend: bool = True
     legend_position: str = "bottom"
     identifier_size: int = 10
     show_auxiliary_labels: bool = True
 
+    def category_color(self, category: object) -> str:
+        """Expose the pre-4.12 API without using it for scientific rendering."""
+        value = getattr(category, "value", str(category)).lower()
+        if value in {"man", "male"}:
+            return self.man_color
+        if value in {"woman", "female"}:
+            return self.woman_color
+        return self.unspecified_color
+
     @classmethod
     def from_settings(cls, settings: QSettings | None = None) -> "PedigreeRenderStyle":
         settings = settings or QSettings()
         return cls(
-            category_colors=settings.value("pedigree/category_colors", True, bool),
             monochrome=settings.value("pedigree/monochrome", False, bool),
-            man_color=settings.value("pedigree/man_color", "#3B82F6", str),
-            woman_color=settings.value("pedigree/woman_color", "#F472B6", str),
-            unspecified_color=settings.value("pedigree/unspecified_color", "#94A3B8", str),
+            affected_color=settings.value("phenotype/affected_color", "#20262E", str),
+            unaffected_color=settings.value("phenotype/unaffected_color", "#FFFFFF", str),
+            unknown_color=settings.value("phenotype/unknown_color", "#FFFFFF", str),
+            outline_color=settings.value("phenotype/outline_color", "#20262E", str),
+            outline_width=settings.value("phenotype/outline_width", 3, int),
             show_legend=settings.value("pedigree/show_legend", True, bool),
             legend_position=settings.value("pedigree/legend_position", "bottom", str),
             identifier_size=settings.value("pedigree/identifier_size", 10, int),
             show_auxiliary_labels=settings.value("pedigree/show_auxiliary_labels", True, bool),
         )
 
-    def category_color(self, gender: GenderIdentity) -> str:
-        if self.monochrome or not self.category_colors:
-            return "#20262E"
-        if gender == GenderIdentity.MAN:
-            return self.man_color
-        if gender == GenderIdentity.WOMAN:
-            return self.woman_color
-        return self.unspecified_color
+    def phenotype_fill(self, status) -> str:
+        from rarepedigree.domain import ObservationStatus
+
+        if self.monochrome:
+            return "#20262E" if status == ObservationStatus.PRESENT else "#FFFFFF"
+        if status == ObservationStatus.PRESENT:
+            return self.affected_color
+        if status == ObservationStatus.ABSENT:
+            return self.unaffected_color
+        return self.unknown_color

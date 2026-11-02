@@ -20,6 +20,7 @@ from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsSimpleText
 from rarepedigree.domain import Individual, ParentageKind, PedigreeProject, Relationship
 from rarepedigree.layout import PedigreeLayoutEngine
 from rarepedigree.rendering.items import (
+    AnnotationItem,
     IndividualItem,
     ParentageConnectorItem,
     RelationshipItem,
@@ -37,6 +38,7 @@ class PedigreeScene(QGraphicsScene):
         self.parentage_items: dict[UUID, ParentageConnectorItem] = {}
         self.twin_items: dict[UUID, TwinConnectorItem] = {}
         self.generation_items: list[QGraphicsSimpleTextItem] = []
+        self.annotation_items: dict[UUID, AnnotationItem] = {}
         self.legend_item: QGraphicsSimpleTextItem | None = None
         self.project = PedigreeProject()
         self.render_style = PedigreeRenderStyle.from_settings()
@@ -44,6 +46,7 @@ class PedigreeScene(QGraphicsScene):
         self.on_context_action: Callable[[IndividualItem, str], None] | None = None
         self.context_actions: Callable[[IndividualItem], set[str]] | None = None
         self.on_empty_context_action: Callable[[str, QPointF], None] | None = None
+        self.on_annotation_action: Callable | None = None
         self.interaction_mode = "select"
         self._entry_animations: dict[UUID, QParallelAnimationGroup] = {}
 
@@ -58,6 +61,7 @@ class PedigreeScene(QGraphicsScene):
         self.parentage_items.clear()
         self.twin_items.clear()
         self.generation_items.clear()
+        self.annotation_items.clear()
         self.legend_item = None
         display_labels = self._display_labels(project)
         for person in project.individuals:
@@ -70,6 +74,15 @@ class PedigreeScene(QGraphicsScene):
         self._add_parentage_connectors(project)
         self._add_generation_labels(project)
         self._add_legend()
+        for note in project.annotations:
+            if note.visible:
+                self.add_annotation(note)
+
+    def add_annotation(self, note) -> AnnotationItem:
+        item = AnnotationItem(note, self.on_annotation_action)
+        self.addItem(item)
+        self.annotation_items[note.id] = item
+        return item
 
     def _add_generation_labels(self, project: PedigreeProject) -> None:
         generations = PedigreeLayoutEngine().generations(project)
@@ -100,11 +113,6 @@ class PedigreeScene(QGraphicsScene):
         def translate(text: str) -> str:
             return QCoreApplication.translate("RarePedigree", text)
 
-        category = (
-            "  |  " + translate("contorno azul/rosa/cinza = categoria de representação")
-            if self.render_style.category_colors and not self.render_style.monochrome
-            else "  |  " + translate("modo científico monocromático")
-        )
         legend = QGraphicsSimpleTextItem(
             translate("Legenda: preenchido = afetado")
             + "  |  ? = "
@@ -112,7 +120,8 @@ class PedigreeScene(QGraphicsScene):
             + "  |  / = "
             + translate("falecido")
             + "  |  P = proband  |  C = consultand"
-            + category
+            + "  |  "
+            + translate("contorno neutro = geometria; preenchimento = fenótipo")
         )
         legend.setBrush(QColor("#344b5a"))
         positions = {
@@ -269,6 +278,19 @@ class PedigreeScene(QGraphicsScene):
         self._entry_animations[person_id] = group
         group.start()
 
+    def animate_annotation_entry(self, annotation_id: UUID, reduced_motion: bool = False) -> None:
+        """Introduce a canvas note gently, honoring reduced-motion settings."""
+        item = self.annotation_items.get(annotation_id)
+        if item is None or reduced_motion:
+            return
+        item.setOpacity(0.0)
+        animation = QPropertyAnimation(item, b"opacity", self)
+        animation.setDuration(180)
+        animation.setStartValue(0.0)
+        animation.setEndValue(1.0)
+        animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+        animation.start(QPropertyAnimation.DeletionPolicy.DeleteWhenStopped)
+
     def set_interaction_mode(self, mode: str) -> None:
         if mode not in {"select", "move"}:
             raise ValueError(f"Unknown interaction mode: {mode}")
@@ -340,6 +362,9 @@ class PedigreeScene(QGraphicsScene):
             return super().contextMenuEvent(event)
         menu = QMenu()
         actions = {
+            menu.addAction(
+                QCoreApplication.translate("RarePedigree", "Adicionar anotação")
+            ): "note",
             menu.addAction(QCoreApplication.translate("RarePedigree", "Ajustar à tela")): "fit",
             menu.addAction(
                 QCoreApplication.translate("RarePedigree", "Organização automática")

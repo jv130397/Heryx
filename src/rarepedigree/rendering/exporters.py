@@ -15,20 +15,32 @@ class ExportOptions:
     margin: float = 30.0
     landscape: bool = True
     include_legend: bool = True
+    include_annotations: bool = False
     monochrome: bool | None = None
 
 
 DEFAULT_EXPORT_OPTIONS = ExportOptions()
 
 
-def _content_rect(scene: QGraphicsScene, margin: float, include_legend: bool = True) -> QRectF:
+def _content_rect(
+    scene: QGraphicsScene,
+    margin: float,
+    include_legend: bool = True,
+    include_annotations: bool = False,
+) -> QRectF:
     legend = getattr(scene, "legend_item", None)
     previous = legend.isVisible() if legend is not None else False
     if legend is not None:
         legend.setVisible(include_legend)
+    notes = list(getattr(scene, "annotation_items", {}).values())
+    note_visibility = [item.isVisible() for item in notes]
+    for item in notes:
+        item.setVisible(include_annotations and item.note.visible)
     rect = scene.itemsBoundingRect().adjusted(-margin, -margin, margin, margin)
     if legend is not None:
         legend.setVisible(previous)
+    for item, visible in zip(notes, note_visibility, strict=True):
+        item.setVisible(visible)
     return rect if not rect.isEmpty() else QRectF(0, 0, 640, 480)
 
 
@@ -45,6 +57,13 @@ def _render(
     if legend is not None:
         legend.setVisible(options.include_legend)
     styled_items = list(getattr(scene, "person_items", {}).values())
+    annotation_items = list(getattr(scene, "annotation_items", {}).values())
+    annotation_visibility = [item.isVisible() for item in annotation_items]
+    annotation_effects = [item.graphicsEffect() for item in annotation_items]
+    for item in annotation_items:
+        item.setVisible(options.include_annotations and item.note.visible)
+        if item.graphicsEffect() is not None:
+            item.graphicsEffect().setEnabled(False)
     original_modes = [item.render_style.monochrome for item in styled_items]
     if options.monochrome is not None:
         for item in styled_items:
@@ -60,6 +79,11 @@ def _render(
     for item, mode in zip(styled_items, original_modes, strict=True):
         item.render_style.monochrome = mode
         item.update()
+    for item, visible in zip(annotation_items, annotation_visibility, strict=True):
+        item.setVisible(visible)
+    for effect in annotation_effects:
+        if effect is not None:
+            effect.setEnabled(True)
     if legend is not None:
         legend.setVisible(legend_visible)
 
@@ -67,7 +91,9 @@ def _render(
 def export_svg(
     scene: QGraphicsScene, path: Path, options: ExportOptions = DEFAULT_EXPORT_OPTIONS
 ) -> None:
-    rect = _content_rect(scene, options.margin, options.include_legend)
+    rect = _content_rect(
+        scene, options.margin, options.include_legend, options.include_annotations
+    )
     generator = QSvgGenerator()
     generator.setFileName(str(path))
     generator.setSize(QSize(max(1, int(rect.width())), max(1, int(rect.height()))))
@@ -81,7 +107,9 @@ def export_svg(
 def export_png(
     scene: QGraphicsScene, path: Path, options: ExportOptions = DEFAULT_EXPORT_OPTIONS
 ) -> None:
-    rect = _content_rect(scene, options.margin, options.include_legend)
+    rect = _content_rect(
+        scene, options.margin, options.include_legend, options.include_annotations
+    )
     size = QSize(
         max(1, int(rect.width() * options.png_scale)),
         max(1, int(rect.height() * options.png_scale)),
@@ -99,7 +127,9 @@ def export_png(
 def export_pdf(
     scene: QGraphicsScene, path: Path, options: ExportOptions = DEFAULT_EXPORT_OPTIONS
 ) -> None:
-    rect = _content_rect(scene, options.margin, options.include_legend)
+    rect = _content_rect(
+        scene, options.margin, options.include_legend, options.include_annotations
+    )
     writer = QPdfWriter(str(path))
     writer.setTitle("RarePedigree Studio export")
     writer.setResolution(300)

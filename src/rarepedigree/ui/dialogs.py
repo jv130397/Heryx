@@ -28,6 +28,8 @@ from PySide6.QtWidgets import (
 )
 
 from rarepedigree.domain import (
+    AnnotationType,
+    CanvasAnnotation,
     FamilyService,
     GenderIdentity,
     Individual,
@@ -41,6 +43,43 @@ from rarepedigree.layout import PedigreeLayoutEngine
 from rarepedigree.rendering import PedigreeScene
 from rarepedigree.ui.components import NexusDialogHeader
 from rarepedigree.ui.i18n import language_manager, tr
+
+
+class AnnotationEditorDialog(QDialog):
+    """Compact editor for a non-clinical canvas annotation."""
+
+    def __init__(self, note: CanvasAnnotation, parent=None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(tr("Editar anotação"))
+        self.setMinimumSize(460, 330)
+        root = QVBoxLayout(self)
+        root.addWidget(NexusDialogHeader(tr("Anotação"), tr("Comentário visual do usuário")))
+        form = QFormLayout()
+        self.kind = QComboBox()
+        self.kind.addItem(tr("Observação geral"), AnnotationType.GENERAL)
+        self.kind.addItem(tr("Pendência de revisão"), AnnotationType.REVIEW)
+        self.kind.addItem(tr("Informação a confirmar"), AnnotationType.TO_CONFIRM)
+        self.kind.addItem(tr("Comentário técnico"), AnnotationType.TECHNICAL)
+        self.kind.setCurrentIndex(max(0, self.kind.findData(note.kind)))
+        self.title_edit = QLineEdit(note.title)
+        self.text_edit = QTextEdit(note.text)
+        form.addRow(tr("Tipo"), self.kind)
+        form.addRow(tr("Título"), self.title_edit)
+        form.addRow(tr("Texto"), self.text_edit)
+        root.addLayout(form)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
+        )
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        root.addWidget(buttons)
+
+    def values(self) -> dict[str, Any]:
+        return {
+            "kind": self.kind.currentData(),
+            "title": self.title_edit.text().strip() or tr("Anotação"),
+            "text": self.text_edit.toPlainText().strip(),
+        }
 
 
 class ImportProjectDialog(QDialog):
@@ -135,10 +174,15 @@ class ExportFigureDialog(QDialog):
         self.include_legend.setChecked(settings.value("export/include_legend", True, bool))
         self.monochrome = QCheckBox(tr("Modo científico monocromático"))
         self.monochrome.setChecked(settings.value("export/monochrome", False, bool))
+        self.include_annotations = QCheckBox(tr("Incluir anotações visíveis"))
+        self.include_annotations.setChecked(
+            settings.value("export/include_annotations", False, bool)
+        )
         form.addRow(tr("Formato"), self.format)
         form.addRow(tr("Destino"), row)
         form.addRow(self.include_legend)
         form.addRow(self.monochrome)
+        form.addRow(self.include_annotations)
         layout.addLayout(form)
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
@@ -182,7 +226,7 @@ class SymbolPreview(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = QRectF(self.width() / 2 - 28, 26, 56, 56)
-        painter.setPen(QPen(QColor("#078FC2"), 4))
+        painter.setPen(QPen(QColor("#20262E"), 4))
         painter.setBrush(
             QColor("#1C293B") if self.status == ObservationStatus.PRESENT else QColor("white")
         )

@@ -1,0 +1,21 @@
+{
+  "platform": "offscreen",
+  "real_display": false,
+  "note": "Real Qt widgets rendered offscreen; no mockups or compositing.",
+  "checks": {
+    "neutral_outline": true,
+    "annotation_count": true,
+    "annotations_outside_clinical_graph": true,
+    "export_default_excludes_annotations": true,
+    "legacy_drawer_hidden": true,
+    "minimap_absent": true
+  },
+  "evidence": {
+    "workspace_pt_1920": "assets/phase_4_12/01_workspace_notes_pt_1920x1080.png",
+    "workspace_pt_1366": "assets/phase_4_12/02_workspace_notes_pt_1366x768.png",
+    "phenotype_preferences": "assets/phase_4_12/03_phenotype_preferences.png",
+    "annotation_editor": "assets/phase_4_12/04_annotation_editor.png",
+    "export_opt_in": "assets/phase_4_12/05_export_annotation_option.png",
+    "workspace_en": "assets/phase_4_12/06_workspace_notes_en.png"
+  }
+}

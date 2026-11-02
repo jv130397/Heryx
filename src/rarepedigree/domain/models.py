@@ -60,6 +60,13 @@ class TwinZygosity(StrEnum):
     UNKNOWN = "unknown"
 
 
+class AnnotationType(StrEnum):
+    GENERAL = "general"
+    REVIEW = "review"
+    TO_CONFIRM = "to_confirm"
+    TECHNICAL = "technical"
+
+
 class LayoutPosition(BaseModel):
     """Disposable visual position, deliberately separate from clinical facts."""
 
@@ -144,12 +151,30 @@ class Family(BaseModel):
     label: str = Field(default="Família", max_length=200)
 
 
+class CanvasAnnotation(BaseModel):
+    """User-authored canvas comment, deliberately outside clinical facts."""
+
+    id: UUID = Field(default_factory=uuid4)
+    title: str = Field(default="Anotação", max_length=120)
+    text: str = Field(default="", max_length=4000)
+    x: float = 0.0
+    y: float = 0.0
+    width: float = Field(default=220.0, ge=140.0, le=600.0)
+    height: float = Field(default=150.0, ge=100.0, le=500.0)
+    kind: AnnotationType = AnnotationType.GENERAL
+    color: str = Field(default="#FFF2B3", max_length=20)
+    individual_id: UUID | None = None
+    visible: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
 class PedigreeProject(BaseModel):
     """Native project document with an explicit schema version."""
 
     model_config = ConfigDict(validate_assignment=True)
 
-    schema_version: str = "0.2.0"
+    schema_version: str = "0.3.0"
     project_id: UUID = Field(default_factory=uuid4)
     title: str = Field(default="Heredograma sem título", max_length=200)
     description: str = Field(default="", max_length=1000)
@@ -162,11 +187,18 @@ class PedigreeProject(BaseModel):
     parentages: list[Parentage] = Field(default_factory=list)
     twin_groups: list[TwinGroup] = Field(default_factory=list)
     declared_kinships: list[DeclaredKinship] = Field(default_factory=list)
+    annotations: list[CanvasAnnotation] = Field(default_factory=list)
     family: Family = Field(default_factory=Family)
 
     @model_validator(mode="after")
     def relationship_members_must_exist(self) -> PedigreeProject:
         individual_ids = {person.id for person in self.individuals}
+        for annotation in self.annotations:
+            if (
+                annotation.individual_id is not None
+                and annotation.individual_id not in individual_ids
+            ):
+                annotation.individual_id = None
         for relationship in self.relationships:
             if (
                 relationship.member_a not in individual_ids
