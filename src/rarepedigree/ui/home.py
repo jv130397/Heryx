@@ -33,6 +33,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from rarepedigree.ui.genomic_sphere import GenomicSphere
 from rarepedigree.ui.i18n import language_manager, tr
 from rarepedigree.ui.icons import icon
 
@@ -351,15 +352,40 @@ class WelcomeScreen(QWidget):
     newRequested = Signal()
     openRequested = Signal()
     recentRequested = Signal(Path)
+    preferencesRequested = Signal()
+    languageRequested = Signal()
 
     def __init__(self, store: RecentProjectsStore | None = None, parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("welcome-screen")
         self.store = store or RecentProjectsStore()
         self._animations = QParallelAnimationGroup(self)
-        shell = QHBoxLayout(self)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+        utility = QFrame()
+        utility.setObjectName("welcome-utility")
+        utility_layout = QHBoxLayout(utility)
+        utility_layout.setContentsMargins(22, 6, 18, 6)
+        utility_layout.setSpacing(8)
+        utility_brand = QLabel("RarePedigree Studio")
+        utility_brand.setObjectName("welcome-utility-brand")
+        utility_layout.addWidget(utility_brand)
+        utility_layout.addStretch()
+        self.utility_language = QToolButton()
+        self.utility_language.clicked.connect(self.languageRequested)
+        self.utility_preferences = QToolButton()
+        self.utility_preferences.setIcon(icon("settings", "#AFC1D8", 17))
+        self.utility_preferences.setAccessibleName(tr("Preferências…"))
+        self.utility_preferences.clicked.connect(self.preferencesRequested)
+        utility_layout.addWidget(self.utility_language)
+        utility_layout.addWidget(self.utility_preferences)
+        root.addWidget(utility)
+        content = QWidget()
+        shell = QHBoxLayout(content)
         shell.setContentsMargins(0, 0, 0, 0)
         shell.setSpacing(0)
+        root.addWidget(content, 1)
         self.hero = QFrame()
         self.hero.setObjectName("welcome-hero")
         hero = QVBoxLayout(self.hero)
@@ -377,17 +403,22 @@ class WelcomeScreen(QWidget):
         self.tagline = QLabel()
         self.tagline.setObjectName("welcome-tagline")
         hero.addWidget(self.tagline)
-        self.illustration = PedigreeIllustration()
-        self._idle_animation = QPropertyAnimation(self.illustration, b"bobOffset", self)
+        self.hero_heading = QLabel()
+        self.hero_heading.setObjectName("welcome-hero-heading")
+        self.hero_heading.setWordWrap(True)
+        self.hero_description = QLabel()
+        self.hero_description.setObjectName("welcome-hero-description")
+        self.hero_description.setWordWrap(True)
+        hero.addWidget(self.hero_heading)
+        hero.addWidget(self.hero_description)
+        self.sphere = GenomicSphere(self.store.settings)
+        self.illustration = self.sphere
+        self._idle_animation = QPropertyAnimation(self.sphere, b"bobOffset", self)
         self._idle_animation.setDuration(4200)
         self._idle_animation.setLoopCount(-1)
-        self._idle_animation.setKeyValueAt(0.0, 0.0)
-        self._idle_animation.setKeyValueAt(0.25, -5.0)
-        self._idle_animation.setKeyValueAt(0.5, 0.0)
-        self._idle_animation.setKeyValueAt(0.75, 5.0)
-        self._idle_animation.setKeyValueAt(1.0, 0.0)
-        self._idle_animation.setEasingCurve(QEasingCurve.Type.InOutSine)
-        hero.addWidget(self.illustration, 1)
+        self._idle_animation.setStartValue(0.0)
+        self._idle_animation.setEndValue(0.0)
+        hero.addWidget(self.sphere, 1)
         self.privacy = QLabel()
         self.privacy.setWordWrap(True)
         self.privacy.setObjectName("welcome-privacy")
@@ -434,15 +465,15 @@ class WelcomeScreen(QWidget):
 
     def start_animation(self, reduced_motion: bool = False) -> None:
         self._animations.stop()
+        self.sphere.stop()
         self._idle_animation.stop()
-        self.illustration.set_bob_offset(0.0)
         for card in (self.new_card, self.open_card, self.recent_card):
             card.set_motion_enabled(not reduced_motion)
         self._animations.deleteLater()
         self._animations = QParallelAnimationGroup(self)
         if reduced_motion:
-            self.illustration.set_motion_enabled(False)
-            self.illustration.set_progress(1.0)
+            self.sphere.set_intro_progress(1.0)
+            self.sphere.start(reduced_motion=True)
             for widget in (
                 self.heading,
                 self.intro,
@@ -454,10 +485,10 @@ class WelcomeScreen(QWidget):
                 if isinstance(effect, QGraphicsOpacityEffect):
                     effect.setOpacity(1.0)
             return
-        self.illustration.set_motion_enabled(True)
-        self.illustration.set_progress(0.0)
-        drawing = QPropertyAnimation(self.illustration, b"progress", self)
-        drawing.setDuration(2800)
+        self.sphere.set_intro_progress(0.0)
+        self.sphere.start(reduced_motion=False)
+        drawing = QPropertyAnimation(self.sphere, b"introProgress", self)
+        drawing.setDuration(820)
         drawing.setStartValue(0.0)
         drawing.setEndValue(1.0)
         drawing.setEasingCurve(QEasingCurve.Type.OutCubic)
@@ -473,25 +504,33 @@ class WelcomeScreen(QWidget):
             animation.setEndValue(1.0)
             animation.setEasingCurve(QEasingCurve.Type.OutCubic)
             self._animations.addAnimation(animation)
-        self._animations.finished.connect(self._start_idle_animation)
+        self._animations.finished.connect(self._clear_completed_opacity_effects)
         self._animations.start()
 
-    def _start_idle_animation(self) -> None:
-        if self.isVisible():
-            self._idle_animation.start()
+    def _clear_completed_opacity_effects(self) -> None:
+        """Remove finished effects so native/offscreen painting stays single-pass."""
+        for widget in (self.heading, self.intro, self.new_card, self.open_card, self.recent_card):
+            widget.setGraphicsEffect(None)
 
     def stop_animation(self) -> None:
         self._animations.stop()
+        self.sphere.stop()
         self._idle_animation.stop()
-        self.illustration.set_progress(1.0)
-        self.illustration.set_bob_offset(0.0)
+        self.sphere.set_intro_progress(1.0)
         for widget in (self.heading, self.intro, self.new_card, self.open_card, self.recent_card):
             effect = widget.graphicsEffect()
             if isinstance(effect, QGraphicsOpacityEffect):
                 effect.setOpacity(1.0)
 
+    def _start_idle_animation(self) -> None:
+        """Compatibility hook; the sphere timer now owns the actual idle motion."""
+        if self.isVisible():
+            self.sphere.start(reduced_motion=False)
+            self._idle_animation.start()
+
     def set_theme(self, theme: str) -> None:
         self.setProperty("welcomeTheme", "light" if theme == "light" else "midnight")
+        self.sphere.set_theme(theme)
         self.style().unpolish(self)
         self.style().polish(self)
         for child in self.findChildren(QWidget):
@@ -554,7 +593,15 @@ class WelcomeScreen(QWidget):
         self.refresh_recent_projects()
 
     def retranslate_ui(self, _language: str | None = None) -> None:
+        self.utility_language.setText("EN" if language_manager.language == "pt_BR" else "PT")
         self.tagline.setText(tr("Genética • Família • Descoberta"))
+        self.hero_heading.setText(tr("A genética de cada família conta uma história."))
+        self.hero_description.setText(
+            tr(
+                "Crie heredogramas científicos, explore relações familiares "
+                "e organize informações clínicas com precisão."
+            )
+        )
         self.privacy.setText(
             tr("Privacidade por padrão: seus projetos permanecem neste computador.")
         )

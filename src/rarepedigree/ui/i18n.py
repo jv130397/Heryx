@@ -66,6 +66,16 @@ CATALOG = {
         "Arquivo": "File",
         "Tela inicial": "Home screen",
         "Genética • Família • Descoberta": "Genetics • Family • Discovery",
+        "A genética de cada família conta uma história.": (
+            "Every family's genetics tells a story."
+        ),
+        (
+            "Crie heredogramas científicos, explore relações familiares "
+            "e organize informações clínicas com precisão."
+        ): (
+            "Create scientific pedigrees, explore family relationships, "
+            "and organize clinical information with precision."
+        ),
         "Privacidade por padrão: seus projetos permanecem neste computador.": (
             "Privacy by default: your projects stay on this computer."
         ),

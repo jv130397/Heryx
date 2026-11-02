@@ -6,7 +6,16 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from PySide6.QtCore import QEasingCurve, QPointF, QRectF, QSettings, QSize, Qt, QVariantAnimation
+from PySide6.QtCore import (
+    QEasingCurve,
+    QPointF,
+    QPropertyAnimation,
+    QRectF,
+    QSettings,
+    QSize,
+    Qt,
+    QVariantAnimation,
+)
 from PySide6.QtGui import (
     QAction,
     QActionGroup,
@@ -20,6 +29,7 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
+    QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -167,6 +177,8 @@ class MainWindow(QMainWindow):
         self.welcome_screen.newRequested.connect(self.new_project)
         self.welcome_screen.openRequested.connect(self.open_project)
         self.welcome_screen.recentRequested.connect(self.open_recent_project)
+        self.welcome_screen.preferencesRequested.connect(self.open_preferences)
+        self.welcome_screen.languageRequested.connect(self.toggle_language)
         self.page_container = QWidget()
         self.page_container.setObjectName("application-pages")
         self.page_stack = QStackedLayout(self.page_container)
@@ -175,6 +187,14 @@ class MainWindow(QMainWindow):
         self.page_stack.addWidget(self.welcome_screen)
         self.page_stack.addWidget(self.central_shell)
         self.setCentralWidget(self.page_container)
+        self.workspace_opacity = QGraphicsOpacityEffect(self.central_shell)
+        self.workspace_opacity.setOpacity(1.0)
+        self.central_shell.setGraphicsEffect(self.workspace_opacity)
+        self.workspace_reveal = QPropertyAnimation(self.workspace_opacity, b"opacity", self)
+        self.workspace_reveal.setDuration(180)
+        self.workspace_reveal.setStartValue(0.0)
+        self.workspace_reveal.setEndValue(1.0)
+        self.workspace_reveal.setEasingCurve(QEasingCurve.Type.OutCubic)
 
         self.properties = PropertiesPanel()
         self.properties_drawer = SlidingPanel(self.properties, self.central_shell)
@@ -1384,6 +1404,7 @@ class MainWindow(QMainWindow):
         self.welcome_screen.refresh_recent_projects()
         self.page_stack.setCurrentWidget(self.welcome_screen)
         self.main_toolbar.hide()
+        self.menuBar().hide()
         self.statusBar().hide()
         self.welcome_screen.start_animation(
             self.settings.value("ui/reduce_motion", False, bool)
@@ -1393,8 +1414,14 @@ class MainWindow(QMainWindow):
     def show_workspace(self) -> None:
         self.welcome_screen.stop_animation()
         self.page_stack.setCurrentWidget(self.central_shell)
+        self.menuBar().show()
         self.main_toolbar.show()
         self.statusBar().show()
+        if self.settings.value("ui/reduce_motion", False, bool):
+            self.workspace_opacity.setOpacity(1.0)
+        else:
+            self.workspace_reveal.stop()
+            self.workspace_reveal.start()
         self._position_canvas_overlays()
 
     def export_figure(self) -> None:

@@ -1,0 +1,40 @@
+{
+  "platform": "offscreen",
+  "implementation": "Native PySide6 QWidget/QPainter; screenshots are direct widget grabs.",
+  "checks": {
+    "sphere_vertices": 74,
+    "sphere_edges": 123,
+    "fallback_mode": true,
+    "menu_hidden_on_welcome": true,
+    "timer_stopped_in_editor": true,
+    "themes": [
+      "midnight",
+      "light"
+    ],
+    "languages": [
+      "pt_BR",
+      "en"
+    ],
+    "reduced_motion": true
+  },
+  "performance": {
+    "construct_ms": 71.83,
+    "visible_ms": 46.83,
+    "editor_transition_ms": 6.94,
+    "measured_animation_fps": 57.21,
+    "rss_mib": 126.0
+  },
+  "evidence": {
+    "pt_midnight_1920": "assets/phase_4_16_0_cinematic/01_pt_midnight_1920x1080.png",
+    "pt_midnight_1366": "assets/phase_4_16_0_cinematic/02_pt_midnight_1366x768.png",
+    "entrance": "assets/phase_4_16_0_cinematic/03_cinematic_entrance.png",
+    "hover": "assets/phase_4_16_0_cinematic/04_sphere_hover_response.png",
+    "drag": "assets/phase_4_16_0_cinematic/05_sphere_drag_inertia.png",
+    "pulse": "assets/phase_4_16_0_cinematic/06_sphere_click_pulse.png",
+    "reduced_motion": "assets/phase_4_16_0_cinematic/07_reduced_motion_static.png",
+    "en_light": "assets/phase_4_16_0_cinematic/08_en_light_1920x1080.png",
+    "card_hover": "assets/phase_4_16_0_cinematic/09_card_hover_microinteraction.png",
+    "video": "assets/phase_4_16_0_cinematic/phase_4_16_0_real_interaction.mp4",
+    "editor_transition": "assets/phase_4_16_0_cinematic/10_editor_transition.png"
+  }
+}

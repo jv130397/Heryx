@@ -143,10 +143,16 @@ QDialog#welcome-dialog { background: #FFFFFF; }
 QLabel#welcome-title { font-size: 22px; font-weight: 700; color: #1F2933; }
 QLabel#welcome-mark { color: #078FC2; font-size: 48px; }
 QWidget#welcome-screen { background: #0C1427; }
+QFrame#welcome-utility { background: #0A1323; border-bottom: 1px solid #223451; min-height: 34px; }
+QLabel#welcome-utility-brand { color: #AFC1D8; font-size: 11px; font-weight: 650; }
+QFrame#welcome-utility QToolButton { color: #C9D7E8; min-width: 28px; min-height: 24px; padding: 2px 6px; }
 QFrame#welcome-hero { background: #0C1427; border: 0; }
 QFrame#welcome-actions { background: #111B31; border-left: 1px solid #263755; }
 QLabel#welcome-brand { color: #F2F8FF; font-size: 24px; font-weight: 750; }
 QLabel#welcome-tagline { color: #78D9F6; font-size: 14px; letter-spacing: 1px; }
+QLabel#welcome-hero-heading { color: #F2F6FB; font-size: 25px; font-weight: 720; padding-top: 18px; }
+QLabel#welcome-hero-description { color: #A8B7CC; font-size: 13px; }
+QWidget#genomic-sphere { background: transparent; }
 QLabel#welcome-privacy { color: #8FA3C2; font-size: 12px; }
 QLabel#welcome-heading { color: #F4F7FD; font-size: 26px; font-weight: 750; }
 QLabel#welcome-intro { color: #AAB8CE; font-size: 14px; padding-bottom: 5px; }
@@ -164,13 +170,18 @@ QLabel#recent-project-title { color: #E6EDF8; font-size: 12px; font-weight: 650;
 QLabel#recent-project-path, QLabel#recent-empty { color: #8294AF; font-size: 10px; }
 QFrame#recent-projects-panel QPushButton, QFrame#recent-projects-panel QToolButton { color: #D7E3F3; background: #172B49; border-color: #355173; }
 QWidget#welcome-screen[welcomeTheme="light"] { background: #F3F7FA; }
+QWidget#welcome-screen[welcomeTheme="light"] QFrame#welcome-utility { background: #FFFFFF; border-bottom-color: #D8E3E9; }
+QWidget#welcome-screen[welcomeTheme="light"] QLabel#welcome-utility-brand,
+QWidget#welcome-screen[welcomeTheme="light"] QFrame#welcome-utility QToolButton { color: #536575; }
 QWidget#welcome-screen[welcomeTheme="light"] QFrame#welcome-hero { background: #EAF3F8; }
 QWidget#welcome-screen[welcomeTheme="light"] QFrame#welcome-actions { background: #FFFFFF; border-left-color: #D6E2E8; }
 QWidget#welcome-screen[welcomeTheme="light"] QLabel#welcome-brand,
-QWidget#welcome-screen[welcomeTheme="light"] QLabel#welcome-heading { color: #17283B; }
+QWidget#welcome-screen[welcomeTheme="light"] QLabel#welcome-heading,
+QWidget#welcome-screen[welcomeTheme="light"] QLabel#welcome-hero-heading { color: #17283B; }
 QWidget#welcome-screen[welcomeTheme="light"] QLabel#welcome-tagline { color: #087EAA; }
 QWidget#welcome-screen[welcomeTheme="light"] QLabel#welcome-privacy,
 QWidget#welcome-screen[welcomeTheme="light"] QLabel#welcome-intro,
+QWidget#welcome-screen[welcomeTheme="light"] QLabel#welcome-hero-description,
 QWidget#welcome-screen[welcomeTheme="light"] QLabel#welcome-card-description { color: #647586; }
 QWidget#welcome-screen[welcomeTheme="light"] QFrame#welcome-action-card { background: #F8FBFC; border-color: #CAD9E1; }
 QWidget#welcome-screen[welcomeTheme="light"] QFrame#welcome-action-card:hover { background: #EFF8FB; border-color: #078FC2; }

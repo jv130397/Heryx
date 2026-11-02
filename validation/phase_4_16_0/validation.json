@@ -22,11 +22,11 @@
     ]
   },
   "performance": {
-    "construct_main_window_ms": 88.15,
-    "construct_to_visible_ms": 42.49,
-    "enter_editor_ms": 10.02,
-    "open_project_ms": 19.82,
-    "rss_mib": 122.41
+    "construct_main_window_ms": 88.72,
+    "construct_to_visible_ms": 44.08,
+    "enter_editor_ms": 9.24,
+    "open_project_ms": 8.67,
+    "rss_mib": 123.09
   },
   "evidence": {
     "pt_midnight_1920": "assets/phase_4_16_0/01_welcome_pt_midnight_1920x1080.png",
