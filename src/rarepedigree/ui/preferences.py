@@ -3,7 +3,6 @@
 from PySide6.QtCore import QSettings, Signal
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (
-    QCheckBox,
     QColorDialog,
     QComboBox,
     QDialog,
@@ -19,6 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from rarepedigree.ui.components import AccessibleCheckBox as QCheckBox
 from rarepedigree.ui.i18n import language_manager, tr
 
 

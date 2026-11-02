@@ -7,7 +7,6 @@ from typing import Any, ClassVar
 from PySide6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QPainterPath, QPen
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QFrame,
     QGraphicsItemGroup,
@@ -29,6 +28,7 @@ from PySide6.QtWidgets import (
 from rarepedigree.domain import GenderIdentity, Individual, ObservationStatus
 from rarepedigree.rendering import IndividualItem
 from rarepedigree.rendering.items import SYMBOL_SIZE
+from rarepedigree.ui.components import AccessibleCheckBox as QCheckBox
 from rarepedigree.ui.i18n import tr
 
 

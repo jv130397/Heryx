@@ -40,6 +40,7 @@ Checkpoint anterior às alterações: `cdd7346`.
 | Exportação limpa | seleção, alças e sombra são desativadas durante renderização | exportador compartilhado | Aceito |
 | Movimento reduzido | fade curto de entrada, desativável por preferência | configuração `ui/reduce_motion` | Aceito |
 | PT-BR/EN | novas ações, diálogos e mensagens no catálogo | captura 06 e catálogo | Aceito |
+| Controles de opção acessíveis | fundo branco/borda no estado livre, azul e `✓` redundante no estado marcado | captura 07 e teste de tema | Aceito |
 | Fase 4.11 preservada | drawer legado oculto, minimapa ausente, zoom único | validação estrutural | Aceito |
 
 ## Arquivos modificados
@@ -69,12 +70,12 @@ visíveis, o que é intencional para navegação, mas não muda suas coordenadas
 ```text
 ruff check .
 QT_QPA_PLATFORM=offscreen pytest -q
-148 passed
+149 passed
 ```
 
-A suíte anterior tinha 140 testes. Foram adicionados oito testes da Fase 4.12, cobrindo
+A suíte anterior tinha 140 testes. Foram adicionados nove testes da Fase 4.12, cobrindo
 neutralidade, monocromia, paleta, criação, atalho, movimentação com undo, persistência,
-exportação opt-in e compatibilidade de preferências antigas.
+exportação opt-in, compatibilidade de preferências antigas e contraste dos controles de opção.
 
 ## Evidências visuais reais
 
@@ -87,6 +88,7 @@ composição artificial:
 - `assets/phase_4_12/04_annotation_editor.png`
 - `assets/phase_4_12/05_export_annotation_option.png`
 - `assets/phase_4_12/06_workspace_notes_en.png`
+- `assets/phase_4_12/07_checkbox_states.png`
 
 O resultado automatizado está em `validation/phase_4_12/validation.json`. Todos os checks
 estruturais registrados são verdadeiros.
@@ -104,5 +106,5 @@ estruturais registrados são verdadeiros.
 ## Decisão final
 
 Aceita. Os requisitos centrais da Fase 4.12 estão implementados, os 140 testes históricos foram
-preservados, a suíte total passa com 148 testes e as evidências reais confirmam a separação entre
+preservados, a suíte total passa com 149 testes e as evidências reais confirmam a separação entre
 representação científica e comentários visuais.

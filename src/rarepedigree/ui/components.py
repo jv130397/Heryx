@@ -1,8 +1,18 @@
 """Reusable presentation components for the Scientific Workspace."""
 
-from PySide6.QtCore import QEasingCurve, QEvent, QPropertyAnimation, QRect, Qt, QTimer, Signal
-from PySide6.QtGui import QAction, QColor
+from PySide6.QtCore import (
+    QEasingCurve,
+    QEvent,
+    QPointF,
+    QPropertyAnimation,
+    QRect,
+    Qt,
+    QTimer,
+    Signal,
+)
+from PySide6.QtGui import QAction, QColor, QPainter, QPen
 from PySide6.QtWidgets import (
+    QCheckBox,
     QFrame,
     QGraphicsDropShadowEffect,
     QHBoxLayout,
@@ -10,6 +20,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QStyle,
+    QStyleOptionButton,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -17,6 +29,40 @@ from PySide6.QtWidgets import (
 
 from rarepedigree.ui.i18n import tr
 from rarepedigree.ui.icons import icon
+
+
+class AccessibleCheckBox(QCheckBox):
+    """Checkbox with a redundant high-contrast tick in its checked state."""
+
+    def paintEvent(self, event) -> None:
+        super().paintEvent(event)
+        if not self.isChecked():
+            return
+        option = QStyleOptionButton()
+        self.initStyleOption(option)
+        rect = self.style().subElementRect(
+            QStyle.SubElement.SE_CheckBoxIndicator, option, self
+        )
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        pen = QPen(QColor("#FFFFFF"), 2.2)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+        painter.setPen(pen)
+        painter.drawLine(QPointF(
+            rect.left() + rect.width() * 0.24,
+            rect.top() + rect.height() * 0.53,
+        ), QPointF(
+            rect.left() + rect.width() * 0.44,
+            rect.top() + rect.height() * 0.72,
+        ))
+        painter.drawLine(QPointF(
+            rect.left() + rect.width() * 0.44,
+            rect.top() + rect.height() * 0.72,
+        ), QPointF(
+            rect.left() + rect.width() * 0.78,
+            rect.top() + rect.height() * 0.30,
+        ))
 
 
 class ToolRailButton(QToolButton):

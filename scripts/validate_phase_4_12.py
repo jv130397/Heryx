@@ -92,6 +92,13 @@ def main() -> None:
     evidence["export_opt_in"] = capture_dialog(
         ExportFigureDialog(window), "05_export_annotation_option", (700, 390)
     )
+    item = window.scene.person_items[project.individuals[0].id]
+    item.setSelected(True)
+    window._open_floating_editor(item)
+    window.floating_editor.proband.setChecked(True)
+    window.floating_editor.consultand.setChecked(False)
+    evidence["checkbox_states"] = capture(window, "07_checkbox_states")
+    window.floating_editor.hide()
     language_manager.set_language("en")
     window.resize(1920, 1080)
     evidence["workspace_en"] = capture(window, "06_workspace_notes_en")

@@ -16,6 +16,7 @@ from rarepedigree.rendering.exporters import ExportOptions, export_svg
 from rarepedigree.rendering.style import PedigreeRenderStyle
 from rarepedigree.ui.main_window import MainWindow
 from rarepedigree.ui.preferences import PreferencesDialog
+from rarepedigree.ui.theme import SCIENTIFIC_WORKSPACE_STYLESHEET
 
 
 def test_geometry_not_color_encodes_gender() -> None:
@@ -104,3 +105,11 @@ def test_legacy_category_preferences_do_not_change_neutral_outline() -> None:
     assert PedigreeRenderStyle.from_settings(settings).outline_color == settings.value(
         "phenotype/outline_color", "#20262E", str
     )
+
+
+def test_option_controls_have_explicit_high_contrast_states() -> None:
+    stylesheet = SCIENTIFIC_WORKSPACE_STYLESHEET
+    assert "QCheckBox::indicator:checked" in stylesheet
+    assert "background: #078FC2" in stylesheet
+    assert "QCheckBox::indicator:disabled" in stylesheet
+    assert "QDialog QScrollArea" in stylesheet

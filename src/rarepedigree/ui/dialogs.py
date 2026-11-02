@@ -8,7 +8,6 @@ from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (
     QButtonGroup,
-    QCheckBox,
     QComboBox,
     QDialog,
     QDialogButtonBox,
@@ -41,6 +40,7 @@ from rarepedigree.domain import (
 )
 from rarepedigree.layout import PedigreeLayoutEngine
 from rarepedigree.rendering import PedigreeScene
+from rarepedigree.ui.components import AccessibleCheckBox as QCheckBox
 from rarepedigree.ui.components import NexusDialogHeader
 from rarepedigree.ui.i18n import language_manager, tr
 
