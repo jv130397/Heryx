@@ -101,14 +101,13 @@ QFrame#empty-state { background: rgba(255,255,255,242); border: 1px solid #D6DCE
 QFrame#empty-state QLabel { color: #66737F; }
 QLabel#empty-title { color: #1F2933; font-size: 19px; font-weight: 700; }
 QLabel#empty-mark { color: #078FC2; font-size: 38px; }
-QWidget#zoom-control { background: #FFFFFF; border: 1px solid #C9D1D8; border-radius: 7px; }
+QWidget#zoom-control { background: #FFFFFF; border: 1px solid #C9D1D8; border-radius: 10px; }
 QWidget#zoom-control QLabel, QWidget#zoom-control QToolButton { color: #334155; background: transparent; }
 QWidget#view-mode-control { background: #F7F9FA; border: 1px solid #D6DCE1; border-radius: 6px; }
 QFrame#individual-search { background: #FFFFFF; border: 1px solid #C9D1D8; border-radius: 10px; }
 QFrame#individual-search QListWidget { background: #FFFFFF; color: #1F2933; border: 1px solid #D6DCE1; border-radius: 6px; }
 QFrame#individual-search QListWidget::item { padding: 8px; border-radius: 4px; }
 QFrame#individual-search QListWidget::item:selected { background: #D9F0F7; color: #075E7D; }
-QGraphicsView#pedigree-minimap { background: #FFFFFF; border: 1px solid #BFC8D0; border-radius: 8px; }
 QPushButton[symbolCard="true"] { font-size: 28px; min-width: 62px; min-height: 52px; }
 QPushButton[symbolCard="true"]:checked { background: #D9F0F7; border: 2px solid #078FC2; color: #075E7D; }
 QDialog#welcome-dialog { background: #FFFFFF; }

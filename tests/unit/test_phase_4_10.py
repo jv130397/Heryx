@@ -11,8 +11,6 @@ def _stable_navigation_preferences():
     defaults = {
         "navigation/minimum_zoom": 5,
         "navigation/maximum_zoom": 500,
-        "navigation/minimap_width": 220,
-        "navigation/show_minimap": True,
     }
     for key, value in defaults.items():
         settings.setValue(key, value)
@@ -36,22 +34,28 @@ def _three_generation_window(qtbot) -> MainWindow:
     return window
 
 
-def test_genomic_nexus_workspace_starts_with_live_minimap(qtbot) -> None:
+def test_workspace_has_one_floating_zoom_bar_instead_of_minimap(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
-    assert window.minimap.scene() is window.scene
-    assert window.minimap.source_view is window.view
-    assert window.toggle_minimap_action.isChecked()
+    window.resize(1366, 768)
+    window.show()
+    qtbot.wait(20)
+    assert not hasattr(window, "minimap")
+    assert window.zoom_control is window.floating_zoom
+    assert window.floating_zoom.parent() is window.view.viewport()
+    assert window.floating_zoom.geometry().right() < window.view.viewport().width()
+    assert window.floating_zoom.geometry().bottom() < window.view.viewport().height()
+    assert window.floating_zoom.y() > window.view.viewport().height() // 2
 
 
-def test_minimap_navigation_centers_real_view(qtbot) -> None:
+def test_floating_zoom_bar_controls_real_view(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
-    target = QPointF(410, 280)
-    window.minimap.navigationRequested.emit(target)
-    center = window.view.mapToScene(window.view.viewport().rect().center())
-    assert abs(center.x() - target.x()) < 3
-    assert abs(center.y() - target.y()) < 3
+    window.view.set_zoom(100)
+    window.floating_zoom.zoomIn.emit()
+    assert window.view.zoom_percent == 120
+    window.floating_zoom.zoomOut.emit()
+    assert window.view.zoom_percent == 100
 
 
 def test_search_finds_label_and_uuid_and_navigates(qtbot) -> None:
@@ -113,7 +117,7 @@ def test_scientific_view_hides_editor_chrome_and_restores_it(qtbot) -> None:
     assert not window.tool_rail.isVisible()
     assert not window.main_toolbar.isVisible()
     assert not window.view.grid_enabled
-    assert not window.minimap.isVisible()
+    assert not window.floating_zoom.isVisible()
     window.set_view_mode("overview")
     assert window.tool_rail.isVisible()
     assert window.main_toolbar.isVisible()
@@ -137,14 +141,10 @@ def test_navigation_preferences_are_applied(qtbot) -> None:
     settings = QSettings()
     settings.setValue("navigation/minimum_zoom", 8)
     settings.setValue("navigation/maximum_zoom", 420)
-    settings.setValue("navigation/minimap_width", 190)
-    settings.setValue("navigation/show_minimap", False)
     window = MainWindow()
     qtbot.addWidget(window)
     assert window.view.minimum_zoom == 8
     assert window.view.maximum_zoom == 420
-    assert window.minimap.width() == 190
-    assert not window.toggle_minimap_action.isChecked()
 
 
 def test_context_menu_exposes_only_nonredundant_person_actions(qtbot) -> None:

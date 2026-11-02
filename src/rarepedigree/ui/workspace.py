@@ -4,13 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QPoint, QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QMouseEvent, QPainter
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
-    QGraphicsScene,
-    QGraphicsView,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -23,71 +20,6 @@ from PySide6.QtWidgets import (
 
 from rarepedigree.domain import Individual, ObservationStatus, PedigreeProject
 from rarepedigree.ui.i18n import tr
-
-
-class PedigreeMiniMap(QGraphicsView):
-    """Live overview of the real scene with a draggable viewport indicator."""
-
-    navigationRequested = Signal(QPointF)
-
-    def __init__(self, scene: QGraphicsScene, source_view: QGraphicsView, parent=None) -> None:
-        super().__init__(scene, parent)
-        self.source_view = source_view
-        self.setObjectName("pedigree-minimap")
-        self.setFixedSize(220, 150)
-        self.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setInteractive(False)
-        self.setAccessibleName(tr("Minimapa do heredograma"))
-        self._dragging = False
-
-    def refresh(self) -> None:
-        bounds = self.scene().itemsBoundingRect().adjusted(-40, -40, 40, 40)
-        if not bounds.isEmpty():
-            self.fitInView(bounds, Qt.AspectRatioMode.KeepAspectRatio)
-        self.viewport().update()
-
-    def visible_scene_rect(self) -> QRectF:
-        return self.source_view.mapToScene(self.source_view.viewport().rect()).boundingRect()
-
-    def drawForeground(self, painter: QPainter, rect: QRectF) -> None:
-        super().drawForeground(painter, rect)
-        visible = self.visible_scene_rect()
-        painter.save()
-        painter.setBrush(Qt.BrushStyle.NoBrush)
-        pen = painter.pen()
-        pen.setColor(QColor("#078FC2"))
-        pen.setWidthF(2 / max(self.transform().m11(), 0.01))
-        painter.setPen(pen)
-        painter.drawRect(visible)
-        painter.restore()
-
-    def _navigate(self, position: QPoint) -> None:
-        point = self.mapToScene(position)
-        self.navigationRequested.emit(point)
-
-    def mousePressEvent(self, event: QMouseEvent) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            self._dragging = True
-            self._navigate(event.position().toPoint())
-            event.accept()
-            return
-        super().mousePressEvent(event)
-
-    def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        if self._dragging:
-            self._navigate(event.position().toPoint())
-            event.accept()
-            return
-        super().mouseMoveEvent(event)
-
-    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
-        if event.button() == Qt.MouseButton.LeftButton:
-            self._dragging = False
-            event.accept()
-            return
-        super().mouseReleaseEvent(event)
 
 
 class IndividualSearch(QFrame):

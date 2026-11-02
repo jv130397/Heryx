@@ -111,12 +111,39 @@ def test_relationship_inspector_contains_no_editing_controls(qtbot) -> None:
     assert not hasattr(window, "properties_dock")
 
 
-def test_family_rail_keeps_only_advanced_family_operations(qtbot) -> None:
+def test_family_creation_exists_only_on_selected_person(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
-    actions = set(window.family_button.menu().actions())
-    assert window.add_relative_action in actions
-    assert window.add_parents_action not in actions
-    assert window.add_partner_action not in actions
-    assert window.add_child_action not in actions
-    assert window.add_sibling_action not in actions
+    assert not hasattr(window, "family_button")
+    assert not hasattr(window, "person_button")
+    menu_labels = {action.text() for action in window.pedigree_menu.actions()}
+    assert "Adicionar pais" not in menu_labels
+    assert "Adicionar parceiro" not in menu_labels
+    assert "Adicionar filho" not in menu_labels
+    assert "Adicionar irmão" not in menu_labels
+    window.add_person(GenderIdentity.UNKNOWN)
+    assert not window.context_bar.isHidden()
+    assert {"parents", "partner", "child", "sibling"} <= {
+        key for key, button in window.context_bar._buttons.items() if not button.isHidden()
+    }
+
+
+def test_visible_new_person_uses_entry_animation(qtbot) -> None:
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window.settings.setValue("ui/reduce_motion", False)
+    window.show()
+    person = window.add_person(GenderIdentity.UNKNOWN)
+    assert person.id in window.scene._entry_animations
+    qtbot.waitUntil(lambda: person.id not in window.scene._entry_animations, timeout=1000)
+    item = window.scene.person_items[person.id]
+    assert item.opacity() == 1.0
+    assert item.scale() == 1.0
+    window._context_action(item, "parents")
+    window.undo_stack.setClean()
+    relative_ids = {entry.id for entry in window.project.individuals} - {person.id}
+    assert relative_ids <= set(window.scene._entry_animations)
+    qtbot.waitUntil(
+        lambda: not relative_ids.intersection(window.scene._entry_animations), timeout=1000
+    )
+    window.close()

@@ -5,7 +5,15 @@ from __future__ import annotations
 from collections.abc import Callable
 from uuid import UUID
 
-from PySide6.QtCore import QCoreApplication, QPointF, QRectF, QSettings
+from PySide6.QtCore import (
+    QCoreApplication,
+    QEasingCurve,
+    QParallelAnimationGroup,
+    QPointF,
+    QPropertyAnimation,
+    QRectF,
+    QSettings,
+)
 from PySide6.QtGui import QColor, QFont, QTransform
 from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene, QGraphicsSimpleTextItem, QMenu
 
@@ -37,8 +45,12 @@ class PedigreeScene(QGraphicsScene):
         self.context_actions: Callable[[IndividualItem], set[str]] | None = None
         self.on_empty_context_action: Callable[[str, QPointF], None] | None = None
         self.interaction_mode = "select"
+        self._entry_animations: dict[UUID, QParallelAnimationGroup] = {}
 
     def load_project(self, project: PedigreeProject) -> None:
+        for animation in self._entry_animations.values():
+            animation.stop()
+        self._entry_animations.clear()
         self.clear()
         self.project = project
         self.person_items.clear()
@@ -225,6 +237,38 @@ class PedigreeScene(QGraphicsScene):
         self.person_items[person.id] = item
         return item
 
+    def animate_person_entry(self, person_id: UUID, reduced_motion: bool = False) -> None:
+        """Fade and scale a new symbol without affecting its stored layout."""
+        item = self.person_items.get(person_id)
+        if item is None:
+            return
+        if reduced_motion:
+            item.setOpacity(1.0)
+            item.setScale(1.0)
+            return
+        previous = self._entry_animations.pop(person_id, None)
+        if previous is not None:
+            previous.stop()
+        item.setTransformOriginPoint(item.boundingRect().center())
+        item.setOpacity(0.0)
+        item.setScale(0.72)
+        group = QParallelAnimationGroup(self)
+        opacity = QPropertyAnimation(item, b"opacity", group)
+        opacity.setDuration(220)
+        opacity.setStartValue(0.0)
+        opacity.setEndValue(1.0)
+        opacity.setEasingCurve(QEasingCurve.Type.OutCubic)
+        scale = QPropertyAnimation(item, b"scale", group)
+        scale.setDuration(260)
+        scale.setStartValue(0.72)
+        scale.setEndValue(1.0)
+        scale.setEasingCurve(QEasingCurve.Type.OutBack)
+        group.addAnimation(opacity)
+        group.addAnimation(scale)
+        group.finished.connect(lambda: self._entry_animations.pop(person_id, None))
+        self._entry_animations[person_id] = group
+        group.start()
+
     def set_interaction_mode(self, mode: str) -> None:
         if mode not in {"select", "move"}:
             raise ValueError(f"Unknown interaction mode: {mode}")
@@ -296,9 +340,6 @@ class PedigreeScene(QGraphicsScene):
             return super().contextMenuEvent(event)
         menu = QMenu()
         actions = {
-            menu.addAction(QCoreApplication.translate("RarePedigree", "Adicionar indivíduo")): (
-                "add"
-            ),
             menu.addAction(QCoreApplication.translate("RarePedigree", "Ajustar à tela")): "fit",
             menu.addAction(
                 QCoreApplication.translate("RarePedigree", "Organização automática")

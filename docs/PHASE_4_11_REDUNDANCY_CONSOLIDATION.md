@@ -1,5 +1,9 @@
 # Consolidação das redundâncias da interface
 
+> Atualização de 2 de novembro de 2026: a criação familiar foi posteriormente
+> concentrada integralmente na barra do indivíduo. Consulte
+> `PHASE_4_11_CONTEXT_ONLY_CREATION_AND_ZOOM.md` para o estado vigente.
+
 ## Resultado
 
 As recomendações prioritárias de `PHASE_4_11_REDUNDANCY_AUDIT.md` foram aplicadas sem alterar o domínio, o motor de parentesco, o layout científico ou o formato persistente.

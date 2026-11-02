@@ -64,7 +64,6 @@ from rarepedigree.rendering.exporters import ExportOptions, export_pdf, export_p
 from rarepedigree.rendering.style import PedigreeRenderStyle
 from rarepedigree.ui.components import (
     EmptyState,
-    FamilyMenu,
     SlidingPanel,
     Toast,
     ToolRailButton,
@@ -89,7 +88,7 @@ from rarepedigree.ui.interaction import (
 from rarepedigree.ui.preferences import PreferencesDialog
 from rarepedigree.ui.properties import PropertiesPanel
 from rarepedigree.ui.theme import SCIENTIFIC_WORKSPACE_STYLESHEET
-from rarepedigree.ui.workspace import IndividualSearch, PedigreeMiniMap, ViewModeControl
+from rarepedigree.ui.workspace import IndividualSearch, ViewModeControl
 
 
 class MainWindow(QMainWindow):
@@ -149,9 +148,6 @@ class MainWindow(QMainWindow):
         self.search_panel.hide()
         self.search_panel.personActivated.connect(self.navigate_to_person)
         self.search_panel.close_button.clicked.connect(self.search_panel.hide)
-        self.minimap = PedigreeMiniMap(self.scene, self.view, canvas)
-        self.minimap.navigationRequested.connect(self.view.center_smoothly)
-        self.view.viewportChanged.connect(self.minimap.viewport().update)
         self.view.viewportChanged.connect(self._position_canvas_overlays)
         self.central_shell = QWidget()
         self.central_layout = QHBoxLayout(self.central_shell)
@@ -188,21 +184,13 @@ class MainWindow(QMainWindow):
         self.redo_action = self.undo_stack.createRedoAction(self, "Refazer")
         self.undo_action.setShortcut(QKeySequence.StandardKey.Undo)
         self.redo_action.setShortcut(QKeySequence.StandardKey.Redo)
-        self.add_man_action = QAction("Adicionar homem/menino", self)
-        self.add_woman_action = QAction("Adicionar mulher/menina", self)
-        self.add_unspecified_action = QAction("Adicionar gênero não especificado", self)
         self.relationship_action = QAction("Relacionar selecionados", self)
         self.consanguinity_action = QAction("Relação consanguínea", self)
         self.separation_action = QAction("Relação separada", self)
         self.divorce_action = QAction("Relação divorciada", self)
-        self.add_parents_action = QAction("Adicionar pais", self)
-        self.add_relative_action = QAction("Adicionar familiar…", self)
         self.edit_kinship_action = QAction("Editar parentesco entre selecionados…", self)
         self.reconcile_action = QAction("Identificar familiar desconhecido…", self)
         self.reassign_branch_action = QAction("Corrigir ramo de tio ou primo…", self)
-        self.add_partner_action = QAction("Adicionar parceiro", self)
-        self.add_child_action = QAction("Adicionar filho", self)
-        self.add_sibling_action = QAction("Adicionar irmão", self)
         self.delete_action = QAction("Excluir", self, shortcut=QKeySequence.StandardKey.Delete)
         self.auto_layout_action = QAction("Organização automática", self, shortcut="Ctrl+L")
         self.fit_action = QAction("Ajustar à tela", self, shortcut="Ctrl+0")
@@ -211,9 +199,6 @@ class MainWindow(QMainWindow):
         self.search_action = QAction("Buscar indivíduo…", self, shortcut="Ctrl+F")
         self.focus_proband_action = QAction("Focar no probando", self, shortcut="Ctrl+P")
         self.clear_focus_action = QAction("Limpar foco", self, shortcut="Escape")
-        self.toggle_minimap_action = QAction("Mostrar minimapa", self)
-        self.toggle_minimap_action.setCheckable(True)
-        self.toggle_minimap_action.setChecked(True)
         self.preferences_action = QAction("Preferências…", self)
         self.label_configuration_action = QAction("Configurar rótulos…", self)
         self.move_action = QAction("Mover", self)
@@ -241,7 +226,6 @@ class MainWindow(QMainWindow):
             self.auto_layout_action: "layout",
             self.export_action: "export",
             self.preferences_action: "settings",
-            self.add_unspecified_action: "person",
             self.relationship_action: "link",
             self.delete_action: "delete",
             self.fit_action: "fit",
@@ -262,11 +246,6 @@ class MainWindow(QMainWindow):
         self.save_as_action.triggered.connect(self.save_project_as)
         self.export_action.triggered.connect(self.export_figure)
         self.quit_action.triggered.connect(self.close)
-        self.add_man_action.triggered.connect(lambda: self.add_person(GenderIdentity.MAN))
-        self.add_woman_action.triggered.connect(lambda: self.add_person(GenderIdentity.WOMAN))
-        self.add_unspecified_action.triggered.connect(
-            lambda: self.add_person(GenderIdentity.UNKNOWN)
-        )
         self.relationship_action.triggered.connect(
             lambda: self.add_relationship(RelationshipKind.PARTNERSHIP)
         )
@@ -279,14 +258,9 @@ class MainWindow(QMainWindow):
         self.divorce_action.triggered.connect(
             lambda: self.add_relationship(RelationshipKind.DIVORCED_PARTNERSHIP)
         )
-        self.add_parents_action.triggered.connect(lambda: self._context_for_selected("parents"))
-        self.add_relative_action.triggered.connect(self._open_relative_wizard)
         self.edit_kinship_action.triggered.connect(self._edit_selected_kinship)
         self.reconcile_action.triggered.connect(self._reconcile_selected_unknown)
         self.reassign_branch_action.triggered.connect(self._reassign_selected_branch)
-        self.add_partner_action.triggered.connect(lambda: self._context_for_selected("partner"))
-        self.add_child_action.triggered.connect(lambda: self._context_for_selected("child"))
-        self.add_sibling_action.triggered.connect(lambda: self._context_for_selected("sibling"))
         self.delete_action.triggered.connect(lambda: self._context_for_selected("delete"))
         self.auto_layout_action.triggered.connect(self.auto_layout)
         self.fit_action.triggered.connect(self.fit_pedigree)
@@ -295,9 +269,6 @@ class MainWindow(QMainWindow):
         self.search_action.triggered.connect(self.toggle_search)
         self.focus_proband_action.triggered.connect(self.focus_on_proband)
         self.clear_focus_action.triggered.connect(self.clear_focus)
-        self.toggle_minimap_action.toggled.connect(
-            lambda visible: self.minimap.setVisible(visible)
-        )
         self.preferences_action.triggered.connect(lambda: self.open_preferences())
         self.label_configuration_action.triggered.connect(self.open_label_configuration)
         self.twins_mz_action.triggered.connect(
@@ -337,18 +308,10 @@ class MainWindow(QMainWindow):
         self.pedigree_menu = self.menuBar().addMenu("Heredograma")
         self.pedigree_menu.addActions(
             [
-                self.add_man_action,
-                self.add_woman_action,
-                self.add_unspecified_action,
                 self.relationship_action,
                 self.consanguinity_action,
                 self.separation_action,
                 self.divorce_action,
-                self.add_parents_action,
-                self.add_partner_action,
-                self.add_child_action,
-                self.add_sibling_action,
-                self.add_relative_action,
                 self.edit_kinship_action,
                 self.reassign_branch_action,
                 self.reconcile_action,
@@ -369,7 +332,6 @@ class MainWindow(QMainWindow):
                 self.search_action,
                 self.focus_proband_action,
                 self.clear_focus_action,
-                self.toggle_minimap_action,
                 self.label_configuration_action,
             ]
         )
@@ -473,51 +435,6 @@ class MainWindow(QMainWindow):
         move_button = ToolRailButton(self.move_action, "move", expanded=False)
         self.rail_buttons.append(move_button)
         layout.addWidget(move_button)
-        self.person_button = QToolButton()
-        person_button = self.person_button
-        person_button.setIcon(icon("person"))
-        person_button.setText("Adicionar indivíduo")
-        person_button.setFixedHeight(46)
-        person_button.setFixedWidth(44)
-        person_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-        person_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        person_menu = FamilyMenu(
-            [self.add_man_action, self.add_woman_action, self.add_unspecified_action],
-            person_button,
-        )
-        person_button.setMenu(person_menu)
-        layout.addWidget(person_button)
-        self.family_button = QToolButton()
-        family_button = self.family_button
-        family_button.setIcon(icon("family"))
-        family_button.setFixedHeight(46)
-        family_button.setFixedWidth(44)
-        family_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-        family_button.setText("Adicionar familiar")
-        family_button.setProperty("railButton", True)
-        family_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        family_button.setMenu(
-            FamilyMenu(
-                [
-                    self.add_relative_action,
-                    self.edit_kinship_action,
-                    self.reconcile_action,
-                    self.reassign_branch_action,
-                ],
-                family_button,
-            )
-        )
-        family_button.menu().addSeparator()
-        family_button.menu().addAction("Adicionar pais desconhecidos").triggered.connect(
-            lambda: self._context_for_selected("unknown_parents")
-        )
-        family_button.menu().addAction("Adicionar filho adotivo").triggered.connect(
-            lambda: self._context_for_selected("adopted_child")
-        )
-        family_button.setToolTip("Adicionar familiar")
-        family_button.setAccessibleName("Adicionar familiar")
-        layout.addWidget(family_button)
-        self.rail_buttons.extend([person_button, family_button])
         relation_button = ToolRailButton(self.relationship_action, "link", expanded=False)
         self.rail_buttons.append(relation_button)
         layout.addWidget(relation_button)
@@ -650,10 +567,17 @@ class MainWindow(QMainWindow):
         positions = self.layout_engine.compute(after)
         for person in after.individuals:
             person.layout.x, person.layout.y = positions[person.id]
+        new_ids = {person.id for person in after.individuals} - {
+            person.id for person in before.individuals
+        }
         self.undo_stack.push(ReplaceProjectCommand(label, before, after, self._apply_project))
         self.message_status.setText(tr(label))
         self.toast.show_message(tr(label))
         self.fit_pedigree()
+        if self.isVisible():
+            reduced_motion = self.settings.value("ui/reduce_motion", False, bool)
+            for person_id in new_ids:
+                self.scene.animate_person_entry(person_id, reduced_motion)
 
     def toggle_tool_rail(self) -> None:
         self.rail_expanded = not self.rail_expanded
@@ -695,23 +619,18 @@ class MainWindow(QMainWindow):
         self.save_status = QLabel("Salvo")
         self.validation_status = QLabel()
         self.message_status = QLabel("Pronto")
-        self.zoom_control = ZoomControl()
         self.floating_zoom = ZoomControl(self.view.viewport())
+        self.zoom_control = self.floating_zoom
         self.view.floating_control = self.floating_zoom
-        self.zoom_control.zoomIn.connect(self.zoom_in_action.trigger)
-        self.zoom_control.zoomOut.connect(self.zoom_out_action.trigger)
-        self.zoom_control.fitRequested.connect(self.fit_action.trigger)
         self.floating_zoom.zoomIn.connect(self.zoom_in_action.trigger)
         self.floating_zoom.zoomOut.connect(self.zoom_out_action.trigger)
         self.floating_zoom.fitRequested.connect(self.fit_action.trigger)
-        self.view.zoomChanged.connect(self.zoom_control.set_zoom)
         self.view.zoomChanged.connect(self.floating_zoom.set_zoom)
         self.statusBar().addWidget(self.message_status, 1)
         self.statusBar().addPermanentWidget(self.count_status)
         self.statusBar().addPermanentWidget(self.generation_status)
         self.statusBar().addPermanentWidget(self.save_status)
         self.statusBar().addPermanentWidget(self.validation_status)
-        self.statusBar().addPermanentWidget(self.zoom_control)
 
     def new_project(self) -> None:
         if not self._may_discard_changes():
@@ -755,16 +674,11 @@ class MainWindow(QMainWindow):
                 return
         self._context_action(selected[0], action)
 
-    def _empty_context_action(self, action: str, position: QPointF) -> None:
+    def _empty_context_action(self, action: str, _position: QPointF) -> None:
         if action == "fit":
             self.fit_pedigree()
         elif action == "layout":
             self.auto_layout()
-        elif action == "add":
-            person = self.add_person(GenderIdentity.UNKNOWN)
-            person.layout.x = position.x()
-            person.layout.y = position.y()
-            self.scene.person_items[person.id].setPos(position)
 
     def _context_action(self, item: IndividualItem, action: str) -> None:
         if action == "center":
@@ -844,13 +758,7 @@ class MainWindow(QMainWindow):
         except ValueError as error:
             QMessageBox.warning(self, "Relação inválida", str(error))
             return
-        positions = self.layout_engine.compute(after)
-        for person in after.individuals:
-            person.layout.x, person.layout.y = positions[person.id]
-        self.undo_stack.push(ReplaceProjectCommand(label, before, after, self._apply_project))
-        self.message_status.setText(tr(label))
-        self.toast.show_message(tr(label))
-        self.fit_pedigree()
+        self._finish_kinship_plan(label, before, after)
 
     def _partner_for_new_child(
         self, person_id: UUID, selected: list[IndividualItem]
@@ -931,7 +839,6 @@ class MainWindow(QMainWindow):
         if not rect.isEmpty():
             self.view.fitInView(rect, Qt.AspectRatioMode.KeepAspectRatio)
             self.view.zoomChanged.emit(self.view.zoom_percent)
-            self.minimap.refresh()
             readable = self.settings.value("navigation/readable_zoom", 45, int)
             if self.view.zoom_percent < readable:
                 self.toast.show_message(
@@ -1125,7 +1032,6 @@ class MainWindow(QMainWindow):
         self.menuBar().setVisible(not scientific)
         self.statusBar().setVisible(not scientific)
         self.floating_zoom.setVisible(not scientific)
-        self.minimap.setVisible(not scientific and self.toggle_minimap_action.isChecked())
         if scientific:
             self.toast.hide()
         self.view.grid_enabled = not scientific and self.settings.value("pedigree/grid", True, bool)
@@ -1145,6 +1051,10 @@ class MainWindow(QMainWindow):
         self.undo_stack.push(AddIndividualCommand(self.project, self.scene, person))
         self.scene.clearSelection()
         self.scene.person_items[person.id].setSelected(True)
+        if self.isVisible():
+            self.scene.animate_person_entry(
+                person.id, self.settings.value("ui/reduce_motion", False, bool)
+            )
         self._update_workspace_state()
         self.toast.show_message(tr("Indivíduo adicionado"))
         return person
@@ -1214,6 +1124,11 @@ class MainWindow(QMainWindow):
             return
         if action == "edit_float":
             self._open_floating_editor(item)
+            return
+        if action == "advanced":
+            self.scene.clearSelection()
+            item.setSelected(True)
+            self._open_relative_wizard()
             return
         self.relation_preview.show(item, action)
         answer = QMessageBox.question(
@@ -1365,11 +1280,6 @@ class MainWindow(QMainWindow):
         self.view.grid_enabled = self.settings.value("pedigree/grid", True, bool)
         self.view.minimum_zoom = self.settings.value("navigation/minimum_zoom", 5, int)
         self.view.maximum_zoom = self.settings.value("navigation/maximum_zoom", 500, int)
-        minimap_width = self.settings.value("navigation/minimap_width", 220, int)
-        self.minimap.setFixedSize(minimap_width, round(minimap_width * 0.68))
-        show_minimap = self.settings.value("navigation/show_minimap", True, bool)
-        self.toggle_minimap_action.setChecked(show_minimap)
-        self.minimap.setVisible(show_minimap)
         self._close_context_surfaces()
         self._context_item = None
         self.scene.apply_render_style(PedigreeRenderStyle.from_settings(self.settings))
@@ -1388,9 +1298,6 @@ class MainWindow(QMainWindow):
             self.quit_action: "Sair",
             self.undo_action: "Desfazer",
             self.redo_action: "Refazer",
-            self.add_man_action: "Adicionar homem/menino",
-            self.add_woman_action: "Adicionar mulher/menina",
-            self.add_unspecified_action: "Adicionar gênero não especificado",
             self.auto_layout_action: "Organização automática",
             self.export_action: "Exportar figura…",
             self.preferences_action: "Preferências…",
@@ -1402,10 +1309,6 @@ class MainWindow(QMainWindow):
             self.consanguinity_action: "Relação consanguínea",
             self.separation_action: "Relação separada",
             self.divorce_action: "Relação divorciada",
-            self.add_parents_action: "Adicionar pais",
-            self.add_partner_action: "Adicionar parceiro",
-            self.add_child_action: "Adicionar filho",
-            self.add_sibling_action: "Adicionar irmão",
             self.fit_action: "Ajustar à tela",
             self.zoom_in_action: "Ampliar",
             self.zoom_out_action: "Reduzir",
@@ -1414,7 +1317,6 @@ class MainWindow(QMainWindow):
             self.search_action: "Buscar indivíduo…",
             self.focus_proband_action: "Focar no probando",
             self.clear_focus_action: "Limpar foco",
-            self.toggle_minimap_action: "Mostrar minimapa",
             self.label_configuration_action: "Configurar rótulos…",
         }
         for action, source in mapping.items():
@@ -1425,8 +1327,6 @@ class MainWindow(QMainWindow):
         self.edit_menu.setTitle(tr("Editar"))
         self.pedigree_menu.setTitle(tr("Heredograma"))
         self.view_menu.setTitle(tr("Exibir"))
-        self.person_button.setText(tr("Adicionar indivíduo"))
-        self.family_button.setText(tr("Adicionar familiar"))
         self.branch_button.setText(tr("Ramos"))
         for action in self.branch_actions:
             action.setText(tr(action.data()))
@@ -1461,7 +1361,6 @@ class MainWindow(QMainWindow):
         if hasattr(self, "_kinship_index"):
             del self._kinship_index
         self.search_panel.set_project(self.project, self._kinship_label)
-        self.minimap.refresh()
         self.empty_overlay.setVisible(count == 0)
         self.canvas_stack.setCurrentWidget(self.empty_overlay if count == 0 else self.view)
         if hasattr(self, "count_status"):
@@ -1505,12 +1404,15 @@ class MainWindow(QMainWindow):
         self._position_canvas_overlays()
 
     def _position_canvas_overlays(self) -> None:
-        if hasattr(self, "minimap"):
-            self.minimap.move(
-                max(18, self.canvas.width() - self.minimap.width() - 18),
-                max(18, self.canvas.height() - self.minimap.height() - 18),
+        if hasattr(self, "floating_zoom"):
+            control = self.floating_zoom
+            control.adjustSize()
+            viewport = self.view.viewport()
+            control.move(
+                max(18, viewport.width() - control.width() - 18),
+                max(18, viewport.height() - control.height() - 18),
             )
-            self.minimap.raise_()
+            control.raise_()
         if hasattr(self, "search_panel"):
             width = min(460, max(320, self.canvas.width() - 48))
             self.search_panel.setFixedWidth(width)

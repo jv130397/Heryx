@@ -22,7 +22,7 @@ def test_workspace_starts_with_functional_empty_state(qtbot) -> None:
 def test_compact_toolbar_actions_are_functional(qtbot) -> None:
     window = MainWindow()
     qtbot.addWidget(window)
-    window.add_unspecified_action.trigger()
+    window.empty_state.addRequested.emit()
     assert len(window.project.individuals) == 1
     window.undo_action.trigger()
     assert window.project.individuals == []

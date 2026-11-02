@@ -7,7 +7,6 @@ from PySide6.QtWidgets import (
     QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
-    QMenu,
     QPushButton,
     QScrollArea,
     QSizePolicy,
@@ -111,8 +110,15 @@ class ZoomControl(QWidget):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("zoom-control")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.setFixedHeight(42)
+        shadow = QGraphicsDropShadowEffect(self)
+        shadow.setBlurRadius(18)
+        shadow.setOffset(0, 4)
+        shadow.setColor(QColor(31, 41, 51, 55))
+        self.setGraphicsEffect(shadow)
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(6, 2, 6, 2)
+        layout.setContentsMargins(8, 4, 8, 4)
         layout.setSpacing(2)
         minus = QToolButton(text="-")
         plus = QToolButton(text="+")
@@ -132,15 +138,6 @@ class ZoomControl(QWidget):
 
     def set_zoom(self, percent: int) -> None:
         self.label.setText(f"{percent}%")
-
-
-class FamilyMenu(QMenu):
-    """Consistent popup for family construction commands."""
-
-    def __init__(self, actions: list[QAction], parent=None) -> None:
-        super().__init__(parent)
-        self.setAccessibleName("Adicionar familiar")
-        self.addActions(actions)
 
 
 class Toast(QFrame):

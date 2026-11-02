@@ -172,12 +172,6 @@ class PreferencesDialog(QDialog):
         self.readable_zoom.setRange(10, 100)
         self.readable_zoom.setSuffix("%")
         self.readable_zoom.setValue(self.settings.value("navigation/readable_zoom", 45, int))
-        self.show_minimap = QCheckBox("Mostrar minimapa")
-        self.show_minimap.setChecked(self.settings.value("navigation/show_minimap", True, bool))
-        self.minimap_size = QSpinBox()
-        self.minimap_size.setRange(160, 320)
-        self.minimap_size.setSuffix(" px")
-        self.minimap_size.setValue(self.settings.value("navigation/minimap_width", 220, int))
         self.reduce_motion = QCheckBox("Reduzir movimento")
         self.reduce_motion.setChecked(self.settings.value("ui/reduce_motion", False, bool))
         self.palette = QComboBox()
@@ -214,8 +208,6 @@ class PreferencesDialog(QDialog):
         form.addRow("Zoom mínimo", self.minimum_zoom)
         form.addRow("Zoom máximo", self.maximum_zoom)
         form.addRow("Limite de legibilidade", self.readable_zoom)
-        form.addRow(self.show_minimap)
-        form.addRow("Largura do minimapa", self.minimap_size)
         form.addRow(self.reduce_motion)
         form.addRow("Paleta", self.palette)
         form.addRow("Masculino / quadrado", self.man_color)
@@ -311,8 +303,6 @@ class PreferencesDialog(QDialog):
             "navigation/minimum_zoom": self.minimum_zoom.value(),
             "navigation/maximum_zoom": self.maximum_zoom.value(),
             "navigation/readable_zoom": self.readable_zoom.value(),
-            "navigation/show_minimap": self.show_minimap.isChecked(),
-            "navigation/minimap_width": self.minimap_size.value(),
             "ui/reduce_motion": self.reduce_motion.isChecked(),
             "pedigree/man_color": self.man_color.color,
             "pedigree/woman_color": self.woman_color.color,

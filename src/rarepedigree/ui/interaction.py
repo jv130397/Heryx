@@ -97,7 +97,7 @@ class ContextualFamilyBar(QFrame):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("context-family-bar")
-        self.setFixedSize(286, 118)
+        self.setFixedSize(330, 118)
         self._buttons: dict[str, QToolButton] = {}
         layout = QGridLayout(self)
         layout.setContentsMargins(8, 5, 8, 7)
@@ -107,8 +107,8 @@ class ContextualFamilyBar(QFrame):
         close = QToolButton(text="x")
         close.setAccessibleName(tr("Fechar"))
         close.clicked.connect(self.closeRequested)
-        layout.addWidget(self.identity, 0, 0, 1, 4)
-        layout.addWidget(close, 0, 4)
+        layout.addWidget(self.identity, 0, 0, 1, 5)
+        layout.addWidget(close, 0, 5)
         for column, (key, symbol, tooltip) in enumerate(self.ACTIONS):
             button = QToolButton(text=symbol)
             button.setProperty("connectionPoint", True)
@@ -125,6 +125,11 @@ class ContextualFamilyBar(QFrame):
         edit.setObjectName("context-edit-button")
         edit.clicked.connect(lambda: self.actionRequested.emit("edit_float"))
         layout.addWidget(edit, 1, 4)
+        more = QToolButton(text="⋯")
+        more.setToolTip(tr("Mais opções familiares"))
+        more.setAccessibleName(tr("Mais opções familiares"))
+        more.clicked.connect(lambda: self.actionRequested.emit("advanced"))
+        layout.addWidget(more, 1, 5)
         self.animation = QPropertyAnimation(self, b"windowOpacity", self)
         self.animation.setDuration(160)
         self.animation.setEasingCurve(QEasingCurve.Type.OutCubic)

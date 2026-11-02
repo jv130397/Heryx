@@ -124,8 +124,7 @@
     <message><source>Busca de indivíduos</source><translation>Individual search</translation></message>
     <message><source>Focar no probando</source><translation>Focus on proband</translation></message>
     <message><source>Limpar foco</source><translation>Clear focus</translation></message>
-    <message><source>Mostrar minimapa</source><translation>Show minimap</translation></message>
-    <message><source>Minimapa do heredograma</source><translation>Pedigree minimap</translation></message>
+    <message><source>Mais opções familiares</source><translation>More family options</translation></message>
     <message><source>Visão</source><translation>View</translation></message>
     <message><source>Geral</source><translation>Overview</translation></message>
     <message><source>Focada</source><translation>Focused</translation></message>

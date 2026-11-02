@@ -30,7 +30,10 @@ class PedigreeView(QGraphicsView):
         if self.floating_control is not None:
             control = self.floating_control
             control.adjustSize()
-            control.move(self.viewport().width() - control.width() - 18, 18)
+            control.move(
+                self.viewport().width() - control.width() - 18,
+                self.viewport().height() - control.height() - 18,
+            )
         self.viewportChanged.emit()
 
     @property

@@ -85,6 +85,11 @@ def main() -> None:
         "context_bar_over_canvas": window.context_bar.parentWidget() is window.canvas,
         "floating_editor_over_canvas": window.floating_editor.parentWidget() is window.canvas,
         "legacy_drawer_hidden_on_person_selection": not window.properties_drawer.isVisible(),
+        "minimap_removed": not hasattr(window, "minimap"),
+        "single_zoom_bar": window.zoom_control is window.floating_zoom,
+        "zoom_bar_in_lower_half": (
+            window.floating_zoom.y() > window.view.viewport().height() // 2
+        ),
         "preview_is_not_domain_data": len(window.project.individuals) == len(project.individuals),
         "four_generations_rendered": len(window.scene.generation_items) == 4,
     }

@@ -6,6 +6,9 @@
     "context_bar_over_canvas": true,
     "floating_editor_over_canvas": true,
     "legacy_drawer_hidden_on_person_selection": true,
+    "minimap_removed": true,
+    "single_zoom_bar": true,
+    "zoom_bar_in_lower_half": true,
     "preview_is_not_domain_data": true,
     "four_generations_rendered": true
   },
