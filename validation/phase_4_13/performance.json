@@ -1,0 +1,10 @@
+{
+  "synthetic_people": 200,
+  "synthetic_observations": 200,
+  "hpo_installed_terms": 20482,
+  "mean_hpo_search_ms": 24.697638039999955,
+  "mean_matrix_ms": 4.271486879999884,
+  "mean_save_ms": 1.8842212000009795,
+  "mean_load_ms": 12.58112540000127,
+  "peak_python_memory_mib": 1.306563377380371
+}

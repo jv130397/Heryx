@@ -6,7 +6,7 @@ from copy import deepcopy
 from typing import Any
 from uuid import NAMESPACE_URL, uuid5
 
-CURRENT_SCHEMA_VERSION = "0.3.0"
+CURRENT_SCHEMA_VERSION = "0.4.0"
 
 
 def migrate_project(data: dict[str, Any]) -> dict[str, Any]:
@@ -29,6 +29,10 @@ def migrate_project(data: dict[str, Any]) -> dict[str, Any]:
         migrated.setdefault("annotations", [])
         migrated["schema_version"] = "0.3.0"
         version = "0.3.0"
+    if version == "0.3.0":
+        migrated.setdefault("hpo_observations", [])
+        migrated["schema_version"] = "0.4.0"
+        version = "0.4.0"
     if version != CURRENT_SCHEMA_VERSION:
         raise ValueError(f"unsupported project schema version: {version}")
     return migrated

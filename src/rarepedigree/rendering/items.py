@@ -178,6 +178,7 @@ class IndividualItem(QGraphicsObject):
             else f"{self.display_label} · {person.label}"
         )
         self.adopted = False
+        self.clinical_highlight: str | None = None
 
     def boundingRect(self) -> QRectF:
         # Identifiers are part of the scientific symbol, so their complete
@@ -210,6 +211,18 @@ class IndividualItem(QGraphicsObject):
     ) -> None:
         del option, widget
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if self.clinical_highlight:
+            highlight_colors = {
+                "present": "#16A66A",
+                "absent": "#D97706",
+                "unknown": "#64748B",
+                "not_evaluated": "#CBD5E1",
+            }
+            painter.setPen(QPen(QColor(highlight_colors[self.clinical_highlight]), 6))
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            outline = QPainterPathStroker()
+            outline.setWidth(10)
+            painter.drawPath(outline.createStroke(self.shape()))
         selected = self.isSelected()
         normal_color = self.render_style.outline_color
         pen = QPen(QColor("#22D3EE") if selected else QColor(normal_color), 4 if selected else 3)

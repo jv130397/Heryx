@@ -12,11 +12,16 @@ from rarepedigree.domain.kinship import (
 from rarepedigree.domain.models import (
     AnnotationType,
     CanvasAnnotation,
+    ClinicalCourse,
+    ClinicalLaterality,
+    ClinicalObservationStatus,
+    ClinicalSeverity,
     DeclaredKinship,
     DeclaredKinshipKind,
     EvidenceStatus,
     Family,
     GenderIdentity,
+    HPOObservation,
     Individual,
     LayoutPosition,
     Parentage,
@@ -27,11 +32,21 @@ from rarepedigree.domain.models import (
     TwinGroup,
     TwinZygosity,
 )
+from rarepedigree.domain.phenotyping import (
+    export_phenotype_matrix_csv,
+    latest_observation,
+    observations_for,
+    phenotype_matrix,
+)
 from rarepedigree.domain.states import EvidenceState, ObservationStatus
 
 __all__ = [
     "AnnotationType",
     "CanvasAnnotation",
+    "ClinicalCourse",
+    "ClinicalLaterality",
+    "ClinicalObservationStatus",
+    "ClinicalSeverity",
     "DeclaredKinship",
     "DeclaredKinshipKind",
     "EvidenceState",
@@ -39,6 +54,7 @@ __all__ = [
     "Family",
     "FamilyService",
     "GenderIdentity",
+    "HPOObservation",
     "Individual",
     "KinshipEngine",
     "KinshipIssue",
@@ -55,4 +71,8 @@ __all__ = [
     "SiblingKind",
     "TwinGroup",
     "TwinZygosity",
+    "export_phenotype_matrix_csv",
+    "latest_observation",
+    "observations_for",
+    "phenotype_matrix",
 ]

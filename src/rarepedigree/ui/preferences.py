@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from rarepedigree.ui.clinical import HPOManagerDialog
 from rarepedigree.ui.components import AccessibleCheckBox as QCheckBox
 from rarepedigree.ui.i18n import language_manager, tr
 
@@ -87,6 +88,7 @@ class PreferencesDialog(QDialog):
         self.tabs.addTab(self._appearance_tab(), tr("Aparência"))
         self.tabs.addTab(self._language_tab(), tr("Idioma"))
         self.tabs.addTab(self._pedigree_tab(), tr("Heredograma"))
+        self.tabs.addTab(self._hpo_tab(), "HPO")
         self.tabs.addTab(self._export_tab(), tr("Exportação"))
         self.buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
@@ -270,6 +272,24 @@ class PreferencesDialog(QDialog):
         form.addRow(self.export_annotations)
         return page
 
+    def _hpo_tab(self) -> QWidget:
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        text = QLabel(
+            tr(
+                "A ontologia é instalada localmente e nenhuma informação clínica "
+                "é enviada durante a atualização."
+            )
+        )
+        text.setWordWrap(True)
+        text.setProperty("card", True)
+        manage = QPushButton(tr("Gerenciar ontologia HPO…"))
+        manage.clicked.connect(lambda: HPOManagerDialog(self).exec())
+        layout.addWidget(text)
+        layout.addWidget(manage)
+        layout.addStretch()
+        return page
+
     def _reset_colors(self) -> None:
         self.affected_color.set_color("#20262E")
         self.unaffected_color.set_color("#FFFFFF")
@@ -311,7 +331,7 @@ class PreferencesDialog(QDialog):
 
     def retranslate_ui(self, _language=None) -> None:
         self.setWindowTitle(tr("Preferências…").replace("…", ""))
-        for index, text in enumerate(("Aparência", "Idioma", "Heredograma", "Exportação")):
+        for index, text in enumerate(("Aparência", "Idioma", "Heredograma", "HPO", "Exportação")):
             self.tabs.setTabText(index, tr(text))
         self.buttons.button(QDialogButtonBox.StandardButton.Save).setText(tr("Salvar"))
         self.buttons.button(QDialogButtonBox.StandardButton.Cancel).setText(tr("Cancelar"))

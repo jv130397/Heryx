@@ -64,6 +64,7 @@ from rarepedigree.rendering import (
 )
 from rarepedigree.rendering.exporters import ExportOptions, export_pdf, export_png, export_svg
 from rarepedigree.rendering.style import PedigreeRenderStyle
+from rarepedigree.ui.clinical import FamilyPhenotypeComparisonDialog, HPOManagerDialog
 from rarepedigree.ui.components import (
     EmptyState,
     SlidingPanel,
@@ -205,6 +206,8 @@ class MainWindow(QMainWindow):
         self.focus_proband_action = QAction("Focar no probando", self, shortcut="Ctrl+P")
         self.clear_focus_action = QAction("Limpar foco", self, shortcut="Escape")
         self.preferences_action = QAction("Preferências…", self)
+        self.hpo_manager_action = QAction("Gerenciar ontologia HPO…", self)
+        self.phenotype_comparison_action = QAction("Comparação fenotípica familiar…", self)
         self.label_configuration_action = QAction("Configurar rótulos…", self)
         self.move_action = QAction("Mover", self)
         self.move_action.setCheckable(True)
@@ -279,6 +282,8 @@ class MainWindow(QMainWindow):
         self.focus_proband_action.triggered.connect(self.focus_on_proband)
         self.clear_focus_action.triggered.connect(self.clear_focus)
         self.preferences_action.triggered.connect(lambda: self.open_preferences())
+        self.hpo_manager_action.triggered.connect(self.open_hpo_manager)
+        self.phenotype_comparison_action.triggered.connect(self.open_phenotype_comparison)
         self.label_configuration_action.triggered.connect(self.open_label_configuration)
         self.twins_mz_action.triggered.connect(
             lambda: self._set_selected_twins(TwinZygosity.MONOZYGOTIC)
@@ -330,6 +335,9 @@ class MainWindow(QMainWindow):
                 self.twins_dz_action,
             ]
         )
+        self.pedigree_menu.addSeparator()
+        self.pedigree_menu.addAction(self.phenotype_comparison_action)
+        self.pedigree_menu.addAction(self.hpo_manager_action)
         self.view_menu = self.menuBar().addMenu("Exibir")
         self.view_menu.addActions([self.zoom_in_action, self.zoom_out_action])
         self.view_menu.addActions(
@@ -1228,7 +1236,12 @@ class MainWindow(QMainWindow):
 
     def _open_floating_editor(self, item: IndividualItem) -> None:
         self._context_item = item
-        self.floating_editor.set_person(item.person)
+        observations = [
+            observation
+            for observation in self.project.hpo_observations
+            if observation.individual_id == item.person.id
+        ]
+        self.floating_editor.set_person(item.person, observations)
         self._position_context_surfaces()
         self.floating_editor.reveal(
             self.settings.value("ui/reduce_motion", False, bool)
@@ -1238,11 +1251,36 @@ class MainWindow(QMainWindow):
         item = self._context_item
         if item is None:
             return
+        observations = values.pop("hpo_observations")
         old_values = {field: getattr(item.person, field) for field in values}
-        if values != old_values:
+        old_observations = [
+            observation
+            for observation in self.project.hpo_observations
+            if observation.individual_id == item.person.id
+        ]
+        individual_changed = values != old_values
+        observations_changed = observations != old_observations
+        if not individual_changed and not observations_changed:
+            return
+        if individual_changed and not observations_changed:
             self.undo_stack.push(UpdateIndividualCommand(item, old_values, values))
             self.properties.set_item(item, self.project)
             self.message_status.setText(tr("Indivíduo atualizado"))
+            return
+        before = self.project.model_copy(deep=True)
+        after = self.project.model_copy(deep=True)
+        person = next(person for person in after.individuals if person.id == item.person.id)
+        for field, value in values.items():
+            setattr(person, field, value)
+        after.hpo_observations = [
+            observation
+            for observation in after.hpo_observations
+            if observation.individual_id != item.person.id
+        ] + observations
+        self.undo_stack.push(
+            ReplaceProjectCommand("Atualizar perfil clínico", before, after, self._apply_project)
+        )
+        self.message_status.setText(tr("Indivíduo atualizado"))
 
     def _close_context_surfaces(self) -> None:
         self.context_bar.hide()
@@ -1339,6 +1377,32 @@ class MainWindow(QMainWindow):
             dialog.tabs.setCurrentIndex(tab_index)
         dialog.applied.connect(self.apply_preferences)
         dialog.exec()
+
+    def open_hpo_manager(self) -> None:
+        HPOManagerDialog(self).exec()
+
+    def open_phenotype_comparison(self) -> None:
+        dialog = FamilyPhenotypeComparisonDialog(self.project, self)
+        dialog.highlightRequested.connect(self.highlight_hpo)
+        dialog.exec()
+        self.scene.set_clinical_highlights()
+
+    def highlight_hpo(self, hpo_id: str) -> None:
+        states: dict[UUID, str] = {}
+        for person in self.project.individuals:
+            observations = [
+                item
+                for item in self.project.hpo_observations
+                if item.individual_id == person.id and item.hpo_id == hpo_id
+            ]
+            if observations:
+                latest = max(
+                    observations, key=lambda item: item.observed_at or item.created_at
+                )
+                states[person.id] = latest.status.value
+            else:
+                states[person.id] = "not_evaluated"
+        self.scene.set_clinical_highlights(states)
 
     def open_label_configuration(self) -> None:
         self.open_preferences(2)

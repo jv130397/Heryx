@@ -298,6 +298,13 @@ class PedigreeScene(QGraphicsScene):
         for item in self.person_items.values():
             item.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable, mode == "move")
 
+    def set_clinical_highlights(self, states: dict[UUID, str] | None = None) -> None:
+        """Apply temporary HPO emphasis without modifying scientific fills or data."""
+        states = states or {}
+        for person_id, item in self.person_items.items():
+            item.clinical_highlight = states.get(person_id)
+            item.update()
+
     def apply_render_style(self, style: PedigreeRenderStyle) -> None:
         selected_ids = {item.person.id for item in self.selected_people()}
         self.render_style = style

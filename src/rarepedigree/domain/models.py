@@ -67,6 +67,38 @@ class AnnotationType(StrEnum):
     TECHNICAL = "technical"
 
 
+class ClinicalObservationStatus(StrEnum):
+    PRESENT = "present"
+    ABSENT = "absent"
+    UNKNOWN = "unknown"
+    NOT_EVALUATED = "not_evaluated"
+
+
+class ClinicalSeverity(StrEnum):
+    MILD = "mild"
+    MODERATE = "moderate"
+    SEVERE = "severe"
+    UNKNOWN = "unknown"
+
+
+class ClinicalCourse(StrEnum):
+    STABLE = "stable"
+    IMPROVING = "improving"
+    PROGRESSIVE = "progressive"
+    FLUCTUATING = "fluctuating"
+    RESOLVED = "resolved"
+    UNKNOWN = "unknown"
+
+
+class ClinicalLaterality(StrEnum):
+    LEFT = "left"
+    RIGHT = "right"
+    BILATERAL = "bilateral"
+    MIDLINE = "midline"
+    NOT_APPLICABLE = "not_applicable"
+    UNKNOWN = "unknown"
+
+
 class LayoutPosition(BaseModel):
     """Disposable visual position, deliberately separate from clinical facts."""
 
@@ -169,12 +201,33 @@ class CanvasAnnotation(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
+class HPOObservation(BaseModel):
+    """A traceable clinical observation, separate from overall affected status."""
+
+    id: UUID = Field(default_factory=uuid4)
+    individual_id: UUID
+    hpo_id: str = Field(pattern=r"^HP:\d{7}$")
+    term_label: str = Field(min_length=1, max_length=500)
+    status: ClinicalObservationStatus = ClinicalObservationStatus.UNKNOWN
+    observed_at: datetime | None = None
+    source: str | None = Field(default=None, max_length=500)
+    notes: str | None = Field(default=None, max_length=4000)
+    ontology_version: str = Field(min_length=1, max_length=80)
+    onset: str | None = Field(default=None, max_length=200)
+    severity: ClinicalSeverity = ClinicalSeverity.UNKNOWN
+    frequency: str | None = Field(default=None, max_length=200)
+    course: ClinicalCourse = ClinicalCourse.UNKNOWN
+    laterality: ClinicalLaterality = ClinicalLaterality.UNKNOWN
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
 class PedigreeProject(BaseModel):
     """Native project document with an explicit schema version."""
 
     model_config = ConfigDict(validate_assignment=True)
 
-    schema_version: str = "0.3.0"
+    schema_version: str = "0.4.0"
     project_id: UUID = Field(default_factory=uuid4)
     title: str = Field(default="Heredograma sem título", max_length=200)
     description: str = Field(default="", max_length=1000)
@@ -188,6 +241,7 @@ class PedigreeProject(BaseModel):
     twin_groups: list[TwinGroup] = Field(default_factory=list)
     declared_kinships: list[DeclaredKinship] = Field(default_factory=list)
     annotations: list[CanvasAnnotation] = Field(default_factory=list)
+    hpo_observations: list[HPOObservation] = Field(default_factory=list)
     family: Family = Field(default_factory=Family)
 
     @model_validator(mode="after")
@@ -199,6 +253,14 @@ class PedigreeProject(BaseModel):
                 and annotation.individual_id not in individual_ids
             ):
                 annotation.individual_id = None
+        observation_keys: set[tuple[UUID, str, datetime | None]] = set()
+        for observation in self.hpo_observations:
+            if observation.individual_id not in individual_ids:
+                raise ValueError("HPO observation refers to an individual absent from the project")
+            key = (observation.individual_id, observation.hpo_id, observation.observed_at)
+            if key in observation_keys:
+                raise ValueError("duplicate HPO observation for individual, term and date")
+            observation_keys.add(key)
         for relationship in self.relationships:
             if (
                 relationship.member_a not in individual_ids

@@ -25,9 +25,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from rarepedigree.domain import GenderIdentity, Individual, ObservationStatus
+from rarepedigree.domain import GenderIdentity, HPOObservation, Individual, ObservationStatus
 from rarepedigree.rendering import IndividualItem
 from rarepedigree.rendering.items import SYMBOL_SIZE
+from rarepedigree.ui.clinical import HPOClinicalPanel
 from rarepedigree.ui.components import AccessibleCheckBox as QCheckBox
 from rarepedigree.ui.i18n import tr
 
@@ -182,7 +183,7 @@ class FloatingIndividualEditor(QFrame):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setObjectName("floating-individual-editor")
-        self.setFixedSize(410, 430)
+        self.setFixedSize(560, 610)
         self._person: Individual | None = None
         self._baseline: dict[str, Any] = {}
         root = QVBoxLayout(self)
@@ -229,16 +230,8 @@ class FloatingIndividualEditor(QFrame):
         self.phenotype.addItem(tr("Afetado"), ObservationStatus.PRESENT)
         self.phenotype.addItem(tr("Não afetado"), ObservationStatus.ABSENT)
         clinical_layout.addWidget(self.phenotype)
-        note = QLabel(
-            tr(
-                "Condições, HPO e resultados genéticos serão habilitados "
-                "quando o modelo clínico os suportar."
-            )
-        )
-        note.setWordWrap(True)
-        note.setProperty("card", True)
-        clinical_layout.addWidget(note)
-        clinical_layout.addStretch()
+        self.clinical_panel = HPOClinicalPanel()
+        clinical_layout.addWidget(self.clinical_panel, 1)
         self.tabs.addTab(personal, tr("Pessoal"))
         self.tabs.addTab(clinical, tr("Clínica"))
         root.addWidget(self.tabs, 1)
@@ -257,7 +250,9 @@ class FloatingIndividualEditor(QFrame):
         self.animation.setEasingCurve(QEasingCurve.Type.OutCubic)
         self.hide()
 
-    def set_person(self, person: Individual) -> None:
+    def set_person(
+        self, person: Individual, observations: list[HPOObservation] | None = None
+    ) -> None:
         self._person = person
         self.title.setText(f"{tr('Editar indivíduo')} · {person.label}")
         self.label_edit.setText(person.label)
@@ -266,6 +261,7 @@ class FloatingIndividualEditor(QFrame):
         self.deceased.setChecked(person.deceased)
         self.proband.setChecked(person.proband)
         self.consultand.setChecked(person.consultand)
+        self.clinical_panel.set_data(person.id, observations or [])
         self._baseline = self.values()
 
     def values(self) -> dict[str, Any]:
@@ -276,6 +272,9 @@ class FloatingIndividualEditor(QFrame):
             "deceased": self.deceased.isChecked(),
             "proband": self.proband.isChecked(),
             "consultand": self.consultand.isChecked(),
+            "hpo_observations": [
+                item.model_copy(deep=True) for item in self.clinical_panel.observations
+            ],
         }
 
     def reveal(self, reduced_motion: bool = False) -> None:

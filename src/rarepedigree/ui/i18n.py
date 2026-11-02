@@ -227,6 +227,78 @@ CATALOG = {
         "desconhecido": "unknown",
         "Validação: sem erros": "Validation: no errors",
         "Validação: erros": "Validation: errors",
+        "Observação HPO": "HPO observation",
+        "Termo obsoleto": "Obsolete term",
+        "Substituído por": "Replaced by",
+        "Estado": "Status",
+        "Presente": "Present",
+        "Ausente": "Absent",
+        "Não avaliado": "Not evaluated",
+        "Idade de início": "Age of onset",
+        "Ex.: 4 anos, congênito": "E.g. 4 years, congenital",
+        "Gravidade": "Severity",
+        "Desconhecida": "Unknown",
+        "Leve": "Mild",
+        "Moderada": "Moderate",
+        "Grave": "Severe",
+        "Evolução": "Course",
+        "Lateralidade": "Laterality",
+        "Frequência/recorrência": "Frequency/recurrence",
+        "Fonte clínica": "Clinical source",
+        "Data da avaliação": "Assessment date",
+        "Comentários": "Comments",
+        "Buscar código, nome ou sinônimo HPO…": "Search HPO code, name or synonym…",
+        "Busca HPO": "HPO search",
+        "Editar observação": "Edit observation",
+        "Remover": "Remove",
+        "HPO não instalada. Use Preferências para instalar.": (
+            "HPO is not installed. Use Preferences to install it."
+        ),
+        "Nenhum termo encontrado": "No terms found",
+        "obsoleto": "obsolete",
+        "Registro duplicado": "Duplicate record",
+        "Este termo e data já existem.": "This term and date already exist.",
+        "Início": "Onset",
+        "fenótipos": "phenotypes",
+        "presentes": "present",
+        "ausentes": "absent",
+        "Ontologia HPO": "HPO ontology",
+        "Instalar/atualizar HPO oficial": "Install/update official HPO",
+        "Versão instalada": "Installed version",
+        "Termos": "Terms",
+        "Fonte": "Source",
+        "Nenhuma versão HPO instalada. O editor continua disponível offline.": (
+            "No HPO version is installed. The editor remains available offline."
+        ),
+        "Baixando e validando fora da interface…": (
+            "Downloading and validating outside the UI…"
+        ),
+        "HPO instalada com sucesso": "HPO installed successfully",
+        "Falha na atualização; a base anterior foi preservada.": (
+            "Update failed; the previous database was preserved."
+        ),
+        "Falha na atualização HPO": "HPO update failed",
+        "Comparação fenotípica familiar": "Family phenotype comparison",
+        "Selecione os indivíduos e compare observações documentadas.": (
+            "Select individuals and compare documented observations."
+        ),
+        "Atualizar matriz": "Refresh matrix",
+        "Exportar CSV…": "Export CSV…",
+        "Desidentificar identificadores": "De-identify identifiers",
+        "Código HPO": "HPO code",
+        "Fenótipo": "Phenotype",
+        "Exportar matriz": "Export matrix",
+        "Todas as gerações": "All generations",
+        "Todos os ramos": "All branches",
+        "Gerenciar ontologia HPO…": "Manage HPO ontology…",
+        (
+            "A ontologia é instalada localmente e nenhuma informação clínica "
+            "é enviada durante a atualização."
+        ): (
+            "The ontology is installed locally and no clinical information "
+            "is sent during updates."
+        ),
+        "Comparação fenotípica familiar…": "Family phenotype comparison…",
     }
 }
 
@@ -280,4 +352,7 @@ language_manager = LanguageManager()
 
 
 def tr(text: str) -> str:
-    return QCoreApplication.translate("RarePedigree", text)
+    translated = QCoreApplication.translate("RarePedigree", text)
+    if translated == text:
+        return CATALOG.get(language_manager.language, {}).get(text, text)
+    return translated

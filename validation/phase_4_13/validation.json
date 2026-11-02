@@ -1,0 +1,26 @@
+{
+  "platform": "offscreen",
+  "real_display": false,
+  "note": "Real Qt widgets rendered offscreen with synthetic clinical observations.",
+  "checks": {
+    "official_hpo_terms": 20482,
+    "official_hpo_version": "hp/releases/2026-09-01",
+    "clinical_observations": 3,
+    "overall_status_unchanged": true,
+    "highlight_is_presentation_only": true,
+    "notes_preserved": true
+  },
+  "evidence": {
+    "clinical_editor_1920": "assets/phase_4_13/01_clinical_editor_pt_1920x1080.png",
+    "autocomplete": "assets/phase_4_13/02_hpo_autocomplete.png",
+    "clinical_1366": "assets/phase_4_13/03_clinical_editor_1366x768.png",
+    "present_observation": "assets/phase_4_13/04_present_observation.png",
+    "absent_observation": "assets/phase_4_13/05_absent_observation.png",
+    "obsolete": "assets/phase_4_13/06_obsolete_term.png",
+    "comparison": "assets/phase_4_13/07_family_comparison.png",
+    "highlight": "assets/phase_4_13/08_hpo_highlight.png",
+    "preferences": "assets/phase_4_13/09_hpo_preferences.png",
+    "manager": "assets/phase_4_13/10_hpo_manager.png",
+    "english": "assets/phase_4_13/11_clinical_editor_en.png"
+  }
+}
