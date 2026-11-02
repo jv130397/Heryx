@@ -22,17 +22,18 @@
     ]
   },
   "performance": {
-    "construct_main_window_ms": 90.15,
-    "construct_to_visible_ms": 45.12,
-    "enter_editor_ms": 14.25,
-    "open_project_ms": 17.65,
-    "rss_mib": 122.09
+    "construct_main_window_ms": 88.15,
+    "construct_to_visible_ms": 42.49,
+    "enter_editor_ms": 10.02,
+    "open_project_ms": 19.82,
+    "rss_mib": 122.41
   },
   "evidence": {
     "pt_midnight_1920": "assets/phase_4_16_0/01_welcome_pt_midnight_1920x1080.png",
     "pt_midnight_1366": "assets/phase_4_16_0/02_welcome_pt_midnight_1366x768.png",
     "recent_projects": "assets/phase_4_16_0/03_recent_projects_pt_1600x900.png",
     "en_light_1600": "assets/phase_4_16_0/04_welcome_en_light_1600x900.png",
-    "reduced_motion": "assets/phase_4_16_0/05_welcome_reduced_motion_1920x1080.png"
+    "reduced_motion": "assets/phase_4_16_0/05_welcome_reduced_motion_1920x1080.png",
+    "pointer_parallax": "assets/phase_4_16_0/06_welcome_pointer_parallax_1600x900.png"
   }
 }

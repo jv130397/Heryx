@@ -10,8 +10,10 @@ editor laid out simultaneously, raising one page at a time to avoid geometry jum
   signals. Connect them to canonical application commands; do not implement file I/O in Home.
 - `RecentProjectsStore` persists only title, absolute local path and last-opened timestamp in
   `QSettings`. Never add clinical, pedigree or patient data to this metadata.
-- `PedigreeIllustration.progress` is the single animation property. Keep the duration between
-  1.5 and 2 seconds and leave action buttons enabled throughout.
+- `PedigreeIllustration.progress` controls the initial 2.8-second reveal. `bobOffset` drives the
+  subsequent 4.2-second gentle idle loop. Leave action buttons enabled throughout.
+- `hoverX` and `hoverY` provide bounded pointer parallax (6 px horizontally, 5 px vertically).
+  The nearest symbol receives a local halo; action-card icons animate from 28 to 32 px.
 - Respect `ui/reduce_motion`; the reduced path must render the final state immediately.
 - Welcome-specific theme choice is stored in `ui/welcome_theme` (`midnight` or `light`). Add new
   selectors under `QWidget#welcome-screen` to prevent style leakage into the scientific editor.

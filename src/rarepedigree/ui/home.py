@@ -9,6 +9,7 @@ from pathlib import Path
 
 from PySide6.QtCore import (
     Property,
+    QAbstractAnimation,
     QEasingCurve,
     QParallelAnimationGroup,
     QPointF,
@@ -16,6 +17,7 @@ from PySide6.QtCore import (
     QRectF,
     QSettings,
     Qt,
+    QVariantAnimation,
     Signal,
 )
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
@@ -105,8 +107,19 @@ class PedigreeIllustration(QWidget):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._progress = 1.0
+        self._bob_offset = 0.0
+        self._hover_x = 0.0
+        self._hover_y = 0.0
+        self._motion_enabled = True
+        self._pointer_position: QPointF | None = None
+        self.setMouseTracking(True)
         self.setMinimumSize(390, 280)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._hover_x_animation = QPropertyAnimation(self, b"hoverX", self)
+        self._hover_y_animation = QPropertyAnimation(self, b"hoverY", self)
+        for animation in (self._hover_x_animation, self._hover_y_animation):
+            animation.setDuration(220)
+            animation.setEasingCurve(QEasingCurve.Type.OutCubic)
 
     def get_progress(self) -> float:
         return self._progress
@@ -117,12 +130,72 @@ class PedigreeIllustration(QWidget):
 
     progress = Property(float, get_progress, set_progress)
 
+    def get_bob_offset(self) -> float:
+        return self._bob_offset
+
+    def set_bob_offset(self, value: float) -> None:
+        self._bob_offset = value
+        self.update()
+
+    bobOffset = Property(float, get_bob_offset, set_bob_offset)
+
+    def get_hover_x(self) -> float:
+        return self._hover_x
+
+    def set_hover_x(self, value: float) -> None:
+        self._hover_x = value
+        self.update()
+
+    hoverX = Property(float, get_hover_x, set_hover_x)
+
+    def get_hover_y(self) -> float:
+        return self._hover_y
+
+    def set_hover_y(self, value: float) -> None:
+        self._hover_y = value
+        self.update()
+
+    hoverY = Property(float, get_hover_y, set_hover_y)
+
+    def set_motion_enabled(self, enabled: bool) -> None:
+        self._motion_enabled = enabled
+        if not enabled:
+            self._pointer_position = None
+            self._animate_hover_to(0.0, 0.0)
+
+    def _animate_hover_to(self, x: float, y: float) -> None:
+        for animation, start, end in (
+            (self._hover_x_animation, self._hover_x, x),
+            (self._hover_y_animation, self._hover_y, y),
+        ):
+            animation.stop()
+            animation.setStartValue(start)
+            animation.setEndValue(end)
+            animation.start()
+
+    def mouseMoveEvent(self, event) -> None:
+        self._pointer_position = event.position()
+        if self._motion_enabled and self.width() and self.height():
+            normalized_x = (event.position().x() / self.width() - 0.5) * 2.0
+            normalized_y = (event.position().y() / self.height() - 0.5) * 2.0
+            self._animate_hover_to(normalized_x * 6.0, normalized_y * 5.0)
+        super().mouseMoveEvent(event)
+
+    def leaveEvent(self, event) -> None:
+        self._pointer_position = None
+        self._animate_hover_to(0.0, 0.0)
+        super().leaveEvent(event)
+
     def paintEvent(self, _event) -> None:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         area = self.rect().adjusted(25, 20, -25, -20)
         scale = min(area.width() / 520.0, area.height() / 310.0)
-        origin = QPointF(area.center().x() - 260 * scale, area.center().y() - 155 * scale)
+        origin = QPointF(
+            area.center().x() - 260 * scale,
+            area.center().y() - 155 * scale + self._bob_offset + self._hover_y,
+        )
+        origin.setX(origin.x() + self._hover_x)
 
         def point(x: float, y: float) -> QPointF:
             return origin + QPointF(x * scale, y * scale)
@@ -158,8 +231,17 @@ class PedigreeIllustration(QWidget):
             center = point(x, y)
             rect = QRectF(center.x() - size / 2, center.y() - size / 2, size, size)
             painter.setOpacity(opacity)
-            painter.setPen(QPen(QColor("#7C8CFF" if x == 260 else "#6EC6E8"), 2.5))
-            painter.setBrush(QColor("#111D39" if x == 260 else "#17294B"))
+            node_center = point(x, y)
+            hovered = (
+                self._pointer_position is not None
+                and (node_center - self._pointer_position).manhattanLength() < 58
+            )
+            if hovered and self._motion_enabled:
+                painter.setPen(QPen(QColor("#B6F0FF"), 5.0))
+                painter.setBrush(QColor("#203C68"))
+            else:
+                painter.setPen(QPen(QColor("#7C8CFF" if x == 260 else "#6EC6E8"), 2.5))
+                painter.setBrush(QColor("#111D39" if x == 260 else "#17294B"))
             if shape == "circle":
                 painter.drawEllipse(rect)
             elif shape == "diamond":
@@ -187,11 +269,19 @@ class WelcomeActionCard(QFrame):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(16, 12, 14, 12)
         layout.setSpacing(13)
-        glyph = QLabel()
-        glyph.setPixmap(icon(icon_name, "#62D4FF", 28).pixmap(28, 28))
-        glyph.setFixedSize(42, 42)
-        glyph.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        glyph.setObjectName("welcome-card-icon")
+        self._icon_name = icon_name
+        self._motion_enabled = True
+        self.glyph = QLabel()
+        self.glyph.setPixmap(icon(icon_name, "#62D4FF", 28).pixmap(28, 28))
+        self.glyph.setFixedSize(42, 42)
+        self.glyph.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.glyph.setObjectName("welcome-card-icon")
+        self._hover_animation = QVariantAnimation(self)
+        self._hover_animation.setDuration(180)
+        self._hover_animation.setStartValue(28.0)
+        self._hover_animation.setEndValue(32.0)
+        self._hover_animation.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._hover_animation.valueChanged.connect(self._set_icon_size)
         copy = QVBoxLayout()
         copy.setSpacing(2)
         self.title_label = QLabel()
@@ -201,7 +291,7 @@ class WelcomeActionCard(QFrame):
         self.description_label.setWordWrap(True)
         copy.addWidget(self.title_label)
         copy.addWidget(self.description_label)
-        layout.addWidget(glyph)
+        layout.addWidget(self.glyph)
         layout.addLayout(copy, 1)
         self.button = QPushButton()
         self.button.setObjectName("welcome-card-hit-target")
@@ -232,6 +322,27 @@ class WelcomeActionCard(QFrame):
             event.accept()
             return
         super().keyPressEvent(event)
+
+    def enterEvent(self, event) -> None:
+        if self._motion_enabled:
+            self._hover_animation.setDirection(QAbstractAnimation.Direction.Forward)
+            self._hover_animation.start()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event) -> None:
+        self._hover_animation.setDirection(QAbstractAnimation.Direction.Backward)
+        self._hover_animation.start()
+        super().leaveEvent(event)
+
+    def _set_icon_size(self, value: float) -> None:
+        size = round(value)
+        self.glyph.setPixmap(icon(self._icon_name, "#62D4FF", size).pixmap(size, size))
+
+    def set_motion_enabled(self, enabled: bool) -> None:
+        self._motion_enabled = enabled
+        if not enabled:
+            self._hover_animation.stop()
+            self._set_icon_size(28.0)
 
 
 class WelcomeScreen(QWidget):
@@ -267,6 +378,15 @@ class WelcomeScreen(QWidget):
         self.tagline.setObjectName("welcome-tagline")
         hero.addWidget(self.tagline)
         self.illustration = PedigreeIllustration()
+        self._idle_animation = QPropertyAnimation(self.illustration, b"bobOffset", self)
+        self._idle_animation.setDuration(4200)
+        self._idle_animation.setLoopCount(-1)
+        self._idle_animation.setKeyValueAt(0.0, 0.0)
+        self._idle_animation.setKeyValueAt(0.25, -5.0)
+        self._idle_animation.setKeyValueAt(0.5, 0.0)
+        self._idle_animation.setKeyValueAt(0.75, 5.0)
+        self._idle_animation.setKeyValueAt(1.0, 0.0)
+        self._idle_animation.setEasingCurve(QEasingCurve.Type.InOutSine)
         hero.addWidget(self.illustration, 1)
         self.privacy = QLabel()
         self.privacy.setWordWrap(True)
@@ -314,9 +434,14 @@ class WelcomeScreen(QWidget):
 
     def start_animation(self, reduced_motion: bool = False) -> None:
         self._animations.stop()
+        self._idle_animation.stop()
+        self.illustration.set_bob_offset(0.0)
+        for card in (self.new_card, self.open_card, self.recent_card):
+            card.set_motion_enabled(not reduced_motion)
         self._animations.deleteLater()
         self._animations = QParallelAnimationGroup(self)
         if reduced_motion:
+            self.illustration.set_motion_enabled(False)
             self.illustration.set_progress(1.0)
             for widget in (
                 self.heading,
@@ -329,9 +454,10 @@ class WelcomeScreen(QWidget):
                 if isinstance(effect, QGraphicsOpacityEffect):
                     effect.setOpacity(1.0)
             return
+        self.illustration.set_motion_enabled(True)
         self.illustration.set_progress(0.0)
         drawing = QPropertyAnimation(self.illustration, b"progress", self)
-        drawing.setDuration(1750)
+        drawing.setDuration(2800)
         drawing.setStartValue(0.0)
         drawing.setEndValue(1.0)
         drawing.setEasingCurve(QEasingCurve.Type.OutCubic)
@@ -342,16 +468,27 @@ class WelcomeScreen(QWidget):
             effect = QGraphicsOpacityEffect(widget)
             widget.setGraphicsEffect(effect)
             animation = QPropertyAnimation(effect, b"opacity", self)
-            animation.setDuration(650 + index * 120)
+            animation.setDuration(1050 + index * 170)
             animation.setStartValue(0.0)
             animation.setEndValue(1.0)
             animation.setEasingCurve(QEasingCurve.Type.OutCubic)
             self._animations.addAnimation(animation)
+        self._animations.finished.connect(self._start_idle_animation)
         self._animations.start()
+
+    def _start_idle_animation(self) -> None:
+        if self.isVisible():
+            self._idle_animation.start()
 
     def stop_animation(self) -> None:
         self._animations.stop()
+        self._idle_animation.stop()
         self.illustration.set_progress(1.0)
+        self.illustration.set_bob_offset(0.0)
+        for widget in (self.heading, self.intro, self.new_card, self.open_card, self.recent_card):
+            effect = widget.graphicsEffect()
+            if isinstance(effect, QGraphicsOpacityEffect):
+                effect.setOpacity(1.0)
 
     def set_theme(self, theme: str) -> None:
         self.setProperty("welcomeTheme", "light" if theme == "light" else "midnight")

@@ -54,7 +54,7 @@ def main() -> None:
     app.processEvents()
     visible = time.perf_counter()
     interactive = window.welcome_screen.new_card.button.isEnabled()
-    QTest.qWait(1800)
+    QTest.qWait(3000)
     evidence = {
         "pt_midnight_1920": capture(window, "01_welcome_pt_midnight_1920x1080", (1920, 1080)),
         "pt_midnight_1366": capture(window, "02_welcome_pt_midnight_1366x768", (1366, 768)),
@@ -71,6 +71,16 @@ def main() -> None:
     window.welcome_screen.start_animation(reduced_motion=True)
     evidence["reduced_motion"] = capture(
         window, "05_welcome_reduced_motion_1920x1080", (1920, 1080)
+    )
+    window.welcome_screen.start_animation(reduced_motion=False)
+    window.welcome_screen.stop_animation()
+    QTest.mouseMove(
+        window.welcome_screen.illustration,
+        window.welcome_screen.illustration.rect().center(),
+    )
+    QTest.qWait(260)
+    evidence["pointer_parallax"] = capture(
+        window, "06_welcome_pointer_parallax_1600x900", (1600, 900)
     )
 
     enter_started = time.perf_counter()

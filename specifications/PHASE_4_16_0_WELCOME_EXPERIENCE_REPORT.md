@@ -27,14 +27,15 @@ not cause a layout jump.
 | Open project | signal delegates to canonical `open_project/load_from` | loading/recents integration test | Accepted |
 | Recent projects | bounded `QSettings` metadata store; open/remove/clear/unavailable states | four recent-store tests + capture 03 | Accepted |
 | Privacy | only title/path/timestamp are stored; removing an entry never deletes its file | privacy and removal tests | Accepted |
-| Non-blocking 1.5–2 s animation | 1,750 ms `QPropertyAnimation`; buttons stay enabled | animation interaction test | Accepted |
+| Non-blocking animated entry | 2,800 ms reveal followed by a subtle 4,200 ms idle loop; buttons stay enabled | animation interaction and idle-motion tests | Accepted |
 | Reduced motion | final state is applied immediately from `ui/reduce_motion` | reduced-motion test + capture 05 | Accepted |
+| Pointer interaction | bounded parallax, nearest-node halo and card icon scale; disabled with reduced motion | pointer and reduced-motion tests + capture 06 | Accepted |
 | Home command | File → Home screen, `Ctrl+Shift+H`, existing unsaved-change gate | `show_home` integration | Accepted |
 | PT-BR / English | all new visible copy routed through `tr()` | captures 01 and 04 | Accepted |
 | Midnight / light | isolated welcome theme selectors and Preferences selector | theme tests + captures 01 and 04 | Accepted |
 | 1366 / 1600 / 1920 | proportional split, expanding illustration and wrapped copy | captures 01–04; existing resolution tests | Accepted |
 | Keyboard/accessibility | actions are native `QPushButton`s with accessible names/tooltips | action-card unit test | Accepted |
-| Existing editor preserved | no domain, layout, rendering, HPO or persistence schema changes | complete 173-test suite | Accepted |
+| Existing editor preserved | no domain, layout, rendering, HPO or persistence schema changes | complete 176-test suite | Accepted |
 
 ## Files changed
 
@@ -72,6 +73,7 @@ construction is not justified by the current 329 ms startup result and would car
 - `assets/phase_4_16_0/03_recent_projects_pt_1600x900.png`
 - `assets/phase_4_16_0/04_welcome_en_light_1600x900.png`
 - `assets/phase_4_16_0/05_welcome_reduced_motion_1920x1080.png`
+- `assets/phase_4_16_0/06_welcome_pointer_parallax_1600x900.png`
 
 These are direct `QWidget.grab()` results from the real PySide6 application. No screenshot was
 composed or manually mocked.
@@ -83,12 +85,12 @@ ruff check .
 All checks passed!
 
 QT_QPA_PLATFORM=offscreen pytest -q
-173 passed
+176 passed
 ```
 
-The nine new tests cover storage bounds/deduplication/privacy, safe removal, animation
-interactivity, reduced motion, both themes, Preferences persistence, Home/editor navigation,
-loading and unavailable recent entries.
+The twelve new tests cover storage bounds/deduplication/privacy, safe removal, animation
+interactivity, idle and pointer motion, reduced motion, both themes, Preferences persistence,
+Home/editor navigation, loading and unavailable recent entries.
 
 ## Known constraints
 

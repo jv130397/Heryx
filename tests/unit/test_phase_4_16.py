@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt
+from PySide6.QtCore import QPoint, QSettings, Qt
 
 from rarepedigree.domain import PedigreeProject
 from rarepedigree.persistence import JsonProjectRepository
@@ -57,6 +57,44 @@ def test_reduced_motion_renders_final_welcome_state(qtbot) -> None:
     screen.start_animation(reduced_motion=True)
     assert screen.illustration.progress == 1.0
     assert screen._animations.state() == screen._animations.State.Stopped
+    assert screen._idle_animation.state() == screen._idle_animation.State.Stopped
+
+
+def test_welcome_enters_gentle_idle_motion_after_reveal(qtbot) -> None:
+    screen = WelcomeScreen()
+    qtbot.addWidget(screen)
+    screen.show()
+    screen._start_idle_animation()
+    assert screen._idle_animation.state() == screen._idle_animation.State.Running
+    assert screen._idle_animation.duration() == 4200
+    screen.stop_animation()
+    assert screen.illustration.bobOffset == 0.0
+
+
+def test_pointer_adds_bounded_parallax_and_card_icon_motion(qtbot) -> None:
+    screen = WelcomeScreen()
+    qtbot.addWidget(screen)
+    screen.resize(1200, 700)
+    screen.show()
+    qtbot.mouseMove(screen.illustration, QPoint(screen.illustration.width() - 5, 5))
+    qtbot.wait(260)
+    assert 0.0 < screen.illustration.hoverX <= 6.0
+    assert -5.0 <= screen.illustration.hoverY < 0.0
+    qtbot.mouseMove(screen.new_card, QPoint(10, 10))
+    qtbot.wait(200)
+    assert screen.new_card.glyph.pixmap().width() >= 31
+
+
+def test_reduced_motion_disables_pointer_animation(qtbot) -> None:
+    screen = WelcomeScreen()
+    qtbot.addWidget(screen)
+    screen.start_animation(reduced_motion=True)
+    screen.resize(1200, 700)
+    screen.show()
+    qtbot.mouseMove(screen.illustration, QPoint(screen.illustration.width() - 5, 5))
+    qtbot.wait(260)
+    assert screen.illustration.hoverX == 0.0
+    assert screen.new_card.glyph.pixmap().width() == 28
 
 
 def test_welcome_supports_light_and_midnight_theme_properties(qtbot) -> None:

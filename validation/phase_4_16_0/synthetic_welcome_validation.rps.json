@@ -1,12 +1,12 @@
 {
   "schema_version": "0.4.0",
-  "project_id": "df7a2387-2d90-497e-add9-6b864e2e592d",
+  "project_id": "61cdad10-f17f-4dda-8089-c4140aab54c2",
   "title": "Família sintética de validação",
   "description": "",
   "project_language": "pt_BR",
   "representation": "scientific",
-  "created_at": "2026-11-02T20:12:35.613865Z",
-  "updated_at": "2026-11-02T20:12:35.614064Z",
+  "created_at": "2026-11-02T20:19:00.941510Z",
+  "updated_at": "2026-11-02T20:19:00.941612Z",
   "individuals": [],
   "relationships": [],
   "parentages": [],
@@ -15,7 +15,7 @@
   "annotations": [],
   "hpo_observations": [],
   "family": {
-    "id": "e88e77a6-8b7f-467c-ab55-9131b61cc786",
+    "id": "ef33abe8-e296-4363-962f-a03149a0f974",
     "label": "Família"
   }
 }
