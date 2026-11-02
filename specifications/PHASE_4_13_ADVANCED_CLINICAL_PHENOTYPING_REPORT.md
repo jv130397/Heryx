@@ -8,6 +8,8 @@ de parentesco, layout, cena, notas, paletas e exportadores científicos não for
 
 Checkpoint anterior: `3c4b393`.
 
+Commit principal da implementação: `36c96a4`.
+
 ## Diagnóstico inicial
 
 - Schema `0.3.0`, sem entidade clínica estruturada.
