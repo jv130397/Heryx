@@ -142,27 +142,29 @@ QPushButton[symbolCard="true"]:checked { background: #D9F0F7; border: 2px solid 
 QDialog#welcome-dialog { background: #FFFFFF; }
 QLabel#welcome-title { font-size: 22px; font-weight: 700; color: #1F2933; }
 QLabel#welcome-mark { color: #078FC2; font-size: 48px; }
-QWidget#welcome-screen { background: #0C1427; }
-QFrame#welcome-utility { background: #0A1323; border-bottom: 1px solid #223451; min-height: 34px; }
-QLabel#welcome-utility-brand { color: #AFC1D8; font-size: 11px; font-weight: 650; }
+QWidget#welcome-screen { background: #111820; }
+QFrame#welcome-utility { background: #111820; border-bottom: 1px solid #29333D; min-height: 34px; }
+QLabel#welcome-utility-brand { color: #9EABB6; font-size: 11px; font-weight: 600; }
 QFrame#welcome-utility QToolButton { color: #C9D7E8; min-width: 28px; min-height: 24px; padding: 2px 6px; }
-QFrame#welcome-hero { background: #0C1427; border: 0; }
-QFrame#welcome-actions { background: #111B31; border-left: 1px solid #263755; }
-QLabel#welcome-brand { color: #F2F8FF; font-size: 24px; font-weight: 750; }
-QLabel#welcome-tagline { color: #78D9F6; font-size: 14px; letter-spacing: 1px; }
-QLabel#welcome-hero-heading { color: #F2F6FB; font-size: 25px; font-weight: 720; padding-top: 18px; }
-QLabel#welcome-hero-description { color: #A8B7CC; font-size: 13px; }
-QWidget#genomic-sphere { background: transparent; }
-QLabel#welcome-privacy { color: #8FA3C2; font-size: 12px; }
-QLabel#welcome-heading { color: #F4F7FD; font-size: 26px; font-weight: 750; }
-QLabel#welcome-intro { color: #AAB8CE; font-size: 14px; padding-bottom: 5px; }
-QFrame#welcome-action-card { background: #17243E; border: 1px solid #2A3D60; border-radius: 10px; }
-QFrame#welcome-action-card:hover { background: #1C2D4C; border-color: #4BBDE8; }
-QLabel#welcome-card-icon { background: #10213D; border: 1px solid #29486B; border-radius: 9px; }
+QFrame#welcome-hero { background: #111820; border: 0; }
+QFrame#welcome-actions { background: #171E25; border-left: 1px solid #303A43; }
+QLabel#welcome-brand { color: #F0EEE8; font-size: 23px; font-weight: 700; }
+QLabel#welcome-tagline { color: #8FA8AF; font-size: 11px; letter-spacing: 1.4px; }
+QLabel#welcome-hero-heading { color: #F0EEE8; font-family: "DejaVu Serif"; font-size: 25px; font-weight: 600; padding-top: 18px; }
+QLabel#welcome-hero-description { color: #9EABB6; font-size: 13px; }
+QWidget#living-pedigree { background: transparent; }
+QLabel#welcome-privacy { color: #7F8C96; font-size: 11px; }
+QLabel#welcome-heading { color: #F0EEE8; font-family: "DejaVu Serif"; font-size: 25px; font-weight: 600; }
+QLabel#welcome-intro { color: #9EABB6; font-size: 13px; padding-bottom: 9px; }
+QFrame#welcome-action-card { background: #1D252D; border: 1px solid #35414B; border-radius: 5px; }
+QFrame#welcome-action-card:hover { background: #222D35; border-color: #6F929C; }
+QFrame#welcome-action-card[secondaryAction="true"] { background: transparent; border: 0; border-top: 1px solid #303A43; border-radius: 0; }
+QFrame#welcome-action-card[secondaryAction="true"] QLabel#welcome-card-description { color: #7F8C96; }
+QLabel#welcome-card-icon { background: transparent; border: 1px solid #46545E; border-radius: 4px; }
 QLabel#welcome-card-title { color: #F3F7FC; font-size: 15px; font-weight: 700; }
 QLabel#welcome-card-description { color: #AAB8CE; font-size: 12px; }
-QPushButton#welcome-card-hit-target { min-width: 34px; min-height: 34px; max-width: 34px; padding: 0; background: transparent; border-color: #3B5275; }
-QPushButton#welcome-card-hit-target:hover, QPushButton#welcome-card-hit-target:focus { background: #263E62; border-color: #62D4FF; }
+QPushButton#welcome-card-hit-target { min-width: 34px; min-height: 34px; max-width: 34px; padding: 0; background: transparent; border-color: #46545E; }
+QPushButton#welcome-card-hit-target:hover, QPushButton#welcome-card-hit-target:focus { background: #2B3740; border-color: #7FA4AE; }
 QFrame#recent-projects-panel { background: #0E192D; border: 1px solid #293B5B; border-radius: 8px; }
 QFrame#recent-project-row { background: #15223A; border-radius: 6px; }
 QFrame#recent-project-row[unavailable="true"] { background: #171E2B; }

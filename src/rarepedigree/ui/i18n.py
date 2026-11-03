@@ -66,6 +66,21 @@ CATALOG = {
         "Arquivo": "File",
         "Tela inicial": "Home screen",
         "Genética • Família • Descoberta": "Genetics • Family • Discovery",
+        "HEREDOGRAMAS CLÍNICOS · DESKTOP": "CLINICAL PEDIGREES · DESKTOP",
+        "Histórias familiares, documentadas com precisão.": (
+            "Family histories, documented with precision."
+        ),
+        (
+            "Construa relações, registre fenótipos e preserve o contexto "
+            "clínico de cada família."
+        ): (
+            "Build relationships, record phenotypes, and preserve each "
+            "family's clinical context."
+        ),
+        "RarePedigree Studio": "RarePedigree Studio",
+        "Inicie uma família ou continue um projeto existente.": (
+            "Start a family or continue an existing project."
+        ),
         "A genética de cada família conta uma história.": (
             "Every family's genetics tells a story."
         ),

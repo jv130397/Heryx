@@ -33,9 +33,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from rarepedigree.ui.genomic_sphere import GenomicSphere
 from rarepedigree.ui.i18n import language_manager, tr
 from rarepedigree.ui.icons import icon
+from rarepedigree.ui.living_pedigree import LivingPedigree
 
 
 @dataclass(frozen=True)
@@ -273,7 +273,7 @@ class WelcomeActionCard(QFrame):
         self._icon_name = icon_name
         self._motion_enabled = True
         self.glyph = QLabel()
-        self.glyph.setPixmap(icon(icon_name, "#62D4FF", 28).pixmap(28, 28))
+        self.glyph.setPixmap(icon(icon_name, "#78A6B0", 28).pixmap(28, 28))
         self.glyph.setFixedSize(42, 42)
         self.glyph.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.glyph.setObjectName("welcome-card-icon")
@@ -337,7 +337,7 @@ class WelcomeActionCard(QFrame):
 
     def _set_icon_size(self, value: float) -> None:
         size = round(value)
-        self.glyph.setPixmap(icon(self._icon_name, "#62D4FF", size).pixmap(size, size))
+        self.glyph.setPixmap(icon(self._icon_name, "#78A6B0", size).pixmap(size, size))
 
     def set_motion_enabled(self, enabled: bool) -> None:
         self._motion_enabled = enabled
@@ -392,7 +392,7 @@ class WelcomeScreen(QWidget):
         hero.setContentsMargins(54, 42, 42, 38)
         brand_row = QHBoxLayout()
         logo = QLabel()
-        logo.setPixmap(icon("logo", "#56D6FF", 42).pixmap(42, 42))
+        logo.setPixmap(icon("logo", "#79A8B2", 42).pixmap(42, 42))
         brand = QLabel("RarePedigree Studio")
         brand.setObjectName("welcome-brand")
         brand_row.addWidget(logo)
@@ -411,14 +411,14 @@ class WelcomeScreen(QWidget):
         self.hero_description.setWordWrap(True)
         hero.addWidget(self.hero_heading)
         hero.addWidget(self.hero_description)
-        self.sphere = GenomicSphere(self.store.settings)
-        self.illustration = self.sphere
-        self._idle_animation = QPropertyAnimation(self.sphere, b"bobOffset", self)
+        self.illustration = LivingPedigree()
+        self.sphere = self.illustration  # Compatibility alias for Phase 4.16 integrations.
+        self._idle_animation = QPropertyAnimation(self.illustration, b"bobOffset", self)
         self._idle_animation.setDuration(4200)
         self._idle_animation.setLoopCount(-1)
         self._idle_animation.setStartValue(0.0)
         self._idle_animation.setEndValue(0.0)
-        hero.addWidget(self.sphere, 1)
+        hero.addWidget(self.illustration, 1)
         self.privacy = QLabel()
         self.privacy.setWordWrap(True)
         self.privacy.setObjectName("welcome-privacy")
@@ -440,6 +440,8 @@ class WelcomeScreen(QWidget):
         self.new_card = WelcomeActionCard("new")
         self.open_card = WelcomeActionCard("open")
         self.recent_card = WelcomeActionCard("save")
+        self.recent_card.setProperty("secondaryAction", True)
+        self.recent_card.setMinimumHeight(62)
         self.new_card.clicked.connect(self.newRequested)
         self.open_card.clicked.connect(self.openRequested)
         self.recent_card.clicked.connect(self.toggle_recent_projects)
@@ -465,15 +467,15 @@ class WelcomeScreen(QWidget):
 
     def start_animation(self, reduced_motion: bool = False) -> None:
         self._animations.stop()
-        self.sphere.stop()
+        self.illustration.stop()
         self._idle_animation.stop()
         for card in (self.new_card, self.open_card, self.recent_card):
             card.set_motion_enabled(not reduced_motion)
         self._animations.deleteLater()
         self._animations = QParallelAnimationGroup(self)
         if reduced_motion:
-            self.sphere.set_intro_progress(1.0)
-            self.sphere.start(reduced_motion=True)
+            self.illustration.set_intro_progress(1.0)
+            self.illustration.start(reduced_motion=True)
             for widget in (
                 self.heading,
                 self.intro,
@@ -485,10 +487,10 @@ class WelcomeScreen(QWidget):
                 if isinstance(effect, QGraphicsOpacityEffect):
                     effect.setOpacity(1.0)
             return
-        self.sphere.set_intro_progress(0.0)
-        self.sphere.start(reduced_motion=False)
-        drawing = QPropertyAnimation(self.sphere, b"introProgress", self)
-        drawing.setDuration(820)
+        self.illustration.set_intro_progress(0.0)
+        self.illustration.start(reduced_motion=False)
+        drawing = QPropertyAnimation(self.illustration, b"introProgress", self)
+        drawing.setDuration(1450)
         drawing.setStartValue(0.0)
         drawing.setEndValue(1.0)
         drawing.setEasingCurve(QEasingCurve.Type.OutCubic)
@@ -514,9 +516,9 @@ class WelcomeScreen(QWidget):
 
     def stop_animation(self) -> None:
         self._animations.stop()
-        self.sphere.stop()
+        self.illustration.stop()
         self._idle_animation.stop()
-        self.sphere.set_intro_progress(1.0)
+        self.illustration.set_intro_progress(1.0)
         for widget in (self.heading, self.intro, self.new_card, self.open_card, self.recent_card):
             effect = widget.graphicsEffect()
             if isinstance(effect, QGraphicsOpacityEffect):
@@ -525,12 +527,12 @@ class WelcomeScreen(QWidget):
     def _start_idle_animation(self) -> None:
         """Compatibility hook; the sphere timer now owns the actual idle motion."""
         if self.isVisible():
-            self.sphere.start(reduced_motion=False)
+            self.illustration.start(reduced_motion=False)
             self._idle_animation.start()
 
     def set_theme(self, theme: str) -> None:
         self.setProperty("welcomeTheme", "light" if theme == "light" else "midnight")
-        self.sphere.set_theme(theme)
+        self.illustration.set_theme(theme)
         self.style().unpolish(self)
         self.style().polish(self)
         for child in self.findChildren(QWidget):
@@ -594,19 +596,19 @@ class WelcomeScreen(QWidget):
 
     def retranslate_ui(self, _language: str | None = None) -> None:
         self.utility_language.setText("EN" if language_manager.language == "pt_BR" else "PT")
-        self.tagline.setText(tr("Genética • Família • Descoberta"))
-        self.hero_heading.setText(tr("A genética de cada família conta uma história."))
+        self.tagline.setText(tr("HEREDOGRAMAS CLÍNICOS · DESKTOP"))
+        self.hero_heading.setText(tr("Histórias familiares, documentadas com precisão."))
         self.hero_description.setText(
             tr(
-                "Crie heredogramas científicos, explore relações familiares "
-                "e organize informações clínicas com precisão."
+                "Construa relações, registre fenótipos e preserve o contexto "
+                "clínico de cada família."
             )
         )
         self.privacy.setText(
             tr("Privacidade por padrão: seus projetos permanecem neste computador.")
         )
-        self.heading.setText(tr("Bem-vindo ao seu espaço científico"))
-        self.intro.setText(tr("Crie, documente e explore heredogramas clínicos com clareza."))
+        self.heading.setText(tr("RarePedigree Studio"))
+        self.intro.setText(tr("Inicie uma família ou continue um projeto existente."))
         self.new_card.set_text(
             tr("Nova família"), tr("Inicie um heredograma com o assistente de projeto.")
         )

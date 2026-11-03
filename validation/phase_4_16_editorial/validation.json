@@ -1,0 +1,17 @@
+{
+  "implementation": "Native PySide6/QPainter living pedigree",
+  "checks": {
+    "people": 9,
+    "proband_count": 1,
+    "menu_hidden": true,
+    "recent_action_secondary": true,
+    "reduced_motion_timer_stopped": true
+  },
+  "evidence": {
+    "pt_1920": "assets/phase_4_16_editorial/01_editorial_pt_1920x1080.png",
+    "pt_1366": "assets/phase_4_16_editorial/02_editorial_pt_1366x768.png",
+    "clinical_hover": "assets/phase_4_16_editorial/03_clinical_hover.png",
+    "reduced_motion": "assets/phase_4_16_editorial/04_reduced_motion.png",
+    "en_light": "assets/phase_4_16_editorial/05_editorial_en_light.png"
+  }
+}
