@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
@@ -31,5 +31,11 @@ describe("RarePedigree Web welcome", () => {
     for (const link of screen.getAllByRole("link", { name: /Ver no GitHub/ })) {
       expect(link).toHaveAttribute("href", "https://github.com/jv130397/RarePedigree-Studio");
     }
+  });
+
+  it("lets the user skip the cinematic sequence", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /Pular introdução/ }));
+    expect(screen.queryByRole("button", { name: /Pular introdução/ })).not.toBeInTheDocument();
   });
 });
