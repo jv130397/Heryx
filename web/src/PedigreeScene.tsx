@@ -1,4 +1,4 @@
-import { Environment, Float, Sparkles, useTexture } from "@react-three/drei";
+import { ContactShadows, Environment, Float, Sparkles, useTexture } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -39,13 +39,19 @@ function Avatar({ introPhase }: { introPhase: number }) {
 
 function Observatory({ introPhase }: { introPhase: number }) {
   return <group>
-    <mesh position={[0,-1.25,0]} receiveShadow><cylinderGeometry args={[5.8,6.4,.42,8]} /><meshStandardMaterial color="#101b24" metalness={.72} roughness={.42} /></mesh>
-    <mesh position={[0,-1.02,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[3.9,4.02,64]} /><meshBasicMaterial color="#20c7ee" toneMapped={false} /></mesh>
-    <mesh position={[0,-1,0]} rotation={[-Math.PI/2,0,0]} receiveShadow><circleGeometry args={[5.65,64]} /><meshStandardMaterial color="#07121a" metalness={.5} roughness={.5} /></mesh>
-    {[0,1,2,3,4,5,6].map((i) => <mesh key={i} position={[-6 + i * 2,-.2,-4.2 - Math.abs(3-i) * .25]}><boxGeometry args={[.12,2.3,.12]} /><meshStandardMaterial color="#1e4351" emissive="#0b5368" emissiveIntensity={1.1} /></mesh>)}
+    <mesh position={[0,1,-4.8]} rotation={[0,0,0]} receiveShadow><cylinderGeometry args={[7.8,7.8,6.4,48,1,true,Math.PI*.08,Math.PI*.84]} /><meshStandardMaterial color="#07141d" side={THREE.BackSide} metalness={.72} roughness={.3} /></mesh>
+    <mesh position={[0,-1.2,0]} receiveShadow><cylinderGeometry args={[6.4,6.8,.45,64]} /><meshStandardMaterial color="#0c1b25" metalness={.88} roughness={.24} /></mesh>
+    <mesh position={[0,-.96,0]} rotation={[-Math.PI/2,0,0]} receiveShadow><circleGeometry args={[6.35,64]} /><meshStandardMaterial color="#07131b" metalness={.9} roughness={.22} /></mesh>
+    {[2.25,3.8,5.35].map((radius) => <mesh key={radius} position={[0,-.94,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[radius,radius+.055,96]} /><meshBasicMaterial color="#20d7ef" transparent opacity={radius === 3.8 ? .72 : .36} toneMapped={false} /></mesh>)}
+    {[-5.4,-3.6,-1.8,0,1.8,3.6,5.4].map((x) => <group key={x} position={[x,.3,-4.3 + Math.abs(x)*.09]}><mesh><boxGeometry args={[.1,2.8,.08]} /><meshStandardMaterial color="#16485a" emissive="#13cce9" emissiveIntensity={2.2} /></mesh><pointLight position={[0,0,.5]} color="#20d9f2" intensity={.45} distance={2.2} /></group>)}
+    <mesh position={[2.45,1.25,-1.5]} rotation={[0,0,Math.PI]}><coneGeometry args={[1.6,3.2,48,1,true]} /><meshBasicMaterial color="#2edaf2" transparent opacity={.035} side={THREE.DoubleSide} depthWrite={false} /></mesh>
     <mesh position={[2.45,.05,-1.35]} castShadow><cylinderGeometry args={[1.35,1.6,.36,32]} /><meshStandardMaterial color="#122837" metalness={.75} roughness={.25} /></mesh>
-    <mesh position={[2.45,.25,-1.35]}><cylinderGeometry args={[1.05,1.25,.05,32]} /><meshStandardMaterial color="#1bd0f4" emissive="#0b9fbd" emissiveIntensity={2} /></mesh>
+    <mesh position={[2.45,.19,-1.35]}><cylinderGeometry args={[1.38,1.38,.12,48]} /><meshStandardMaterial color="#07131a" metalness={.82} roughness={.18} /></mesh>
+    <mesh position={[2.45,.27,-1.35]}><cylinderGeometry args={[1.08,1.25,.055,48]} /><meshStandardMaterial color="#b9f8ff" emissive="#20d7ef" emissiveIntensity={2.5} /></mesh>
+    <mesh position={[2.45,.12,-1.35]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[1.39,.035,12,64]} /><meshBasicMaterial color="#20d9f1" toneMapped={false} /></mesh>
+    <mesh position={[2.45,-.04,-1.35]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[1.38,1.49,64]} /><meshBasicMaterial color="#23d9f1" toneMapped={false} /></mesh>
     <Hologram introPhase={introPhase} /><Avatar introPhase={introPhase} /><Sparkles count={55} scale={[12,6,8]} size={1.2} speed={.15} color="#68ddf5" opacity={.45} />
+    <ContactShadows position={[0,-.91,0]} opacity={.68} scale={12} blur={2.6} far={4.5} color="#001018" />
   </group>;
 }
 
@@ -59,7 +65,7 @@ function CameraRig({ reducedMotion, entered }: { reducedMotion: boolean; entered
 }
 
 export function PedigreeScene({ reducedMotion, entered, introPhase }: { reducedMotion: boolean; entered: boolean; introPhase: number }) {
-  return <div className="scene" aria-label="Observatório genômico tridimensional interativo"><Canvas shadows dpr={[1,1.75]} camera={{ position:[0,1.05,9.4],fov:43,near:.1,far:100 }} gl={{ antialias:true,alpha:true,powerPreference:"high-performance" }}>
+  return <div className="scene" aria-label="Observatório genômico tridimensional interativo"><Canvas shadows dpr={[1,1.75]} camera={{ position:[0,1.05,9.4],fov:43,near:.1,far:100 }} gl={{ antialias:true,alpha:true,powerPreference:"high-performance",toneMapping:THREE.ACESFilmicToneMapping,toneMappingExposure:1.12 }}>
     <color attach="background" args={["#03090f"]} /><fog attach="fog" args={["#03090f",8,21]} /><ambientLight intensity={.42} />
     <directionalLight position={[-3,7,5]} intensity={3.4} color="#d6f6ff" castShadow shadow-mapSize={[1024,1024]} /><spotLight position={[2,7,1]} intensity={8} color="#2bdcff" angle={.42} penumbra={1} castShadow /><pointLight position={[-4,1,2]} intensity={5} color="#4656ff" distance={9} />
     <Observatory introPhase={introPhase} /><CameraRig reducedMotion={reducedMotion} entered={entered} /><Environment preset="night" environmentIntensity={.22} />
