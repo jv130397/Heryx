@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
 vi.mock("./PedigreeScene", () => ({
-  PedigreeScene: () => <div aria-label="Heredograma tridimensional interativo" />
+  PedigreeScene: () => <div aria-label="Observatório genômico tridimensional interativo" />
 }));
 
 Object.defineProperty(window, "matchMedia", {
@@ -20,16 +20,16 @@ afterEach(cleanup);
 describe("RarePedigree Web welcome", () => {
   it("renders the 3D scene and core project actions", async () => {
     render(<App />);
-    expect(await screen.findByLabelText("Heredograma tridimensional interativo")).toBeVisible();
-    expect(screen.getByRole("button", { name: /Nova família/ })).toBeEnabled();
-    expect(screen.getByRole("button", { name: /Abrir projeto/ })).toBeEnabled();
+    expect(await screen.findByLabelText("Observatório genômico tridimensional interativo")).toBeVisible();
+    expect(screen.getByRole("button", { name: /Entrar no laboratório/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Continuar projeto/ })).toBeEnabled();
   });
 
-  it("keeps recent projects visually separate from the primary actions", async () => {
+  it("links the welcome experience to the public GitHub repository", async () => {
     render(<App />);
-    await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "Projetos recentes" })).toBeVisible()
-    );
-    expect(screen.getByText("Família Silva")).toBeVisible();
+    await waitFor(() => expect(screen.getAllByRole("link", { name: /Ver no GitHub/ })).toHaveLength(2));
+    for (const link of screen.getAllByRole("link", { name: /Ver no GitHub/ })) {
+      expect(link).toHaveAttribute("href", "https://github.com/jv130397/RarePedigree-Studio");
+    }
   });
 });

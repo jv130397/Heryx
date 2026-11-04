@@ -1,196 +1,67 @@
-import { Environment, Float, Html, RoundedBox } from "@react-three/drei";
+import { Environment, Float, Sparkles, useTexture } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { people, segments, type Person3D, type Segment3D } from "./pedigree";
 
-function Connection({ from, to }: Segment3D) {
-  const { midpoint, quaternion, length } = useMemo(() => {
-    const start = new THREE.Vector3(...from);
-    const end = new THREE.Vector3(...to);
-    const direction = end.clone().sub(start);
-    return {
-      midpoint: start.clone().add(end).multiplyScalar(0.5),
-      quaternion: new THREE.Quaternion().setFromUnitVectors(
-        new THREE.Vector3(0, 1, 0),
-        direction.clone().normalize()
-      ),
-      length: direction.length()
-    };
+type Point = [number, number, number];
+
+function Tube({ from, to, color = "#4ad8ff", radius = .018 }: { from: Point; to: Point; color?: string; radius?: number }) {
+  const values = useMemo(() => {
+    const start = new THREE.Vector3(...from); const end = new THREE.Vector3(...to); const direction = end.clone().sub(start);
+    return { midpoint: start.clone().add(end).multiplyScalar(.5), length: direction.length(), quaternion: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize()) };
   }, [from, to]);
-
-  return (
-    <mesh position={midpoint} quaternion={quaternion} castShadow>
-      <cylinderGeometry args={[0.035, 0.035, length, 18]} />
-      <meshStandardMaterial color="#879197" metalness={0.86} roughness={0.28} />
-    </mesh>
-  );
+  return <mesh position={values.midpoint} quaternion={values.quaternion}><cylinderGeometry args={[radius, radius, values.length, 10]} /><meshStandardMaterial color={color} emissive={color} emissiveIntensity={3} toneMapped={false} /></mesh>;
 }
 
-function PersonNode({ person, selected, onSelect }: {
-  person: Person3D;
-  selected: boolean;
-  onSelect: (person: Person3D) => void;
-}) {
-  const [hovered, setHovered] = useState(false);
-  const material = (
-    <meshPhysicalMaterial
-      color={person.affected ? "#b95f43" : hovered || selected ? "#8cbec1" : "#718084"}
-      transmission={person.affected ? 0.12 : 0.72}
-      thickness={0.8}
-      roughness={person.affected ? 0.38 : 0.2}
-      metalness={person.affected ? 0.25 : 0.05}
-      clearcoat={0.8}
-      clearcoatRoughness={0.18}
-      transparent
-      opacity={0.96}
-    />
-  );
-
-  const interaction = {
-    onClick: (event: { stopPropagation: () => void }) => {
-      event.stopPropagation();
-      onSelect(person);
-    },
-    onPointerOver: (event: { stopPropagation: () => void }) => {
-      event.stopPropagation();
-      setHovered(true);
-      document.body.style.cursor = "pointer";
-    },
-    onPointerOut: () => {
-      setHovered(false);
-      document.body.style.cursor = "default";
-    }
-  };
-
-  return (
-    <group position={person.position}>
-      {person.shape === "square" && (
-        <RoundedBox args={[0.66, 0.66, 0.22]} radius={0.07} smoothness={4} {...interaction}>
-          {material}
-        </RoundedBox>
-      )}
-      {person.shape === "circle" && (
-        <mesh rotation={[Math.PI / 2, 0, 0]} {...interaction}>
-          <cylinderGeometry args={[0.36, 0.36, 0.22, 48]} />
-          {material}
-        </mesh>
-      )}
-      {person.shape === "diamond" && (
-        <RoundedBox
-          args={[0.55, 0.55, 0.2]}
-          radius={0.04}
-          rotation={[0, 0, Math.PI / 4]}
-          {...interaction}
-        >
-          {material}
-        </RoundedBox>
-      )}
-      <Html center position={[0, -0.58, 0]} distanceFactor={8}>
-        <span className="node-label">{person.id}</span>
-      </Html>
-      {(hovered || selected) && (
-        <Html position={[0.5, 0.28, 0.15]} distanceFactor={7.5} zIndexRange={[20, 0]}>
-          <div className="node-inspector">
-            <strong>{person.id}</strong>
-            <span>{person.label}</span>
-          </div>
-        </Html>
-      )}
-    </group>
-  );
+function Hologram() {
+  const group = useRef<THREE.Group>(null);
+  useFrame((state) => { if (group.current) group.current.rotation.y = Math.sin(state.clock.elapsedTime * .22) * .08; });
+  const nodes: Array<[number, number, number, "square" | "circle"]> = [[-1.2,.8,0,"square"],[0,.8,0,"circle"],[1.25,.8,0,"square"],[-.65,-.2,0,"circle"],[.65,-.2,0,"square"],[0,-1.15,0,"circle"]];
+  const links: Array<[Point,Point]> = [[[-1.2,.8,0],[0,.8,0]],[[.6,.8,0],[1.25,.8,0]],[[-.6,.8,0],[-.6,-.2,0]],[[.6,.8,0],[.6,-.2,0]],[[-.65,-.2,0],[.65,-.2,0]],[[0,-.2,0],[0,-1.15,0]]];
+  return <Float speed={.7} floatIntensity={.12} rotationIntensity={.02}><group ref={group} position={[2.45,2.25,-1.35]} rotation={[-.08,-.2,0]}>
+    {links.map(([from,to], index) => <Tube key={index} from={from} to={to} />)}
+    {nodes.map(([x,y,z,shape], index) => <mesh key={index} position={[x,y,z]} rotation={shape === "circle" ? [Math.PI/2,0,0] : [0,0,0]}>{shape === "circle" ? <cylinderGeometry args={[.18,.18,.06,32]} /> : <boxGeometry args={[.34,.34,.07]} />}<meshPhysicalMaterial color="#aaf3ff" emissive="#2fd4ff" emissiveIntensity={2.8} transparent opacity={.78} transmission={.35} /></mesh>)}
+    <pointLight color="#49dfff" intensity={5} distance={5} />
+  </group></Float>;
 }
 
-function GenerationPlane({ y, width, depth }: { y: number; width: number; depth: number }) {
-  return (
-    <mesh position={[-0.25, y - 0.32, depth]} receiveShadow>
-      <boxGeometry args={[width, 0.055, 2.35]} />
-      <meshPhysicalMaterial
-        color="#31545a"
-        transmission={0.8}
-        thickness={0.45}
-        roughness={0.3}
-        transparent
-        opacity={0.19}
-      />
-    </mesh>
-  );
+function Avatar() {
+  const source = useTexture("/assets/joao-vitor-game-avatar.png");
+  const texture = useMemo(() => source.clone(), [source]);
+  const avatar = useRef<THREE.Group>(null);
+  useEffect(() => { texture.needsUpdate = true; texture.repeat.set(1 / 3, 1 / 2); texture.offset.set(0, 1 / 2); texture.colorSpace = THREE.SRGBColorSpace; texture.magFilter = THREE.NearestFilter; }, [texture]);
+  useFrame((state) => { if (avatar.current) avatar.current.position.y = Math.sin(state.clock.elapsedTime * 1.25) * .035; });
+  return <group ref={avatar} position={[-.35,.2,.7]} rotation={[0,.12,0]}>
+    <mesh castShadow><planeGeometry args={[2.65,2.65]} /><meshBasicMaterial map={texture} transparent toneMapped={false} /></mesh>
+    <pointLight position={[0,1,.8]} color="#17d5ec" intensity={1.5} distance={4} />
+  </group>;
 }
 
-function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
+function Observatory() {
+  return <group>
+    <mesh position={[0,-1.25,0]} receiveShadow><cylinderGeometry args={[5.8,6.4,.42,8]} /><meshStandardMaterial color="#101b24" metalness={.72} roughness={.42} /></mesh>
+    <mesh position={[0,-1.02,0]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[3.9,4.02,64]} /><meshBasicMaterial color="#20c7ee" toneMapped={false} /></mesh>
+    <mesh position={[0,-1,0]} rotation={[-Math.PI/2,0,0]} receiveShadow><circleGeometry args={[5.65,64]} /><meshStandardMaterial color="#07121a" metalness={.5} roughness={.5} /></mesh>
+    {[0,1,2,3,4,5,6].map((i) => <mesh key={i} position={[-6 + i * 2,-.2,-4.2 - Math.abs(3-i) * .25]}><boxGeometry args={[.12,2.3,.12]} /><meshStandardMaterial color="#1e4351" emissive="#0b5368" emissiveIntensity={1.1} /></mesh>)}
+    <mesh position={[2.45,.05,-1.35]} castShadow><cylinderGeometry args={[1.35,1.6,.36,32]} /><meshStandardMaterial color="#122837" metalness={.75} roughness={.25} /></mesh>
+    <mesh position={[2.45,.25,-1.35]}><cylinderGeometry args={[1.05,1.25,.05,32]} /><meshStandardMaterial color="#1bd0f4" emissive="#0b9fbd" emissiveIntensity={2} /></mesh>
+    <Hologram /><Avatar /><Sparkles count={55} scale={[12,6,8]} size={1.2} speed={.15} color="#68ddf5" opacity={.45} />
+  </group>;
+}
+
+function CameraRig({ reducedMotion, entered }: { reducedMotion: boolean; entered: boolean }) {
   const { camera, pointer } = useThree();
-  useFrame((state, delta) => {
-    if (reducedMotion) return;
-    const targetX = 0.55 + pointer.x * 0.42;
-    const targetY = 1.25 + pointer.y * 0.24;
-    camera.position.x = THREE.MathUtils.damp(camera.position.x, targetX, 3, delta);
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, targetY, 3, delta);
-    camera.lookAt(-0.25, 0, 0);
-    state.scene.rotation.y = THREE.MathUtils.damp(
-      state.scene.rotation.y,
-      pointer.x * 0.025,
-      2.5,
-      delta
-    );
+  useFrame((_, delta) => {
+    const targetX = reducedMotion ? 0 : pointer.x * .45; const targetY = reducedMotion ? 1.05 : 1.05 + pointer.y * .22;
+    camera.position.x = THREE.MathUtils.damp(camera.position.x,targetX,2.5,delta); camera.position.y = THREE.MathUtils.damp(camera.position.y,targetY,2.5,delta); camera.position.z = THREE.MathUtils.damp(camera.position.z,entered ? 7.4 : 9.4,1.4,delta); camera.lookAt(0,.55,-.5);
   });
   return null;
 }
 
-function Sculpture({ reducedMotion }: { reducedMotion: boolean }) {
-  const group = useRef<THREE.Group>(null);
-  const [selected, setSelected] = useState<Person3D | null>(null);
-  useFrame((state) => {
-    if (!group.current || reducedMotion) return;
-    group.current.position.y = Math.sin(state.clock.elapsedTime * 0.45) * 0.035;
-  });
-
-  return (
-    <Float speed={reducedMotion ? 0 : 0.35} rotationIntensity={0.03} floatIntensity={0.08}>
-      <group ref={group} rotation={[-0.04, -0.14, 0]} onPointerMissed={() => setSelected(null)}>
-        <GenerationPlane y={2.15} width={7.8} depth={-1.25} />
-        <GenerationPlane y={0.05} width={7.2} depth={-0.58} />
-        <GenerationPlane y={-2.1} width={5.4} depth={0.15} />
-        {segments.map((segment, index) => (
-          <Connection key={index} {...segment} />
-        ))}
-        {people.map((person) => (
-          <PersonNode
-            key={person.id}
-            person={person}
-            selected={selected?.id === person.id}
-            onSelect={setSelected}
-          />
-        ))}
-      </group>
-    </Float>
-  );
-}
-
-export function PedigreeScene({ reducedMotion }: { reducedMotion: boolean }) {
-  return (
-    <div className="scene" aria-label="Heredograma tridimensional interativo">
-      <Canvas
-        shadows
-        dpr={[1, 1.75]}
-        camera={{ position: [0.55, 1.25, 9.8], fov: 40, near: 0.1, far: 100 }}
-        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-      >
-        <color attach="background" args={["#090e11"]} />
-        <fog attach="fog" args={["#090e11", 10, 17]} />
-        <ambientLight intensity={0.65} />
-        <directionalLight
-          position={[-4, 6, 7]}
-          intensity={4.2}
-          color="#e9ded0"
-          castShadow
-          shadow-mapSize={[1024, 1024]}
-        />
-        <pointLight position={[3, -2.5, 4]} intensity={11} color="#b45f40" distance={8} />
-        <spotLight position={[4, 5, 1]} intensity={7} color="#6cabad" angle={0.5} penumbra={1} />
-        <Sculpture reducedMotion={reducedMotion} />
-        <CameraRig reducedMotion={reducedMotion} />
-        <Environment preset="warehouse" environmentIntensity={0.28} />
-      </Canvas>
-    </div>
-  );
+export function PedigreeScene({ reducedMotion, entered }: { reducedMotion: boolean; entered: boolean }) {
+  return <div className="scene" aria-label="Observatório genômico tridimensional interativo"><Canvas shadows dpr={[1,1.75]} camera={{ position:[0,1.05,9.4],fov:43,near:.1,far:100 }} gl={{ antialias:true,alpha:true,powerPreference:"high-performance" }}>
+    <color attach="background" args={["#03090f"]} /><fog attach="fog" args={["#03090f",8,21]} /><ambientLight intensity={.42} />
+    <directionalLight position={[-3,7,5]} intensity={3.4} color="#d6f6ff" castShadow shadow-mapSize={[1024,1024]} /><spotLight position={[2,7,1]} intensity={8} color="#2bdcff" angle={.42} penumbra={1} castShadow /><pointLight position={[-4,1,2]} intensity={5} color="#4656ff" distance={9} />
+    <Observatory /><CameraRig reducedMotion={reducedMotion} entered={entered} /><Environment preset="night" environmentIntensity={.22} />
+  </Canvas></div>;
 }
