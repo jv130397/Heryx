@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, FileJson, FolderOpen, GitBranch, Github, Moon, PanelRight, Play, Save, Sun, Undo2, Upload, UserPlus, X, ZoomIn } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileJson, FolderOpen, GitBranch, Github, Moon, Play, Save, Sun, Undo2, Upload, UserPlus, X, ZoomIn } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { WebPedigree, type WebProject } from "./WebPedigree";
 import { NewProjectMission } from "./NewProjectMission";
+import { IndividualDrawer } from "./IndividualDrawer";
 
 const PedigreeScene = lazy(() => import("./PedigreeScene").then((module) => ({ default: module.PedigreeScene })));
 const repositoryUrl = "https://github.com/jv130397/RarePedigree-Studio";
@@ -29,6 +30,7 @@ export function App() {
   const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [projectSummary, setProjectSummary] = useState<ProjectSummary | null>(null);
   const [loadedProject, setLoadedProject] = useState<WebProject | null>(null);
+  const [selectedIndividualId, setSelectedIndividualId] = useState<string | null>(null);
   const [fileError, setFileError] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const text = copy[language];
@@ -52,9 +54,11 @@ export function App() {
     return () => window.clearTimeout(timer);
   }, [entered, reducedMotion]);
 
-  const leaveWorkspace = () => { setWorkspaceOpen(false); setEntered(false); setAvatarPose("neutral"); };
+  const leaveWorkspace = () => { setWorkspaceOpen(false); setEntered(false); setSelectedIndividualId(null); setAvatarPose("neutral"); };
   const beginNewProject = () => { setAvatarPose("pointing"); setNewProjectOpen(true); };
-  const createProject = (project: WebProject) => { setLoadedProject(project); setProjectSummary(null); setNewProjectOpen(false); setAvatarPose("celebrating"); setEntered(true); };
+  const createProject = (project: WebProject) => { setLoadedProject(project); setProjectSummary(null); setSelectedIndividualId(null); setNewProjectOpen(false); setAvatarPose("celebrating"); setEntered(true); };
+  const selectedIndividual = loadedProject?.individuals.find(person => person.id === selectedIndividualId) ?? null;
+  const saveIndividual = (person: WebProject["individuals"][number]) => { setLoadedProject(project => project ? { ...project, updated_at: new Date().toISOString(), individuals: project.individuals.map(current => current.id === person.id ? person : current) } : project); setSelectedIndividualId(null); };
   const inspectProject = async (file?: File) => {
     if (!file) return;
     try {
@@ -95,8 +99,8 @@ export function App() {
     <AnimatePresence>{workspaceOpen && <motion.section className="workspace" aria-label={text.workspace} initial={{ opacity: 0, scale: 1.06 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: .65, ease: [0.2,.7,.2,1] }}>
       <header className="workspace-bar"><button className="workspace-back" onClick={leaveWorkspace}><ArrowLeft size={17} />{text.back}</button><span className="workspace-title"><BrandMark /><strong>{loadedProject?.title ?? "Família RP–001"}</strong><small>{text.workspace}</small></span><div className="workspace-actions"><button aria-label="Desfazer"><Undo2 size={17} /></button><button aria-label="Salvar"><Save size={17} /></button><span>100%</span></div></header>
       <aside className="tool-rail"><button className="active"><UserPlus size={19} /><span>{text.add}</span></button><button><GitBranch size={19} /><span>{text.relationship}</span></button><button><ZoomIn size={19} /><span>Zoom</span></button></aside>
-      <div className="pedigree-canvas">{loadedProject ? <WebPedigree project={loadedProject}/> : <><div className="generation generation-i">I</div><div className="generation generation-ii">II</div><svg className="pedigree-preview" viewBox="0 0 760 430" role="img" aria-label="Heredograma de demonstração"><g className="pedigree-lines"><path d="M210 100H350M280 100V205M170 205H390M170 205V270M390 205V270M390 270H530M460 270V355" /></g><g className="pedigree-symbols"><rect x="180" y="70" width="60" height="60"/><circle cx="380" cy="100" r="30"/><circle cx="170" cy="300" r="30"/><rect className="affected" x="360" y="270" width="60" height="60"/><circle cx="560" cy="300" r="30"/><rect x="430" y="355" width="60" height="60"/></g><g className="pedigree-labels"><text x="210" y="153">I-1</text><text x="380" y="153">I-2</text><text x="170" y="350">II-1</text><text x="390" y="350">II-2</text><text x="560" y="350">II-3</text></g></svg></>}<div className="canvas-guide"><span>JV</span><p><strong>{loadedProject ? "Projeto carregado em modo de visualização." : "Ambiente preparado."}</strong>{loadedProject ? ` ${loadedProject.individuals.length} indivíduos reconstruídos localmente.` : " Selecione um indivíduo para começar."}</p></div></div>
-      <aside className="inspector"><h2><PanelRight size={17}/>{text.inspector}</h2><div className="inspector-empty"><span>◇</span><strong>Nenhum indivíduo selecionado</strong><p>As informações clínicas e familiares aparecerão aqui.</p></div></aside>
+      <div className="pedigree-canvas">{loadedProject ? <WebPedigree project={loadedProject} selectedId={selectedIndividualId} onSelect={setSelectedIndividualId}/> : <><div className="generation generation-i">I</div><div className="generation generation-ii">II</div><svg className="pedigree-preview" viewBox="0 0 760 430" role="img" aria-label="Heredograma de demonstração"><g className="pedigree-lines"><path d="M210 100H350M280 100V205M170 205H390M170 205V270M390 205V270M390 270H530M460 270V355" /></g><g className="pedigree-symbols"><rect x="180" y="70" width="60" height="60"/><circle cx="380" cy="100" r="30"/><circle cx="170" cy="300" r="30"/><rect className="affected" x="360" y="270" width="60" height="60"/><circle cx="560" cy="300" r="30"/><rect x="430" y="355" width="60" height="60"/></g><g className="pedigree-labels"><text x="210" y="153">I-1</text><text x="380" y="153">I-2</text><text x="170" y="350">II-1</text><text x="390" y="350">II-2</text><text x="560" y="350">II-3</text></g></svg></>}<div className="canvas-guide"><span>JV</span><p><strong>{loadedProject ? "Projeto carregado em modo de edição." : "Ambiente preparado."}</strong>{loadedProject ? ` ${loadedProject.individuals.length} indivíduos disponíveis. Selecione um símbolo para editar.` : " Selecione um indivíduo para começar."}</p></div></div>
+      <AnimatePresence>{selectedIndividual && <IndividualDrawer person={selectedIndividual} onClose={()=>setSelectedIndividualId(null)} onSave={saveIndividual}/>}</AnimatePresence>
     </motion.section>}</AnimatePresence>
   </main>;
 }
