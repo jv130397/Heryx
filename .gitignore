@@ -10,6 +10,8 @@ dist/
 .venv/
 .idea/
 .vscode/
+node_modules/
+*.tsbuildinfo
 *.sqlite
 *.sqlite3
 *.db
@@ -17,4 +19,3 @@ dist/
 *.db-shm
 *.tmp
 *.bak
-
