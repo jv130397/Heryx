@@ -11,8 +11,9 @@ export function WebPedigree({ project, selectedId, onSelect }: { project: WebPro
   const xs = source.map((person) => Number(person.layout?.x ?? 0));
   const ys = source.map((person) => Number(person.layout?.y ?? 0));
   const minX = Math.min(...xs); const maxX = Math.max(...xs); const minY = Math.min(...ys); const maxY = Math.max(...ys);
-  const scaleX = (value: number) => 100 + ((value - minX) / Math.max(maxX - minX, 1)) * 760;
-  const scaleY = (value: number) => 85 + ((value - minY) / Math.max(maxY - minY, 1)) * 430;
+  const spanX = maxX - minX; const spanY = maxY - minY; const middleX = (minX + maxX) / 2; const middleY = (minY + maxY) / 2;
+  const scaleX = (value: number) => spanX < 500 ? 480 + (value - middleX) * 1.45 : 100 + ((value - minX) / spanX) * 760;
+  const scaleY = (value: number) => spanY < 340 ? 285 + (value - middleY) * 1.35 : 85 + ((value - minY) / spanY) * 430;
   const points = new Map<string, Point>(source.map((person) => [person.id, { x: scaleX(Number(person.layout?.x ?? 0)), y: scaleY(Number(person.layout?.y ?? 0)) }]));
   const parentages = project.parentages ?? [];
   const children = new Map<string, string[]>();

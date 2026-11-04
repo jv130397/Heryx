@@ -4,6 +4,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { WebPedigree, type WebProject } from "./WebPedigree";
 import { NewProjectMission } from "./NewProjectMission";
 import { IndividualDrawer } from "./IndividualDrawer";
+import { applyFamilyAction, type FamilyAction } from "./familyOperations";
 
 const PedigreeScene = lazy(() => import("./PedigreeScene").then((module) => ({ default: module.PedigreeScene })));
 const repositoryUrl = "https://github.com/jv130397/RarePedigree-Studio";
@@ -59,6 +60,7 @@ export function App() {
   const createProject = (project: WebProject) => { setLoadedProject(project); setProjectSummary(null); setSelectedIndividualId(null); setNewProjectOpen(false); setAvatarPose("celebrating"); setEntered(true); };
   const selectedIndividual = loadedProject?.individuals.find(person => person.id === selectedIndividualId) ?? null;
   const saveIndividual = (person: WebProject["individuals"][number]) => { setLoadedProject(project => project ? { ...project, updated_at: new Date().toISOString(), individuals: project.individuals.map(current => current.id === person.id ? person : current) } : project); setSelectedIndividualId(null); };
+  const addRelative = (action: FamilyAction) => { if (!loadedProject || !selectedIndividualId) return; const result = applyFamilyAction(loadedProject, selectedIndividualId, action); setLoadedProject({ ...result.project, updated_at: new Date().toISOString() }); setSelectedIndividualId(result.createdId); };
   const inspectProject = async (file?: File) => {
     if (!file) return;
     try {
@@ -100,7 +102,7 @@ export function App() {
       <header className="workspace-bar"><button className="workspace-back" onClick={leaveWorkspace}><ArrowLeft size={17} />{text.back}</button><span className="workspace-title"><BrandMark /><strong>{loadedProject?.title ?? "Família RP–001"}</strong><small>{text.workspace}</small></span><div className="workspace-actions"><button aria-label="Desfazer"><Undo2 size={17} /></button><button aria-label="Salvar"><Save size={17} /></button><span>100%</span></div></header>
       <aside className="tool-rail"><button className="active"><UserPlus size={19} /><span>{text.add}</span></button><button><GitBranch size={19} /><span>{text.relationship}</span></button><button><ZoomIn size={19} /><span>Zoom</span></button></aside>
       <div className="pedigree-canvas">{loadedProject ? <WebPedigree project={loadedProject} selectedId={selectedIndividualId} onSelect={setSelectedIndividualId}/> : <><div className="generation generation-i">I</div><div className="generation generation-ii">II</div><svg className="pedigree-preview" viewBox="0 0 760 430" role="img" aria-label="Heredograma de demonstração"><g className="pedigree-lines"><path d="M210 100H350M280 100V205M170 205H390M170 205V270M390 205V270M390 270H530M460 270V355" /></g><g className="pedigree-symbols"><rect x="180" y="70" width="60" height="60"/><circle cx="380" cy="100" r="30"/><circle cx="170" cy="300" r="30"/><rect className="affected" x="360" y="270" width="60" height="60"/><circle cx="560" cy="300" r="30"/><rect x="430" y="355" width="60" height="60"/></g><g className="pedigree-labels"><text x="210" y="153">I-1</text><text x="380" y="153">I-2</text><text x="170" y="350">II-1</text><text x="390" y="350">II-2</text><text x="560" y="350">II-3</text></g></svg></>}<div className="canvas-guide"><span>JV</span><p><strong>{loadedProject ? "Projeto carregado em modo de edição." : "Ambiente preparado."}</strong>{loadedProject ? ` ${loadedProject.individuals.length} indivíduos disponíveis. Selecione um símbolo para editar.` : " Selecione um indivíduo para começar."}</p></div></div>
-      <AnimatePresence>{selectedIndividual && <IndividualDrawer person={selectedIndividual} onClose={()=>setSelectedIndividualId(null)} onSave={saveIndividual}/>}</AnimatePresence>
+      <AnimatePresence>{selectedIndividual && <IndividualDrawer person={selectedIndividual} onClose={()=>setSelectedIndividualId(null)} onSave={saveIndividual} onAddRelative={addRelative}/>}</AnimatePresence>
     </motion.section>}</AnimatePresence>
   </main>;
 }

@@ -23,4 +23,10 @@ describe("WebPedigree", () => {
     fireEvent.click(screen.getByRole("button", { name: "Selecionar indivíduo I-1" }));
     expect(onSelect).toHaveBeenCalledWith("proband");
   });
+
+  it("keeps small family nuclei compact instead of stretching them across the canvas", () => {
+    const project: WebProject = { schema_version: "0.4.0", individuals: [{ id: "a", layout: { x: 0, y: 0 } }, { id: "b", layout: { x: 100, y: 0 } }], relationships: [{ member_a: "a", member_b: "b", kind: "partner" }] };
+    const { container } = render(<WebPedigree project={project}/>);
+    expect(container.querySelector(".loaded-connections path")).toHaveAttribute("d", "M407.5 285H552.5");
+  });
 });
