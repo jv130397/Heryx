@@ -44,4 +44,14 @@ describe("RarePedigree Web welcome", () => {
     fireEvent.mouseEnter(screen.getByRole("button", { name: /Continuar projeto/ }));
     await waitFor(() => expect(screen.getByText("Pronto para retomar seu projeto.")).toBeInTheDocument());
   });
+
+  it("inspects a local RarePedigree project without uploading it", async () => {
+    const { container } = render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /Continuar projeto/ }));
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]');
+    const project = new File([JSON.stringify({ schema_version: "0.4.0", title: "Família teste", individuals: [{ id: "1" }], relationships: [] })], "family.rps.json", { type: "application/json" });
+    fireEvent.change(input!, { target: { files: [project] } });
+    await waitFor(() => expect(screen.getByRole("heading", { name: "Família teste" })).toBeVisible());
+    expect(screen.getByText("0.4.0")).toBeVisible();
+  });
 });

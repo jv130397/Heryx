@@ -1,14 +1,16 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, FolderOpen, GitBranch, Github, Moon, PanelRight, Play, Save, Sun, Undo2, UserPlus, ZoomIn } from "lucide-react";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { ArrowLeft, ArrowRight, FileJson, FolderOpen, GitBranch, Github, Moon, PanelRight, Play, Save, Sun, Undo2, Upload, UserPlus, X, ZoomIn } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 
 const PedigreeScene = lazy(() => import("./PedigreeScene").then((module) => ({ default: module.PedigreeScene })));
 const repositoryUrl = "https://github.com/jv130397/RarePedigree-Studio";
 type AvatarPose = "neutral" | "pointing" | "laptop" | "thinking" | "celebrating";
+type ProjectSummary = { fileName: string; title: string; schema: string; individuals: number; relationships: number; updatedAt?: string };
+const readLocalFile = (file: File) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsText(file); });
 
 const copy = {
-  pt: { nav: ["O projeto", "Ciência", "Documentação"], chapter: "CAPÍTULO 01 · O OBSERVATÓRIO", title: "Toda família guarda uma história.", description: "Entre no laboratório de João Vitor e transforme vínculos, fenótipos e gerações em conhecimento clínico.", enter: "Entrar no laboratório", open: "Continuar projeto", github: "Ver no GitHub", guide: "JOÃO VITOR · GUIA DO OBSERVATÓRIO", hint: "Mova o cursor para explorar o ambiente", status: "SISTEMA ONLINE", mission: "MISSÃO ATUAL", missionText: "Criar um novo heredograma", skip: "Pular introdução", sequence: ["INICIALIZANDO OBSERVATÓRIO", "JOÃO VITOR CONECTADO", "RECONSTRUINDO HISTÓRIA FAMILIAR", "ACESSO LIBERADO"], workspace: "Editor de heredograma", back: "Voltar ao observatório", add: "Adicionar indivíduo", relationship: "Relacionamento", inspector: "Inspetor", reactions: { neutral: "Genética · Família · Descoberta", pointing: "Vamos construir uma história familiar?", laptop: "Pronto para retomar seu projeto.", thinking: "Código aberto, ciência compartilhada.", celebrating: "Acesso ao laboratório autorizado!" } },
-  en: { nav: ["The project", "Science", "Documentation"], chapter: "CHAPTER 01 · THE OBSERVATORY", title: "Every family holds a story.", description: "Enter João Vitor's laboratory and turn relationships, phenotypes and generations into clinical knowledge.", enter: "Enter the laboratory", open: "Continue project", github: "View on GitHub", guide: "JOÃO VITOR · OBSERVATORY GUIDE", hint: "Move the cursor to explore the environment", status: "SYSTEM ONLINE", mission: "CURRENT MISSION", missionText: "Create a new pedigree", skip: "Skip intro", sequence: ["INITIALIZING OBSERVATORY", "JOÃO VITOR CONNECTED", "REBUILDING FAMILY HISTORY", "ACCESS GRANTED"], workspace: "Pedigree editor", back: "Back to observatory", add: "Add individual", relationship: "Relationship", inspector: "Inspector", reactions: { neutral: "Genetics · Family · Discovery", pointing: "Shall we build a family story?", laptop: "Ready to resume your project.", thinking: "Open code, shared science.", celebrating: "Laboratory access authorized!" } }
+  pt: { nav: ["O projeto", "Ciência", "Documentação"], chapter: "CAPÍTULO 01 · O OBSERVATÓRIO", title: "Toda família guarda uma história.", description: "Entre no laboratório de João Vitor e transforme vínculos, fenótipos e gerações em conhecimento clínico.", enter: "Entrar no laboratório", open: "Continuar projeto", github: "Ver no GitHub", guide: "JOÃO VITOR · GUIA DO OBSERVATÓRIO", hint: "Mova o cursor para explorar o ambiente", status: "SISTEMA ONLINE", mission: "MISSÃO ATUAL", missionText: "Criar um novo heredograma", skip: "Pular introdução", sequence: ["INICIALIZANDO OBSERVATÓRIO", "JOÃO VITOR CONECTADO", "RECONSTRUINDO HISTÓRIA FAMILIAR", "ACESSO LIBERADO"], workspace: "Editor de heredograma", back: "Voltar ao observatório", add: "Adicionar indivíduo", relationship: "Relacionamento", inspector: "Inspetor", archive: "Arquivo de famílias", chooseFile: "Selecionar projeto local", localOnly: "O arquivo permanece neste dispositivo.", invalidFile: "Este arquivo não parece ser um projeto RarePedigree válido.", reactions: { neutral: "Genética · Família · Descoberta", pointing: "Vamos construir uma história familiar?", laptop: "Pronto para retomar seu projeto.", thinking: "Código aberto, ciência compartilhada.", celebrating: "Acesso ao laboratório autorizado!" } },
+  en: { nav: ["The project", "Science", "Documentation"], chapter: "CHAPTER 01 · THE OBSERVATORY", title: "Every family holds a story.", description: "Enter João Vitor's laboratory and turn relationships, phenotypes and generations into clinical knowledge.", enter: "Enter the laboratory", open: "Continue project", github: "View on GitHub", guide: "JOÃO VITOR · OBSERVATORY GUIDE", hint: "Move the cursor to explore the environment", status: "SYSTEM ONLINE", mission: "CURRENT MISSION", missionText: "Create a new pedigree", skip: "Skip intro", sequence: ["INITIALIZING OBSERVATORY", "JOÃO VITOR CONNECTED", "REBUILDING FAMILY HISTORY", "ACCESS GRANTED"], workspace: "Pedigree editor", back: "Back to observatory", add: "Add individual", relationship: "Relationship", inspector: "Inspector", archive: "Family archive", chooseFile: "Select local project", localOnly: "The file remains on this device.", invalidFile: "This file does not appear to be a valid RarePedigree project.", reactions: { neutral: "Genetics · Family · Discovery", pointing: "Shall we build a family story?", laptop: "Ready to resume your project.", thinking: "Open code, shared science.", celebrating: "Laboratory access authorized!" } }
 };
 
 function BrandMark() { return <span className="brand-mark" aria-hidden="true"><span /></span>; }
@@ -21,6 +23,10 @@ export function App() {
   const [introPhase, setIntroPhase] = useState(0);
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [avatarPose, setAvatarPose] = useState<AvatarPose>("neutral");
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [projectSummary, setProjectSummary] = useState<ProjectSummary | null>(null);
+  const [fileError, setFileError] = useState(false);
+  const fileInput = useRef<HTMLInputElement>(null);
   const text = copy[language];
 
   useEffect(() => {
@@ -44,6 +50,15 @@ export function App() {
 
   const leaveWorkspace = () => { setWorkspaceOpen(false); setEntered(false); setAvatarPose("neutral"); };
   const enterWorkspace = () => { setAvatarPose("celebrating"); setEntered(true); };
+  const inspectProject = async (file?: File) => {
+    if (!file) return;
+    try {
+      const data = JSON.parse(await readLocalFile(file)) as Record<string, unknown>;
+      if (typeof data.schema_version !== "string" || !Array.isArray(data.individuals)) throw new Error("invalid");
+      setProjectSummary({ fileName: file.name, title: typeof data.title === "string" ? data.title : file.name, schema: data.schema_version, individuals: data.individuals.length, relationships: Array.isArray(data.relationships) ? data.relationships.length : 0, updatedAt: typeof data.updated_at === "string" ? data.updated_at : undefined });
+      setFileError(false);
+    } catch { setProjectSummary(null); setFileError(true); }
+  };
 
   const ready = introPhase === 3;
   return <main className={`${light ? "app light" : "app"}${entered ? " entered" : ""}${ready ? " intro-ready" : " intro-running"}`}>
@@ -63,10 +78,11 @@ export function App() {
       <motion.div className="content" initial={false} animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : 24 }} transition={{ duration: .8, ease: [0.2, 0.7, 0.2, 1] }}>
         <span className="eyebrow"><i />{text.chapter}</span>
         <AnimatePresence mode="wait"><motion.div key={language} initial={reducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: .25 }}><h1>{text.title}</h1><p className="description">{text.description}</p></motion.div></AnimatePresence>
-        <div className="actions"><button className="primary" onClick={enterWorkspace} onMouseEnter={() => setAvatarPose("pointing")} onMouseLeave={() => !entered && setAvatarPose("neutral")}><Play size={17} fill="currentColor" />{text.enter}<ArrowRight size={17} /></button><button className="secondary" onMouseEnter={() => setAvatarPose("laptop")} onMouseLeave={() => setAvatarPose("neutral")}><FolderOpen size={18} />{text.open}</button></div>
+        <div className="actions"><button className="primary" onClick={enterWorkspace} onMouseEnter={() => setAvatarPose("pointing")} onMouseLeave={() => !entered && setAvatarPose("neutral")}><Play size={17} fill="currentColor" />{text.enter}<ArrowRight size={17} /></button><button className="secondary" onClick={() => { setArchiveOpen(true); setAvatarPose("laptop"); }} onMouseEnter={() => setAvatarPose("laptop")} onMouseLeave={() => !archiveOpen && setAvatarPose("neutral")}><FolderOpen size={18} />{text.open}</button></div>
         <a className="github-link" href={repositoryUrl} target="_blank" rel="noreferrer" onMouseEnter={() => setAvatarPose("thinking")} onMouseLeave={() => setAvatarPose("neutral")}><Github size={16} />{text.github}<span>↗</span></a>
       </motion.div>
       <div className="mission-card"><span>01</span><div><small>{text.mission}</small><strong>{text.missionText}</strong></div><i /></div><div className="explore-hint"><span className="mouse-icon" />{text.hint}</div>
+      <AnimatePresence>{archiveOpen && <motion.div className="archive-panel" role="dialog" aria-label={text.archive} initial={{opacity:0,x:40,scale:.97}} animate={{opacity:1,x:0,scale:1}} exit={{opacity:0,x:30}}><header><span><FileJson size={18}/>{text.archive}</span><button aria-label="Fechar arquivo" onClick={() => { setArchiveOpen(false); setAvatarPose("neutral"); }}><X size={17}/></button></header><div className="archive-body"><input ref={fileInput} type="file" accept=".json,.rps.json,application/json" onChange={(event) => inspectProject(event.target.files?.[0])}/><button className="file-picker" onClick={() => fileInput.current?.click()}><Upload size={20}/><span><strong>{text.chooseFile}</strong><small>.rps.json · .json</small></span></button><p className="privacy-note">⌁ {text.localOnly}</p>{fileError && <p className="file-error">{text.invalidFile}</p>}{projectSummary && <section className="project-summary"><small>PROJETO RECONHECIDO</small><h3>{projectSummary.title}</h3><p>{projectSummary.fileName}</p><dl><div><dt>Schema</dt><dd>{projectSummary.schema}</dd></div><div><dt>Indivíduos</dt><dd>{projectSummary.individuals}</dd></div><div><dt>Relações</dt><dd>{projectSummary.relationships}</dd></div></dl><button disabled>Integração com editor em preparação</button></section>}</div></motion.div>}</AnimatePresence>
     </section>
     <AnimatePresence>{workspaceOpen && <motion.section className="workspace" aria-label={text.workspace} initial={{ opacity: 0, scale: 1.06 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: .65, ease: [0.2,.7,.2,1] }}>
       <header className="workspace-bar"><button className="workspace-back" onClick={leaveWorkspace}><ArrowLeft size={17} />{text.back}</button><span className="workspace-title"><BrandMark /><strong>Família RP–001</strong><small>{text.workspace}</small></span><div className="workspace-actions"><button aria-label="Desfazer"><Undo2 size={17} /></button><button aria-label="Salvar"><Save size={17} /></button><span>100%</span></div></header>
