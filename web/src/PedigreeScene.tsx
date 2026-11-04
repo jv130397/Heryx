@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 
 type Point = [number, number, number];
+type AvatarPose = "neutral" | "pointing" | "laptop" | "thinking" | "celebrating";
 
 function Tube({ from, to, color = "#4ad8ff", radius = .018 }: { from: Point; to: Point; color?: string; radius?: number }) {
   const values = useMemo(() => {
@@ -25,19 +26,19 @@ function Hologram({ introPhase }: { introPhase: number }) {
   </group></Float>;
 }
 
-function Avatar({ introPhase }: { introPhase: number }) {
+function Avatar({ introPhase, pose }: { introPhase: number; pose: AvatarPose }) {
   const source = useTexture("/assets/joao-vitor-game-avatar.png");
   const texture = useMemo(() => source.clone(), [source]);
   const avatar = useRef<THREE.Group>(null);
-  useEffect(() => { texture.needsUpdate = true; texture.repeat.set(1 / 3, 1 / 2); texture.offset.set(introPhase === 1 || introPhase === 2 ? 1 / 3 : 0, 1 / 2); texture.colorSpace = THREE.SRGBColorSpace; texture.magFilter = THREE.NearestFilter; }, [texture, introPhase]);
-  useFrame((state) => { if (avatar.current) avatar.current.position.y = Math.sin(state.clock.elapsedTime * 1.25) * .035; });
+  useEffect(() => { const activePose = introPhase === 1 || introPhase === 2 ? "pointing" : pose; const frames: Record<AvatarPose,[number,number]> = { neutral:[0,.5], pointing:[1/3,.5], laptop:[2/3,.5], thinking:[0,0], celebrating:[1/3,0] }; texture.needsUpdate = true; texture.repeat.set(1 / 3,1 / 2); texture.offset.set(...frames[activePose]); texture.colorSpace = THREE.SRGBColorSpace; texture.magFilter = THREE.NearestFilter; }, [texture,introPhase,pose]);
+  useFrame((state,delta) => { if (avatar.current) { avatar.current.position.y = Math.sin(state.clock.elapsedTime * 1.25) * .035; const target = pose === "neutral" ? 1 : 1.035; const scale = THREE.MathUtils.damp(avatar.current.scale.x,target,6,delta); avatar.current.scale.setScalar(scale); } });
   return <group ref={avatar} position={[-.35,.2,.7]} rotation={[0,.12,0]}>
     <mesh castShadow><planeGeometry args={[2.65,2.65]} /><meshBasicMaterial map={texture} transparent toneMapped={false} /></mesh>
     <pointLight position={[0,1,.8]} color="#17d5ec" intensity={1.5} distance={4} />
   </group>;
 }
 
-function Observatory({ introPhase }: { introPhase: number }) {
+function Observatory({ introPhase, avatarPose }: { introPhase: number; avatarPose: AvatarPose }) {
   return <group>
     <mesh position={[0,1,-4.8]} rotation={[0,0,0]} receiveShadow><cylinderGeometry args={[7.8,7.8,6.4,48,1,true,Math.PI*.08,Math.PI*.84]} /><meshStandardMaterial color="#07141d" side={THREE.BackSide} metalness={.72} roughness={.3} /></mesh>
     <mesh position={[0,-1.2,0]} receiveShadow><cylinderGeometry args={[6.4,6.8,.45,64]} /><meshStandardMaterial color="#0c1b25" metalness={.88} roughness={.24} /></mesh>
@@ -50,7 +51,7 @@ function Observatory({ introPhase }: { introPhase: number }) {
     <mesh position={[2.45,.27,-1.35]}><cylinderGeometry args={[1.08,1.25,.055,48]} /><meshStandardMaterial color="#b9f8ff" emissive="#20d7ef" emissiveIntensity={2.5} /></mesh>
     <mesh position={[2.45,.12,-1.35]} rotation={[Math.PI/2,0,0]}><torusGeometry args={[1.39,.035,12,64]} /><meshBasicMaterial color="#20d9f1" toneMapped={false} /></mesh>
     <mesh position={[2.45,-.04,-1.35]} rotation={[-Math.PI/2,0,0]}><ringGeometry args={[1.38,1.49,64]} /><meshBasicMaterial color="#23d9f1" toneMapped={false} /></mesh>
-    <Hologram introPhase={introPhase} /><Avatar introPhase={introPhase} /><Sparkles count={55} scale={[12,6,8]} size={1.2} speed={.15} color="#68ddf5" opacity={.45} />
+    <Hologram introPhase={introPhase} /><Avatar introPhase={introPhase} pose={avatarPose} /><Sparkles count={55} scale={[12,6,8]} size={1.2} speed={.15} color="#68ddf5" opacity={.45} />
     <ContactShadows position={[0,-.91,0]} opacity={.68} scale={12} blur={2.6} far={4.5} color="#001018" />
   </group>;
 }
@@ -64,10 +65,10 @@ function CameraRig({ reducedMotion, entered }: { reducedMotion: boolean; entered
   return null;
 }
 
-export function PedigreeScene({ reducedMotion, entered, introPhase }: { reducedMotion: boolean; entered: boolean; introPhase: number }) {
+export function PedigreeScene({ reducedMotion, entered, introPhase, avatarPose }: { reducedMotion: boolean; entered: boolean; introPhase: number; avatarPose: AvatarPose }) {
   return <div className="scene" aria-label="Observatório genômico tridimensional interativo"><Canvas shadows dpr={[1,1.75]} camera={{ position:[0,1.05,9.4],fov:43,near:.1,far:100 }} gl={{ antialias:true,alpha:true,powerPreference:"high-performance",toneMapping:THREE.ACESFilmicToneMapping,toneMappingExposure:1.12 }}>
     <color attach="background" args={["#03090f"]} /><fog attach="fog" args={["#03090f",8,21]} /><ambientLight intensity={.42} />
     <directionalLight position={[-3,7,5]} intensity={3.4} color="#d6f6ff" castShadow shadow-mapSize={[1024,1024]} /><spotLight position={[2,7,1]} intensity={8} color="#2bdcff" angle={.42} penumbra={1} castShadow /><pointLight position={[-4,1,2]} intensity={5} color="#4656ff" distance={9} />
-    <Observatory introPhase={introPhase} /><CameraRig reducedMotion={reducedMotion} entered={entered} /><Environment preset="night" environmentIntensity={.22} />
+    <Observatory introPhase={introPhase} avatarPose={avatarPose} /><CameraRig reducedMotion={reducedMotion} entered={entered} /><Environment preset="night" environmentIntensity={.22} />
   </Canvas></div>;
 }

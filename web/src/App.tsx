@@ -4,10 +4,11 @@ import { lazy, Suspense, useEffect, useState } from "react";
 
 const PedigreeScene = lazy(() => import("./PedigreeScene").then((module) => ({ default: module.PedigreeScene })));
 const repositoryUrl = "https://github.com/jv130397/RarePedigree-Studio";
+type AvatarPose = "neutral" | "pointing" | "laptop" | "thinking" | "celebrating";
 
 const copy = {
-  pt: { nav: ["O projeto", "Ciência", "Documentação"], chapter: "CAPÍTULO 01 · O OBSERVATÓRIO", title: "Toda família guarda uma história.", description: "Entre no laboratório de João Vitor e transforme vínculos, fenótipos e gerações em conhecimento clínico.", enter: "Entrar no laboratório", open: "Continuar projeto", github: "Ver no GitHub", guide: "JOÃO VITOR · GUIA DO OBSERVATÓRIO", hint: "Mova o cursor para explorar o ambiente", status: "SISTEMA ONLINE", mission: "MISSÃO ATUAL", missionText: "Criar um novo heredograma", skip: "Pular introdução", sequence: ["INICIALIZANDO OBSERVATÓRIO", "JOÃO VITOR CONECTADO", "RECONSTRUINDO HISTÓRIA FAMILIAR", "ACESSO LIBERADO"], workspace: "Editor de heredograma", back: "Voltar ao observatório", add: "Adicionar indivíduo", relationship: "Relacionamento", inspector: "Inspetor" },
-  en: { nav: ["The project", "Science", "Documentation"], chapter: "CHAPTER 01 · THE OBSERVATORY", title: "Every family holds a story.", description: "Enter João Vitor's laboratory and turn relationships, phenotypes and generations into clinical knowledge.", enter: "Enter the laboratory", open: "Continue project", github: "View on GitHub", guide: "JOÃO VITOR · OBSERVATORY GUIDE", hint: "Move the cursor to explore the environment", status: "SYSTEM ONLINE", mission: "CURRENT MISSION", missionText: "Create a new pedigree", skip: "Skip intro", sequence: ["INITIALIZING OBSERVATORY", "JOÃO VITOR CONNECTED", "REBUILDING FAMILY HISTORY", "ACCESS GRANTED"], workspace: "Pedigree editor", back: "Back to observatory", add: "Add individual", relationship: "Relationship", inspector: "Inspector" }
+  pt: { nav: ["O projeto", "Ciência", "Documentação"], chapter: "CAPÍTULO 01 · O OBSERVATÓRIO", title: "Toda família guarda uma história.", description: "Entre no laboratório de João Vitor e transforme vínculos, fenótipos e gerações em conhecimento clínico.", enter: "Entrar no laboratório", open: "Continuar projeto", github: "Ver no GitHub", guide: "JOÃO VITOR · GUIA DO OBSERVATÓRIO", hint: "Mova o cursor para explorar o ambiente", status: "SISTEMA ONLINE", mission: "MISSÃO ATUAL", missionText: "Criar um novo heredograma", skip: "Pular introdução", sequence: ["INICIALIZANDO OBSERVATÓRIO", "JOÃO VITOR CONECTADO", "RECONSTRUINDO HISTÓRIA FAMILIAR", "ACESSO LIBERADO"], workspace: "Editor de heredograma", back: "Voltar ao observatório", add: "Adicionar indivíduo", relationship: "Relacionamento", inspector: "Inspetor", reactions: { neutral: "Genética · Família · Descoberta", pointing: "Vamos construir uma história familiar?", laptop: "Pronto para retomar seu projeto.", thinking: "Código aberto, ciência compartilhada.", celebrating: "Acesso ao laboratório autorizado!" } },
+  en: { nav: ["The project", "Science", "Documentation"], chapter: "CHAPTER 01 · THE OBSERVATORY", title: "Every family holds a story.", description: "Enter João Vitor's laboratory and turn relationships, phenotypes and generations into clinical knowledge.", enter: "Enter the laboratory", open: "Continue project", github: "View on GitHub", guide: "JOÃO VITOR · OBSERVATORY GUIDE", hint: "Move the cursor to explore the environment", status: "SYSTEM ONLINE", mission: "CURRENT MISSION", missionText: "Create a new pedigree", skip: "Skip intro", sequence: ["INITIALIZING OBSERVATORY", "JOÃO VITOR CONNECTED", "REBUILDING FAMILY HISTORY", "ACCESS GRANTED"], workspace: "Pedigree editor", back: "Back to observatory", add: "Add individual", relationship: "Relationship", inspector: "Inspector", reactions: { neutral: "Genetics · Family · Discovery", pointing: "Shall we build a family story?", laptop: "Ready to resume your project.", thinking: "Open code, shared science.", celebrating: "Laboratory access authorized!" } }
 };
 
 function BrandMark() { return <span className="brand-mark" aria-hidden="true"><span /></span>; }
@@ -19,6 +20,7 @@ export function App() {
   const [entered, setEntered] = useState(false);
   const [introPhase, setIntroPhase] = useState(0);
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [avatarPose, setAvatarPose] = useState<AvatarPose>("neutral");
   const text = copy[language];
 
   useEffect(() => {
@@ -40,28 +42,29 @@ export function App() {
     return () => window.clearTimeout(timer);
   }, [entered, reducedMotion]);
 
-  const leaveWorkspace = () => { setWorkspaceOpen(false); setEntered(false); };
+  const leaveWorkspace = () => { setWorkspaceOpen(false); setEntered(false); setAvatarPose("neutral"); };
+  const enterWorkspace = () => { setAvatarPose("celebrating"); setEntered(true); };
 
   const ready = introPhase === 3;
   return <main className={`${light ? "app light" : "app"}${entered ? " entered" : ""}${ready ? " intro-ready" : " intro-running"}`}>
     <header className="topbar">
       <a className="brand" href="#inicio" aria-label="RarePedigree Studio"><BrandMark /><span><strong>RarePedigree</strong><small>STUDIO</small></span></a>
       <nav aria-label="Navegação principal">{text.nav.map((item, index) => <a className={index === 0 ? "active" : ""} href={`#section-${index}`} key={item}>{item}</a>)}</nav>
-      <div className="utilities"><a className="github-compact" href={repositoryUrl} target="_blank" rel="noreferrer" aria-label={text.github}><Github size={17} /><span>GitHub</span></a><button className="language" onClick={() => setLanguage(language === "pt" ? "en" : "pt")} aria-label="Alternar idioma">{language.toUpperCase()}</button><button onClick={() => setLight(!light)} aria-label="Alternar aparência">{light ? <Moon size={17} /> : <Sun size={17} />}</button></div>
+      <div className="utilities"><a className="github-compact" href={repositoryUrl} target="_blank" rel="noreferrer" aria-label={text.github} onMouseEnter={() => setAvatarPose("thinking")} onMouseLeave={() => setAvatarPose("neutral")}><Github size={17} /><span>GitHub</span></a><button className="language" onClick={() => setLanguage(language === "pt" ? "en" : "pt")} aria-label="Alternar idioma">{language.toUpperCase()}</button><button onClick={() => setLight(!light)} aria-label="Alternar aparência">{light ? <Moon size={17} /> : <Sun size={17} />}</button></div>
     </header>
 
     <section className="hero" id="inicio">
-      <div className="visual-stage"><Suspense fallback={<div className="scene-fallback">Carregando observatório…</div>}><PedigreeScene reducedMotion={reducedMotion} entered={entered} introPhase={introPhase} /></Suspense></div>
+      <div className="visual-stage"><Suspense fallback={<div className="scene-fallback">Carregando observatório…</div>}><PedigreeScene reducedMotion={reducedMotion} entered={entered} introPhase={introPhase} avatarPose={avatarPose} /></Suspense></div>
       <div className="screen-vignette" aria-hidden="true" /><div className="hud-corners" aria-hidden="true"><i /><i /><i /><i /></div>
       <motion.div className="system-status" initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }}><span className="status-dot" />{ready ? text.status : text.sequence[introPhase]}<b>RP–01</b></motion.div>
       {!ready && <button className="skip-intro" onClick={() => setIntroPhase(3)}>{text.skip}<span>››</span></button>}
       <div className="sequence-meter" aria-hidden="true"><span style={{ width: `${(introPhase + 1) * 25}%` }} /></div>
-      <motion.div className="guide-tag" initial={false} animate={{ opacity: introPhase >= 1 ? 1 : 0, x: introPhase >= 1 ? 0 : -18 }} transition={{ duration: .65 }}><span>JV</span><div><small>{text.guide}</small><strong>Genética · Família · Descoberta</strong></div></motion.div>
+      <motion.div className="guide-tag" initial={false} animate={{ opacity: introPhase >= 1 ? 1 : 0, x: introPhase >= 1 ? 0 : -18 }} transition={{ duration: .65 }}><span>JV</span><div><small>{text.guide}</small><AnimatePresence mode="wait"><motion.strong key={avatarPose} initial={{opacity:0,y:3}} animate={{opacity:1,y:0}} exit={{opacity:0,y:-3}}>{text.reactions[avatarPose]}</motion.strong></AnimatePresence></div></motion.div>
       <motion.div className="content" initial={false} animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : 24 }} transition={{ duration: .8, ease: [0.2, 0.7, 0.2, 1] }}>
         <span className="eyebrow"><i />{text.chapter}</span>
         <AnimatePresence mode="wait"><motion.div key={language} initial={reducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: .25 }}><h1>{text.title}</h1><p className="description">{text.description}</p></motion.div></AnimatePresence>
-        <div className="actions"><button className="primary" onClick={() => setEntered(true)}><Play size={17} fill="currentColor" />{text.enter}<ArrowRight size={17} /></button><button className="secondary"><FolderOpen size={18} />{text.open}</button></div>
-        <a className="github-link" href={repositoryUrl} target="_blank" rel="noreferrer"><Github size={16} />{text.github}<span>↗</span></a>
+        <div className="actions"><button className="primary" onClick={enterWorkspace} onMouseEnter={() => setAvatarPose("pointing")} onMouseLeave={() => !entered && setAvatarPose("neutral")}><Play size={17} fill="currentColor" />{text.enter}<ArrowRight size={17} /></button><button className="secondary" onMouseEnter={() => setAvatarPose("laptop")} onMouseLeave={() => setAvatarPose("neutral")}><FolderOpen size={18} />{text.open}</button></div>
+        <a className="github-link" href={repositoryUrl} target="_blank" rel="noreferrer" onMouseEnter={() => setAvatarPose("thinking")} onMouseLeave={() => setAvatarPose("neutral")}><Github size={16} />{text.github}<span>↗</span></a>
       </motion.div>
       <div className="mission-card"><span>01</span><div><small>{text.mission}</small><strong>{text.missionText}</strong></div><i /></div><div className="explore-hint"><span className="mouse-icon" />{text.hint}</div>
     </section>

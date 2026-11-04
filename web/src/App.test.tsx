@@ -38,4 +38,10 @@ describe("RarePedigree Web welcome", () => {
     fireEvent.click(screen.getByRole("button", { name: /Pular introdução/ }));
     expect(screen.queryByRole("button", { name: /Pular introdução/ })).not.toBeInTheDocument();
   });
+
+  it("uses João Vitor as a contextual guide", async () => {
+    render(<App />);
+    fireEvent.mouseEnter(screen.getByRole("button", { name: /Continuar projeto/ }));
+    await waitFor(() => expect(screen.getByText("Pronto para retomar seu projeto.")).toBeInTheDocument());
+  });
 });
