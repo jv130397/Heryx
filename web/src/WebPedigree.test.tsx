@@ -29,4 +29,12 @@ describe("WebPedigree", () => {
     const { container } = render(<WebPedigree project={project}/>);
     expect(container.querySelector(".loaded-connections path")).toHaveAttribute("d", "M407.5 285H552.5");
   });
+
+  it("separates coincident stored positions and points the proband arrow toward the symbol", () => {
+    const project: WebProject = { schema_version: "0.4.0", individuals: [{ id: "a", label: "P-1", proband: true, layout: { x: 10, y: 10 } }, { id: "b", label: "P-2", layout: { x: 10, y: 10 } }] };
+    const { container } = render(<WebPedigree project={project}/>);
+    const transforms = [...container.querySelectorAll(".loaded-people>g")].map(node => node.getAttribute("transform"));
+    expect(new Set(transforms).size).toBe(2);
+    expect(container.querySelector(".proband-arrow")).toHaveAttribute("d", "M-46 42L-27 23M-27 23L-29 34M-27 23L-38 25");
+  });
 });

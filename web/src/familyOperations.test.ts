@@ -25,4 +25,12 @@ describe("family operations", () => {
     const result = applyFamilyAction(family, "proband", "sibling", ids("sibling"));
     expect(result.project.parentages?.filter(edge => edge.child_id === "sibling").map(edge => edge.parent_id).sort()).toEqual(["father", "mother"]);
   });
+
+  it("allocates separate lanes for the parents of adjacent partners", () => {
+    const coupled = applyFamilyAction(baseProject(), "proband", "partner", ids("partner")).project;
+    const firstBranch = applyFamilyAction(coupled, "proband", "parents", ids("f1", "m1")).project;
+    const secondBranch = applyFamilyAction(firstBranch, "partner", "parents", ids("f2", "m2")).project;
+    const coordinates = secondBranch.individuals.filter(person => ["f1","m1","f2","m2"].includes(person.id)).map(person => `${person.layout?.x}:${person.layout?.y}`);
+    expect(new Set(coordinates).size).toBe(4);
+  });
 });

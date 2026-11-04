@@ -8,6 +8,11 @@ const oppositeGender = (gender?: string) => gender === "man" ? "woman" : gender 
 const position = (person: WebIndividual) => ({ x: Number(person.layout?.x ?? 480), y: Number(person.layout?.y ?? 300) });
 const label = (project: WebProject) => `P-${project.individuals.length + 1}`;
 const person = (project: WebProject, id: string, gender: string, x: number, y: number): WebIndividual => ({ id, label: label(project), gender_identity: gender, phenotype_status: "unknown", layout: { x, y } });
+const collides = (individuals: WebIndividual[], x: number, y: number, radius = 70) => individuals.some(item => { const point = position(item); return Math.abs(point.x - x) < radius && Math.abs(point.y - y) < radius; });
+const availablePair = (individuals: WebIndividual[], centerX: number, y: number) => {
+  for (const shift of [0, 220, -220, 440, -440]) if (!collides(individuals, centerX - 85 + shift, y) && !collides(individuals, centerX + 85 + shift, y)) return [centerX - 85 + shift, centerX + 85 + shift] as const;
+  return [centerX - 85 + individuals.length * 55, centerX + 85 + individuals.length * 55] as const;
+};
 
 export function applyFamilyAction(project: WebProject, sourceId: string, action: FamilyAction, idFactory: IdFactory = role => `${role}-${crypto.randomUUID()}`): FamilyResult {
   const source = project.individuals.find(item => item.id === sourceId);
@@ -28,9 +33,9 @@ export function applyFamilyAction(project: WebProject, sourceId: string, action:
 
   if (action === "parents") {
     if (parents.length) return { project, createdId: parents[0] };
-    const fatherId = idFactory("father"); const motherId = idFactory("mother");
-    individuals.push(person({ ...project, individuals }, fatherId, "man", sourcePoint.x - 85, sourcePoint.y - 170));
-    individuals.push(person({ ...project, individuals }, motherId, "woman", sourcePoint.x + 85, sourcePoint.y - 170));
+    const fatherId = idFactory("father"); const motherId = idFactory("mother"); const parentY = sourcePoint.y - 170; const [fatherX, motherX] = availablePair(individuals, sourcePoint.x, parentY);
+    individuals.push(person({ ...project, individuals }, fatherId, "man", fatherX, parentY));
+    individuals.push(person({ ...project, individuals }, motherId, "woman", motherX, parentY));
     relationships.push({ member_a: fatherId, member_b: motherId, kind: "partner" });
     parentages.push({ parent_id: fatherId, child_id: sourceId, kind: "biological" }, { parent_id: motherId, child_id: sourceId, kind: "biological" });
     return { project: { ...project, individuals, relationships, parentages }, createdId: fatherId };
