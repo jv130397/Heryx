@@ -1,13 +1,13 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, FolderOpen, Github, Moon, Play, Sun } from "lucide-react";
+import { ArrowLeft, ArrowRight, FolderOpen, GitBranch, Github, Moon, PanelRight, Play, Save, Sun, Undo2, UserPlus, ZoomIn } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 
 const PedigreeScene = lazy(() => import("./PedigreeScene").then((module) => ({ default: module.PedigreeScene })));
 const repositoryUrl = "https://github.com/jv130397/RarePedigree-Studio";
 
 const copy = {
-  pt: { nav: ["O projeto", "Ciência", "Documentação"], chapter: "CAPÍTULO 01 · O OBSERVATÓRIO", title: "Toda família guarda uma história.", description: "Entre no laboratório de João Vitor e transforme vínculos, fenótipos e gerações em conhecimento clínico.", enter: "Entrar no laboratório", open: "Continuar projeto", github: "Ver no GitHub", guide: "JOÃO VITOR · GUIA DO OBSERVATÓRIO", hint: "Mova o cursor para explorar o ambiente", status: "SISTEMA ONLINE", mission: "MISSÃO ATUAL", missionText: "Criar um novo heredograma", skip: "Pular introdução", sequence: ["INICIALIZANDO OBSERVATÓRIO", "JOÃO VITOR CONECTADO", "RECONSTRUINDO HISTÓRIA FAMILIAR", "ACESSO LIBERADO"] },
-  en: { nav: ["The project", "Science", "Documentation"], chapter: "CHAPTER 01 · THE OBSERVATORY", title: "Every family holds a story.", description: "Enter João Vitor's laboratory and turn relationships, phenotypes and generations into clinical knowledge.", enter: "Enter the laboratory", open: "Continue project", github: "View on GitHub", guide: "JOÃO VITOR · OBSERVATORY GUIDE", hint: "Move the cursor to explore the environment", status: "SYSTEM ONLINE", mission: "CURRENT MISSION", missionText: "Create a new pedigree", skip: "Skip intro", sequence: ["INITIALIZING OBSERVATORY", "JOÃO VITOR CONNECTED", "REBUILDING FAMILY HISTORY", "ACCESS GRANTED"] }
+  pt: { nav: ["O projeto", "Ciência", "Documentação"], chapter: "CAPÍTULO 01 · O OBSERVATÓRIO", title: "Toda família guarda uma história.", description: "Entre no laboratório de João Vitor e transforme vínculos, fenótipos e gerações em conhecimento clínico.", enter: "Entrar no laboratório", open: "Continuar projeto", github: "Ver no GitHub", guide: "JOÃO VITOR · GUIA DO OBSERVATÓRIO", hint: "Mova o cursor para explorar o ambiente", status: "SISTEMA ONLINE", mission: "MISSÃO ATUAL", missionText: "Criar um novo heredograma", skip: "Pular introdução", sequence: ["INICIALIZANDO OBSERVATÓRIO", "JOÃO VITOR CONECTADO", "RECONSTRUINDO HISTÓRIA FAMILIAR", "ACESSO LIBERADO"], workspace: "Editor de heredograma", back: "Voltar ao observatório", add: "Adicionar indivíduo", relationship: "Relacionamento", inspector: "Inspetor" },
+  en: { nav: ["The project", "Science", "Documentation"], chapter: "CHAPTER 01 · THE OBSERVATORY", title: "Every family holds a story.", description: "Enter João Vitor's laboratory and turn relationships, phenotypes and generations into clinical knowledge.", enter: "Enter the laboratory", open: "Continue project", github: "View on GitHub", guide: "JOÃO VITOR · OBSERVATORY GUIDE", hint: "Move the cursor to explore the environment", status: "SYSTEM ONLINE", mission: "CURRENT MISSION", missionText: "Create a new pedigree", skip: "Skip intro", sequence: ["INITIALIZING OBSERVATORY", "JOÃO VITOR CONNECTED", "REBUILDING FAMILY HISTORY", "ACCESS GRANTED"], workspace: "Pedigree editor", back: "Back to observatory", add: "Add individual", relationship: "Relationship", inspector: "Inspector" }
 };
 
 function BrandMark() { return <span className="brand-mark" aria-hidden="true"><span /></span>; }
@@ -18,6 +18,7 @@ export function App() {
   const [reducedMotion, setReducedMotion] = useState(false);
   const [entered, setEntered] = useState(false);
   const [introPhase, setIntroPhase] = useState(0);
+  const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const text = copy[language];
 
   useEffect(() => {
@@ -32,6 +33,14 @@ export function App() {
     const timers = [window.setTimeout(() => setIntroPhase(1), 900), window.setTimeout(() => setIntroPhase(2), 2300), window.setTimeout(() => setIntroPhase(3), 4400)];
     return () => timers.forEach(window.clearTimeout);
   }, [reducedMotion]);
+
+  useEffect(() => {
+    if (!entered) return;
+    const timer = window.setTimeout(() => setWorkspaceOpen(true), reducedMotion ? 50 : 1450);
+    return () => window.clearTimeout(timer);
+  }, [entered, reducedMotion]);
+
+  const leaveWorkspace = () => { setWorkspaceOpen(false); setEntered(false); };
 
   const ready = introPhase === 3;
   return <main className={`${light ? "app light" : "app"}${entered ? " entered" : ""}${ready ? " intro-ready" : " intro-running"}`}>
@@ -56,5 +65,11 @@ export function App() {
       </motion.div>
       <div className="mission-card"><span>01</span><div><small>{text.mission}</small><strong>{text.missionText}</strong></div><i /></div><div className="explore-hint"><span className="mouse-icon" />{text.hint}</div>
     </section>
+    <AnimatePresence>{workspaceOpen && <motion.section className="workspace" aria-label={text.workspace} initial={{ opacity: 0, scale: 1.06 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: .65, ease: [0.2,.7,.2,1] }}>
+      <header className="workspace-bar"><button className="workspace-back" onClick={leaveWorkspace}><ArrowLeft size={17} />{text.back}</button><span className="workspace-title"><BrandMark /><strong>Família RP–001</strong><small>{text.workspace}</small></span><div className="workspace-actions"><button aria-label="Desfazer"><Undo2 size={17} /></button><button aria-label="Salvar"><Save size={17} /></button><span>100%</span></div></header>
+      <aside className="tool-rail"><button className="active"><UserPlus size={19} /><span>{text.add}</span></button><button><GitBranch size={19} /><span>{text.relationship}</span></button><button><ZoomIn size={19} /><span>Zoom</span></button></aside>
+      <div className="pedigree-canvas"><div className="generation generation-i">I</div><div className="generation generation-ii">II</div><svg className="pedigree-preview" viewBox="0 0 760 430" role="img" aria-label="Heredograma de demonstração"><g className="pedigree-lines"><path d="M210 100H350M280 100V205M170 205H390M170 205V270M390 205V270M390 270H530M460 270V355" /></g><g className="pedigree-symbols"><rect x="180" y="70" width="60" height="60"/><circle cx="380" cy="100" r="30"/><circle cx="170" cy="300" r="30"/><rect className="affected" x="360" y="270" width="60" height="60"/><circle cx="560" cy="300" r="30"/><rect x="430" y="355" width="60" height="60"/></g><g className="pedigree-labels"><text x="210" y="153">I-1</text><text x="380" y="153">I-2</text><text x="170" y="350">II-1</text><text x="390" y="350">II-2</text><text x="560" y="350">II-3</text></g></svg><div className="canvas-guide"><span>JV</span><p><strong>Ambiente preparado.</strong> Selecione um indivíduo para começar.</p></div></div>
+      <aside className="inspector"><h2><PanelRight size={17}/>{text.inspector}</h2><div className="inspector-empty"><span>◇</span><strong>Nenhum indivíduo selecionado</strong><p>As informações clínicas e familiares aparecerão aqui.</p></div></aside>
+    </motion.section>}</AnimatePresence>
   </main>;
 }
