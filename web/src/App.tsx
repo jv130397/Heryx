@@ -1,10 +1,11 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, FileJson, FolderOpen, GitBranch, Github, Moon, Play, Save, Sun, Undo2, Upload, UserPlus, X, ZoomIn } from "lucide-react";
+import { ArrowLeft, ArrowRight, FileJson, FolderOpen, GitBranch, Github, Moon, Play, Redo2, Save, Sun, Undo2, Upload, UserPlus, X, ZoomIn } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { WebPedigree, type WebProject } from "./WebPedigree";
 import { NewProjectMission } from "./NewProjectMission";
 import { IndividualDrawer } from "./IndividualDrawer";
 import { applyFamilyAction, type FamilyAction } from "./familyOperations";
+import { prepareProjectDownload } from "./projectIO";
 
 const PedigreeScene = lazy(() => import("./PedigreeScene").then((module) => ({ default: module.PedigreeScene })));
 const repositoryUrl = "https://github.com/jv130397/RarePedigree-Studio";
@@ -32,6 +33,9 @@ export function App() {
   const [projectSummary, setProjectSummary] = useState<ProjectSummary | null>(null);
   const [loadedProject, setLoadedProject] = useState<WebProject | null>(null);
   const [selectedIndividualId, setSelectedIndividualId] = useState<string | null>(null);
+  const [undoStack, setUndoStack] = useState<WebProject[]>([]);
+  const [redoStack, setRedoStack] = useState<WebProject[]>([]);
+  const [saveState, setSaveState] = useState<"modified" | "saved">("modified");
   const [fileError, setFileError] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const text = copy[language];
@@ -57,10 +61,14 @@ export function App() {
 
   const leaveWorkspace = () => { setWorkspaceOpen(false); setEntered(false); setSelectedIndividualId(null); setAvatarPose("neutral"); };
   const beginNewProject = () => { setAvatarPose("pointing"); setNewProjectOpen(true); };
-  const createProject = (project: WebProject) => { setLoadedProject(project); setProjectSummary(null); setSelectedIndividualId(null); setNewProjectOpen(false); setAvatarPose("celebrating"); setEntered(true); };
+  const createProject = (project: WebProject) => { setLoadedProject(project); setProjectSummary(null); setSelectedIndividualId(null); setUndoStack([]); setRedoStack([]); setSaveState("modified"); setNewProjectOpen(false); setAvatarPose("celebrating"); setEntered(true); };
   const selectedIndividual = loadedProject?.individuals.find(person => person.id === selectedIndividualId) ?? null;
-  const saveIndividual = (person: WebProject["individuals"][number]) => { setLoadedProject(project => project ? { ...project, updated_at: new Date().toISOString(), individuals: project.individuals.map(current => current.id === person.id ? person : current) } : project); setSelectedIndividualId(null); };
-  const addRelative = (action: FamilyAction) => { if (!loadedProject || !selectedIndividualId) return; const result = applyFamilyAction(loadedProject, selectedIndividualId, action); setLoadedProject({ ...result.project, updated_at: new Date().toISOString() }); setSelectedIndividualId(result.createdId); };
+  const commitProject = (next: WebProject) => { if (loadedProject) setUndoStack(stack => [...stack, loadedProject]); setRedoStack([]); setLoadedProject({ ...next, updated_at: new Date().toISOString() }); setSaveState("modified"); };
+  const saveIndividual = (person: WebProject["individuals"][number]) => { if (loadedProject) commitProject({ ...loadedProject, individuals: loadedProject.individuals.map(current => current.id === person.id ? person : current) }); setSelectedIndividualId(null); };
+  const addRelative = (action: FamilyAction) => { if (!loadedProject || !selectedIndividualId) return; const result = applyFamilyAction(loadedProject, selectedIndividualId, action); commitProject(result.project); setSelectedIndividualId(result.createdId); };
+  const undo = () => { const previous = undoStack.at(-1); if (!previous || !loadedProject) return; setUndoStack(stack => stack.slice(0,-1)); setRedoStack(stack => [...stack,loadedProject]); setLoadedProject(previous); setSelectedIndividualId(null); setSaveState("modified"); };
+  const redo = () => { const next = redoStack.at(-1); if (!next || !loadedProject) return; setRedoStack(stack => stack.slice(0,-1)); setUndoStack(stack => [...stack,loadedProject]); setLoadedProject(next); setSelectedIndividualId(null); setSaveState("modified"); };
+  const saveProject = () => { if (!loadedProject) return; const prepared = prepareProjectDownload(loadedProject); const url = URL.createObjectURL(new Blob([prepared.content],{type:"application/json"})); const anchor = document.createElement("a"); anchor.href=url; anchor.download=prepared.filename; anchor.click(); URL.revokeObjectURL(url); setLoadedProject(prepared.project); setSaveState("saved"); };
   const inspectProject = async (file?: File) => {
     if (!file) return;
     try {
@@ -71,7 +79,7 @@ export function App() {
       setLoadedProject(data as unknown as WebProject);
     } catch { setProjectSummary(null); setLoadedProject(null); setFileError(true); }
   };
-  const openLoadedProject = () => { if (!loadedProject) return; setArchiveOpen(false); setAvatarPose("celebrating"); setEntered(true); };
+  const openLoadedProject = () => { if (!loadedProject) return; setUndoStack([]); setRedoStack([]); setSaveState("saved"); setArchiveOpen(false); setAvatarPose("celebrating"); setEntered(true); };
 
   const ready = introPhase === 3;
   return <main className={`${light ? "app light" : "app"}${entered ? " entered" : ""}${ready ? " intro-ready" : " intro-running"}`}>
@@ -99,7 +107,7 @@ export function App() {
     </section>
     <AnimatePresence>{newProjectOpen && <NewProjectMission language={language} reducedMotion={reducedMotion} onCancel={() => { setNewProjectOpen(false); setAvatarPose("neutral"); }} onComplete={createProject}/>}</AnimatePresence>
     <AnimatePresence>{workspaceOpen && <motion.section className="workspace" aria-label={text.workspace} initial={{ opacity: 0, scale: 1.06 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: .65, ease: [0.2,.7,.2,1] }}>
-      <header className="workspace-bar"><button className="workspace-back" onClick={leaveWorkspace}><ArrowLeft size={17} />{text.back}</button><span className="workspace-title"><BrandMark /><strong>{loadedProject?.title ?? "Família RP–001"}</strong><small>{text.workspace}</small></span><div className="workspace-actions"><button aria-label="Desfazer"><Undo2 size={17} /></button><button aria-label="Salvar"><Save size={17} /></button><span>100%</span></div></header>
+      <header className="workspace-bar"><button className="workspace-back" onClick={leaveWorkspace}><ArrowLeft size={17} />{text.back}</button><span className="workspace-title"><BrandMark /><strong>{loadedProject?.title ?? "Família RP–001"}</strong><small>{saveState === "saved" ? "PROJETO SALVO" : "ALTERAÇÕES LOCAIS"}</small></span><div className="workspace-actions"><button aria-label="Desfazer" disabled={!undoStack.length} onClick={undo}><Undo2 size={17} /></button><button aria-label="Refazer" disabled={!redoStack.length} onClick={redo}><Redo2 size={17} /></button><button aria-label="Salvar projeto" onClick={saveProject}><Save size={17} /></button><span>100%</span></div></header>
       <aside className="tool-rail"><button className="active"><UserPlus size={19} /><span>{text.add}</span></button><button><GitBranch size={19} /><span>{text.relationship}</span></button><button><ZoomIn size={19} /><span>Zoom</span></button></aside>
       <div className="pedigree-canvas">{loadedProject ? <WebPedigree project={loadedProject} selectedId={selectedIndividualId} onSelect={setSelectedIndividualId}/> : <><div className="generation generation-i">I</div><div className="generation generation-ii">II</div><svg className="pedigree-preview" viewBox="0 0 760 430" role="img" aria-label="Heredograma de demonstração"><g className="pedigree-lines"><path d="M210 100H350M280 100V205M170 205H390M170 205V270M390 205V270M390 270H530M460 270V355" /></g><g className="pedigree-symbols"><rect x="180" y="70" width="60" height="60"/><circle cx="380" cy="100" r="30"/><circle cx="170" cy="300" r="30"/><rect className="affected" x="360" y="270" width="60" height="60"/><circle cx="560" cy="300" r="30"/><rect x="430" y="355" width="60" height="60"/></g><g className="pedigree-labels"><text x="210" y="153">I-1</text><text x="380" y="153">I-2</text><text x="170" y="350">II-1</text><text x="390" y="350">II-2</text><text x="560" y="350">II-3</text></g></svg></>}<div className="canvas-guide"><span>JV</span><p><strong>{loadedProject ? "Projeto carregado em modo de edição." : "Ambiente preparado."}</strong>{loadedProject ? ` ${loadedProject.individuals.length} indivíduos disponíveis. Selecione um símbolo para editar.` : " Selecione um indivíduo para começar."}</p></div></div>
       <AnimatePresence>{selectedIndividual && <IndividualDrawer person={selectedIndividual} onClose={()=>setSelectedIndividualId(null)} onSave={saveIndividual} onAddRelative={addRelative}/>}</AnimatePresence>

@@ -70,5 +70,13 @@ describe("RarePedigree Web welcome", () => {
     fireEvent.click(screen.getByRole("button", { name: /Criar heredograma/ }));
     await waitFor(() => expect(screen.getByLabelText("Editor de heredograma")).toBeVisible(), { timeout: 2500 });
     expect(screen.getByRole("img", { name: /Heredograma carregado: Família Aurora/ })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Selecionar indivíduo I-1" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Filho/ })).toBeVisible());
+    fireEvent.click(screen.getByRole("button", { name: /Filho/ }));
+    expect(screen.getByText("P-2")).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: "Desfazer" }));
+    await waitFor(() => expect(screen.queryByText("P-2")).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Refazer" }));
+    await waitFor(() => expect(screen.getByText("P-2")).toBeVisible());
   });
 });
