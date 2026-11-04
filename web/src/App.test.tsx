@@ -53,5 +53,6 @@ describe("RarePedigree Web welcome", () => {
     fireEvent.change(input!, { target: { files: [project] } });
     await waitFor(() => expect(screen.getByRole("heading", { name: "Família teste" })).toBeVisible());
     expect(screen.getByText("0.4.0")).toBeVisible();
+    expect(screen.getByRole("button", { name: /Abrir visualização no editor/ })).toBeEnabled();
   });
 });
