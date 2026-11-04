@@ -55,4 +55,20 @@ describe("RarePedigree Web welcome", () => {
     expect(screen.getByText("0.4.0")).toBeVisible();
     expect(screen.getByRole("button", { name: /Abrir visualização no editor/ })).toBeEnabled();
   });
+
+  it("creates a new project through the guided mission", async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: /Entrar no laboratório/ }));
+    await waitFor(() => expect(screen.getByRole("dialog", { name: /Inicie uma história familiar/ })).toBeVisible());
+    fireEvent.change(screen.getByLabelText("Nome do projeto"), { target: { value: "Família Aurora" } });
+    fireEvent.click(screen.getByRole("button", { name: /^Continuar$/ }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Feminino/ })).toBeVisible());
+    fireEvent.click(screen.getByRole("button", { name: /Feminino/ }));
+    fireEvent.click(screen.getByLabelText(/Apresenta o fenótipo/));
+    fireEvent.click(screen.getByRole("button", { name: /^Continuar$/ }));
+    await waitFor(() => expect(screen.getByText("Família Aurora")).toBeVisible());
+    fireEvent.click(screen.getByRole("button", { name: /Criar heredograma/ }));
+    await waitFor(() => expect(screen.getByLabelText("Editor de heredograma")).toBeVisible(), { timeout: 2500 });
+    expect(screen.getByRole("img", { name: /Heredograma carregado: Família Aurora/ })).toBeVisible();
+  });
 });

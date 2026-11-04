@@ -1,7 +1,7 @@
 export type WebIndividual = { id: string; label?: string; gender_identity?: string; phenotype_status?: string; proband?: boolean; layout?: { x?: number; y?: number } };
 export type WebRelationship = { member_a?: string; member_b?: string; kind?: string };
 export type WebParentage = { parent_id?: string; child_id?: string; kind?: string };
-export type WebProject = { schema_version: string; title?: string; individuals: WebIndividual[]; relationships?: WebRelationship[]; parentages?: WebParentage[]; updated_at?: string };
+export type WebProject = { schema_version: string; title?: string; individuals: WebIndividual[]; relationships?: WebRelationship[]; parentages?: WebParentage[]; study_code?: string; created_at?: string; updated_at?: string };
 
 type Point = { x: number; y: number };
 

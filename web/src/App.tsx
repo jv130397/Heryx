@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, FileJson, FolderOpen, GitBranch, Github, Moon, PanelRight, Play, Save, Sun, Undo2, Upload, UserPlus, X, ZoomIn } from "lucide-react";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { WebPedigree, type WebProject } from "./WebPedigree";
+import { NewProjectMission } from "./NewProjectMission";
 
 const PedigreeScene = lazy(() => import("./PedigreeScene").then((module) => ({ default: module.PedigreeScene })));
 const repositoryUrl = "https://github.com/jv130397/RarePedigree-Studio";
@@ -25,6 +26,7 @@ export function App() {
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [avatarPose, setAvatarPose] = useState<AvatarPose>("neutral");
   const [archiveOpen, setArchiveOpen] = useState(false);
+  const [newProjectOpen, setNewProjectOpen] = useState(false);
   const [projectSummary, setProjectSummary] = useState<ProjectSummary | null>(null);
   const [loadedProject, setLoadedProject] = useState<WebProject | null>(null);
   const [fileError, setFileError] = useState(false);
@@ -51,7 +53,8 @@ export function App() {
   }, [entered, reducedMotion]);
 
   const leaveWorkspace = () => { setWorkspaceOpen(false); setEntered(false); setAvatarPose("neutral"); };
-  const enterWorkspace = () => { setAvatarPose("celebrating"); setEntered(true); };
+  const beginNewProject = () => { setAvatarPose("pointing"); setNewProjectOpen(true); };
+  const createProject = (project: WebProject) => { setLoadedProject(project); setProjectSummary(null); setNewProjectOpen(false); setAvatarPose("celebrating"); setEntered(true); };
   const inspectProject = async (file?: File) => {
     if (!file) return;
     try {
@@ -82,12 +85,13 @@ export function App() {
       <motion.div className="content" initial={false} animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : 24 }} transition={{ duration: .8, ease: [0.2, 0.7, 0.2, 1] }}>
         <span className="eyebrow"><i />{text.chapter}</span>
         <AnimatePresence mode="wait"><motion.div key={language} initial={reducedMotion ? false : { opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: .25 }}><h1>{text.title}</h1><p className="description">{text.description}</p></motion.div></AnimatePresence>
-        <div className="actions"><button className="primary" onClick={enterWorkspace} onMouseEnter={() => setAvatarPose("pointing")} onMouseLeave={() => !entered && setAvatarPose("neutral")}><Play size={17} fill="currentColor" />{text.enter}<ArrowRight size={17} /></button><button className="secondary" onClick={() => { setArchiveOpen(true); setAvatarPose("laptop"); }} onMouseEnter={() => setAvatarPose("laptop")} onMouseLeave={() => !archiveOpen && setAvatarPose("neutral")}><FolderOpen size={18} />{text.open}</button></div>
+        <div className="actions"><button className="primary" onClick={beginNewProject} onMouseEnter={() => setAvatarPose("pointing")} onMouseLeave={() => !entered && !newProjectOpen && setAvatarPose("neutral")}><Play size={17} fill="currentColor" />{text.enter}<ArrowRight size={17} /></button><button className="secondary" onClick={() => { setArchiveOpen(true); setAvatarPose("laptop"); }} onMouseEnter={() => setAvatarPose("laptop")} onMouseLeave={() => !archiveOpen && setAvatarPose("neutral")}><FolderOpen size={18} />{text.open}</button></div>
         <a className="github-link" href={repositoryUrl} target="_blank" rel="noreferrer" onMouseEnter={() => setAvatarPose("thinking")} onMouseLeave={() => setAvatarPose("neutral")}><Github size={16} />{text.github}<span>↗</span></a>
       </motion.div>
       <div className="mission-card"><span>01</span><div><small>{text.mission}</small><strong>{text.missionText}</strong></div><i /></div><div className="explore-hint"><span className="mouse-icon" />{text.hint}</div>
       <AnimatePresence>{archiveOpen && <motion.div className="archive-panel" role="dialog" aria-label={text.archive} initial={{opacity:0,x:40,scale:.97}} animate={{opacity:1,x:0,scale:1}} exit={{opacity:0,x:30}}><header><span><FileJson size={18}/>{text.archive}</span><button aria-label="Fechar arquivo" onClick={() => { setArchiveOpen(false); setAvatarPose("neutral"); }}><X size={17}/></button></header><div className="archive-body"><input ref={fileInput} type="file" accept=".json,.rps.json,application/json" onChange={(event) => inspectProject(event.target.files?.[0])}/><button className="file-picker" onClick={() => fileInput.current?.click()}><Upload size={20}/><span><strong>{text.chooseFile}</strong><small>.rps.json · .json</small></span></button><p className="privacy-note">⌁ {text.localOnly}</p>{fileError && <p className="file-error">{text.invalidFile}</p>}{projectSummary && <section className="project-summary"><small>PROJETO RECONHECIDO</small><h3>{projectSummary.title}</h3><p>{projectSummary.fileName}</p><dl><div><dt>Schema</dt><dd>{projectSummary.schema}</dd></div><div><dt>Indivíduos</dt><dd>{projectSummary.individuals}</dd></div><div><dt>Relações</dt><dd>{projectSummary.relationships}</dd></div></dl><button className="open-project" onClick={openLoadedProject}>Abrir visualização no editor <ArrowRight size={14}/></button></section>}</div></motion.div>}</AnimatePresence>
     </section>
+    <AnimatePresence>{newProjectOpen && <NewProjectMission language={language} reducedMotion={reducedMotion} onCancel={() => { setNewProjectOpen(false); setAvatarPose("neutral"); }} onComplete={createProject}/>}</AnimatePresence>
     <AnimatePresence>{workspaceOpen && <motion.section className="workspace" aria-label={text.workspace} initial={{ opacity: 0, scale: 1.06 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: .65, ease: [0.2,.7,.2,1] }}>
       <header className="workspace-bar"><button className="workspace-back" onClick={leaveWorkspace}><ArrowLeft size={17} />{text.back}</button><span className="workspace-title"><BrandMark /><strong>{loadedProject?.title ?? "Família RP–001"}</strong><small>{text.workspace}</small></span><div className="workspace-actions"><button aria-label="Desfazer"><Undo2 size={17} /></button><button aria-label="Salvar"><Save size={17} /></button><span>100%</span></div></header>
       <aside className="tool-rail"><button className="active"><UserPlus size={19} /><span>{text.add}</span></button><button><GitBranch size={19} /><span>{text.relationship}</span></button><button><ZoomIn size={19} /><span>Zoom</span></button></aside>
