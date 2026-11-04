@@ -13,6 +13,10 @@ const availablePair = (individuals: WebIndividual[], centerX: number, y: number)
   for (const shift of [0, 220, -220, 440, -440]) if (!collides(individuals, centerX - 85 + shift, y) && !collides(individuals, centerX + 85 + shift, y)) return [centerX - 85 + shift, centerX + 85 + shift] as const;
   return [centerX - 85 + individuals.length * 55, centerX + 85 + individuals.length * 55] as const;
 };
+const availableSingle = (individuals: WebIndividual[], preferredX: number, y: number, step = 155) => {
+  for (const offset of [0, -step, step, -step * 2, step * 2, -step * 3, step * 3]) if (!collides(individuals, preferredX + offset, y)) return preferredX + offset;
+  return preferredX + individuals.length * step;
+};
 
 export function applyFamilyAction(project: WebProject, sourceId: string, action: FamilyAction, idFactory: IdFactory = role => `${role}-${crypto.randomUUID()}`): FamilyResult {
   const source = project.individuals.find(item => item.id === sourceId);
@@ -26,7 +30,8 @@ export function applyFamilyAction(project: WebProject, sourceId: string, action:
 
   if (action === "partner") {
     const id = idFactory("partner");
-    individuals.push(person({ ...project, individuals }, id, oppositeGender(source.gender_identity), sourcePoint.x + 170, sourcePoint.y));
+    const partnerX = availableSingle(individuals, sourcePoint.x + 170, sourcePoint.y, 170);
+    individuals.push(person({ ...project, individuals }, id, oppositeGender(source.gender_identity), partnerX, sourcePoint.y));
     relationships.push({ member_a: sourceId, member_b: id, kind: "partner" });
     return { project: { ...project, individuals, relationships, parentages }, createdId: id };
   }
@@ -45,11 +50,13 @@ export function applyFamilyAction(project: WebProject, sourceId: string, action:
     let partnerId = partners[0];
     if (!partnerId) {
       partnerId = idFactory("partner");
-      individuals.push(person({ ...project, individuals }, partnerId, oppositeGender(source.gender_identity), sourcePoint.x + 170, sourcePoint.y));
+      const partnerX = availableSingle(individuals, sourcePoint.x + 170, sourcePoint.y, 170);
+      individuals.push(person({ ...project, individuals }, partnerId, oppositeGender(source.gender_identity), partnerX, sourcePoint.y));
       relationships.push({ member_a: sourceId, member_b: partnerId, kind: "partner" });
     }
     const partner = individuals.find(item => item.id === partnerId)!; const partnerPoint = position(partner); const childId = idFactory("child");
-    individuals.push(person({ ...project, individuals }, childId, "unknown", (sourcePoint.x + partnerPoint.x) / 2, Math.max(sourcePoint.y, partnerPoint.y) + 175));
+    const childY = Math.max(sourcePoint.y, partnerPoint.y) + 175; const childX = availableSingle(individuals, (sourcePoint.x + partnerPoint.x) / 2, childY);
+    individuals.push(person({ ...project, individuals }, childId, "unknown", childX, childY));
     parentages.push({ parent_id: sourceId, child_id: childId, kind: "biological" }, { parent_id: partnerId, child_id: childId, kind: "biological" });
     return { project: { ...project, individuals, relationships, parentages }, createdId: childId };
   }
@@ -61,7 +68,8 @@ export function applyFamilyAction(project: WebProject, sourceId: string, action:
     siblingParents = parentages.filter(edge => edge.child_id === sourceId).map(edge => edge.parent_id).filter(Boolean) as string[];
   }
   const siblingId = idFactory("sibling");
-  individuals.push(person({ ...project, individuals }, siblingId, "unknown", sourcePoint.x + 155, sourcePoint.y));
+  const siblingX = availableSingle(individuals, sourcePoint.x + 155, sourcePoint.y);
+  individuals.push(person({ ...project, individuals }, siblingId, "unknown", siblingX, sourcePoint.y));
   for (const parentId of siblingParents) parentages.push({ parent_id: parentId, child_id: siblingId, kind: "biological" });
   return { project: { ...project, individuals, relationships, parentages }, createdId: siblingId };
 }

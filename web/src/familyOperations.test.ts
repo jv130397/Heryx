@@ -33,4 +33,13 @@ describe("family operations", () => {
     const coordinates = secondBranch.individuals.filter(person => ["f1","m1","f2","m2"].includes(person.id)).map(person => `${person.layout?.x}:${person.layout?.y}`);
     expect(new Set(coordinates).size).toBe(4);
   });
+
+  it("places a sibling away from an existing partner", () => {
+    const coupled = applyFamilyAction(baseProject(), "proband", "partner", ids("partner")).project;
+    const result = applyFamilyAction(coupled, "proband", "sibling", ids("father", "mother", "sibling"));
+    const partnerX = result.project.individuals.find(person => person.id === "partner")?.layout?.x;
+    const siblingX = result.project.individuals.find(person => person.id === "sibling")?.layout?.x;
+    expect(siblingX).not.toBe(partnerX);
+    expect(Math.abs(Number(siblingX) - Number(partnerX))).toBeGreaterThanOrEqual(70);
+  });
 });

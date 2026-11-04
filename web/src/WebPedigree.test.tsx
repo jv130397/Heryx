@@ -37,4 +37,11 @@ describe("WebPedigree", () => {
     expect(new Set(transforms).size).toBe(2);
     expect(container.querySelector(".proband-arrow")).toHaveAttribute("d", "M-46 42L-27 23M-27 23L-29 34M-27 23L-38 25");
   });
+
+  it("separates legacy members that are stored too close together", () => {
+    const project: WebProject = { schema_version: "0.4.0", individuals: [{ id: "a", layout: { x: 100, y: 100 } }, { id: "b", layout: { x: 125, y: 100 } }] };
+    const { container } = render(<WebPedigree project={project}/>);
+    const transforms = [...container.querySelectorAll(".loaded-people>g")].map(node => node.getAttribute("transform"));
+    expect(new Set(transforms).size).toBe(2);
+  });
 });

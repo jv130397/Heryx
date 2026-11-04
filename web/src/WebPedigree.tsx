@@ -8,8 +8,8 @@ type Point = { x: number; y: number };
 export function WebPedigree({ project, selectedId, onSelect }: { project: WebProject; selectedId?: string | null; onSelect?: (id: string) => void }) {
   const source = project.individuals;
   if (!source.length) return <div className="loaded-empty">Projeto válido, ainda sem indivíduos.</div>;
-  const seenPositions = new Map<string, number>();
-  const displaySource = source.map(person => { const x = Number(person.layout?.x ?? 0); const y = Number(person.layout?.y ?? 0); const key = `${x}:${y}`; const collisionIndex = seenPositions.get(key) ?? 0; seenPositions.set(key, collisionIndex + 1); return { person, x: x + collisionIndex * 100, y }; });
+  const placed: Array<{x:number;y:number}> = [];
+  const displaySource = source.map(person => { const originalX = Number(person.layout?.x ?? 0); const y = Number(person.layout?.y ?? 0); const offsets = [0,100,-100,200,-200,300,-300]; const x = originalX + (offsets.find(offset => !placed.some(point => Math.abs(point.x - (originalX + offset)) < 70 && Math.abs(point.y - y) < 70)) ?? placed.length * 100); placed.push({x,y}); return { person, x, y }; });
   const xs = displaySource.map(item => item.x);
   const ys = displaySource.map(item => item.y);
   const minX = Math.min(...xs); const maxX = Math.max(...xs); const minY = Math.min(...ys); const maxY = Math.max(...ys);
