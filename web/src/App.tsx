@@ -43,6 +43,7 @@ export function App() {
   const [fileError, setFileError] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const text = copy[language];
+  const safeAvatarFrames: Record<AvatarPose,string> = { neutral:"0% 100%", pointing:"50% 100%", laptop:"100% 100%", thinking:"0% 0%", celebrating:"50% 0%" };
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -113,7 +114,7 @@ export function App() {
     </header>
 
     <section className="hero" id="inicio">
-      <div className="visual-stage">{safeGraphics ? <div className="safe-scene" aria-label="Observatório genômico em modo compatível"><span className="safe-orbit safe-orbit-one"/><span className="safe-orbit safe-orbit-two"/><span className="safe-core"/></div> : <Suspense fallback={<div className="scene-fallback">Carregando observatório…</div>}><PedigreeScene reducedMotion={reducedMotion} entered={entered} introPhase={introPhase} avatarPose={avatarPose} /></Suspense>}</div>
+      <div className="visual-stage">{safeGraphics ? <div className="safe-scene" aria-label="Observatório genômico em modo compatível"><span className="safe-orbit safe-orbit-one"/><span className="safe-orbit safe-orbit-two"/><span className="safe-core"/><span className="safe-avatar" role="img" aria-label="João Vitor, guia do observatório" style={{backgroundImage:`url(${import.meta.env.BASE_URL}assets/joao-vitor-game-avatar.png)`,backgroundPosition:safeAvatarFrames[avatarPose]}}/></div> : <Suspense fallback={<div className="scene-fallback">Carregando observatório…</div>}><PedigreeScene reducedMotion={reducedMotion} entered={entered} introPhase={introPhase} avatarPose={avatarPose} /></Suspense>}</div>
       <div className="screen-vignette" aria-hidden="true" /><div className="hud-corners" aria-hidden="true"><i /><i /><i /><i /></div>
       <motion.div className="system-status" initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }}><span className="status-dot" />{ready ? text.status : text.sequence[introPhase]}<b>RP–01</b></motion.div>
       {!ready && <button className="skip-intro" onClick={() => setIntroPhase(3)}>{text.skip}<span>››</span></button>}
