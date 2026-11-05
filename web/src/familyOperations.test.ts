@@ -52,4 +52,12 @@ describe("family operations", () => {
     expect(firstX-sourceX).toBe(170);
     expect(secondX-sourceX).toBe(-170);
   });
+
+  it("never reuses an existing generated label from a legacy project", () => {
+    const legacy = baseProject();
+    legacy.individuals.push({ id: "legacy", label: "P-3", layout: { x: 820, y: 300 } });
+    const result = applyFamilyAction(legacy, "proband", "partner", ids("new-partner"));
+    expect(result.project.individuals.find(person => person.id === "new-partner")?.label).toBe("P-4");
+    expect(new Set(result.project.individuals.map(person => person.label)).size).toBe(result.project.individuals.length);
+  });
 });

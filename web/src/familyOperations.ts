@@ -6,7 +6,7 @@ type IdFactory = (role: string) => string;
 
 const oppositeGender = (gender?: string) => gender === "man" ? "woman" : gender === "woman" ? "man" : "unknown";
 const position = (person: WebIndividual) => ({ x: Number(person.layout?.x ?? 480), y: Number(person.layout?.y ?? 300) });
-const label = (project: WebProject) => `P-${project.individuals.length + 1}`;
+const label = (project: WebProject) => { const used = new Set(project.individuals.map(individual => individual.label).filter(Boolean)); let sequence = project.individuals.length+1; while (used.has(`P-${sequence}`)) sequence += 1; return `P-${sequence}`; };
 const person = (project: WebProject, id: string, gender: string, x: number, y: number): WebIndividual => ({ id, label: label(project), gender_identity: gender, phenotype_status: "unknown", layout: { x, y } });
 const collides = (individuals: WebIndividual[], x: number, y: number, radius = 70) => individuals.some(item => { const point = position(item); return Math.abs(point.x - x) < radius && Math.abs(point.y - y) < radius; });
 const availablePair = (individuals: WebIndividual[], centerX: number, y: number) => {
