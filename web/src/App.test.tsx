@@ -74,6 +74,7 @@ describe("RarePedigree Web welcome", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: /Filho/ })).toBeVisible());
     fireEvent.click(screen.getByRole("button", { name: /Filho/ }));
     expect(screen.getByText("P-2")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Selecionar indivíduo P-3" })).toHaveClass("newly-added");
     fireEvent.click(screen.getByRole("button", { name: "Desfazer" }));
     await waitFor(() => expect(screen.queryByText("P-2")).not.toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Refazer" }));

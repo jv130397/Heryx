@@ -50,4 +50,10 @@ describe("WebPedigree", () => {
     render(<WebPedigree project={project} zoom={130}/>);
     expect(screen.getByRole("img")).toHaveStyle({ transform: "translate(-50%,-50%) scale(1.3)" });
   });
+
+  it("marks a newly created relative for its arrival animation", () => {
+    const project: WebProject = { schema_version: "0.4.0", individuals: [{ id: "child", label: "II-1", layout: { x: 0, y: 0 } }] };
+    render(<WebPedigree project={project} newlyAddedId="child" onSelect={() => undefined} />);
+    expect(screen.getByRole("button", { name: "Selecionar indivíduo II-1" })).toHaveClass("newly-added");
+  });
 });
