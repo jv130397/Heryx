@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WebPedigree, type WebProject } from "./WebPedigree";
+import { applyFamilyAction } from "./familyOperations";
 
 afterEach(cleanup);
 
@@ -103,5 +104,27 @@ describe("WebPedigree", () => {
     const path = nucleus?.getAttribute("d") ?? "";
 
     expect(path).toMatch(/V[\d.]+ M[\d.]+ [\d.]+H[\d.]+ M[\d.]+ [\d.]+V/);
+  });
+
+  it("renders two deep ancestral branches with straight centered descents", () => {
+    let sequence = 0;
+    const nextId = (role: string) => `${role}-${++sequence}`;
+    let family: WebProject = { schema_version:"0.4.0", individuals:[{ id:"proband", proband:true, gender_identity:"man", layout:{x:480,y:300} }], relationships:[], parentages:[] };
+    family = applyFamilyAction(family,"proband","parents",nextId).project;
+    const [probandFather,probandMother] = family.parentages!.filter(edge=>edge.child_id==="proband").map(edge=>edge.parent_id!);
+    family = applyFamilyAction(family,probandFather,"parents",nextId).project;
+    family = applyFamilyAction(family,probandMother,"parents",nextId).project;
+    family = applyFamilyAction(family,"proband","partner",nextId).project;
+    const partner = family.relationships!.find(edge=>edge.member_a==="proband" || edge.member_b==="proband")!;
+    const partnerId = partner.member_a === "proband" ? partner.member_b! : partner.member_a!;
+    family = applyFamilyAction(family,partnerId,"parents",nextId).project;
+    const [partnerFather,partnerMother] = family.parentages!.filter(edge=>edge.child_id===partnerId).map(edge=>edge.parent_id!);
+    family = applyFamilyAction(family,partnerFather,"parents",nextId).project;
+    family = applyFamilyAction(family,partnerMother,"parents",nextId).project;
+    const { container } = render(<WebPedigree project={family} />);
+    const ancestralPaths = [...container.querySelectorAll("[data-parental-nucleus]")].map(path=>path.getAttribute("d") ?? "");
+
+    expect(ancestralPaths).toHaveLength(6);
+    expect(ancestralPaths.every(path=>!path.includes("H")),JSON.stringify(ancestralPaths)).toBe(true);
   });
 });

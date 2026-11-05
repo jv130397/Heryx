@@ -70,4 +70,25 @@ describe("family operations", () => {
     const created = applyFamilyAction(family, "proband", "child", ids("child"), "partner-b");
     expect(created.project.parentages?.filter(edge=>edge.child_id==="child").map(edge=>edge.parent_id).sort()).toEqual(["partner-b","proband"]);
   });
+
+  it("keeps the proband and partner ancestry centered in separate branches", () => {
+    let family = applyFamilyAction(baseProject(),"proband","parents",ids("proband-father","proband-mother")).project;
+    family = applyFamilyAction(family,"proband-father","parents",ids("pf-father","pf-mother")).project;
+    family = applyFamilyAction(family,"proband-mother","parents",ids("pm-father","pm-mother")).project;
+    family = applyFamilyAction(family,"proband","partner",ids("partner")).project;
+    family = applyFamilyAction(family,"partner","parents",ids("partner-father","partner-mother")).project;
+    family = applyFamilyAction(family,"partner-father","parents",ids("qf-father","qf-mother")).project;
+    family = applyFamilyAction(family,"partner-mother","parents",ids("qm-father","qm-mother")).project;
+    const x = (id: string) => Number(family.individuals.find(person => person.id === id)?.layout?.x);
+    const midpoint = (left: string,right: string) => (x(left)+x(right))/2;
+
+    expect(family.individuals).toHaveLength(14);
+    expect(midpoint("proband-father","proband-mother")).toBe(x("proband"));
+    expect(midpoint("partner-father","partner-mother")).toBe(x("partner"));
+    expect(midpoint("pf-father","pf-mother")).toBe(x("proband-father"));
+    expect(midpoint("pm-father","pm-mother")).toBe(x("proband-mother"));
+    expect(midpoint("qf-father","qf-mother")).toBe(x("partner-father"));
+    expect(midpoint("qm-father","qm-mother")).toBe(x("partner-mother"));
+    expect(Math.max(x("pf-father"),x("pf-mother"),x("pm-father"),x("pm-mother"))).toBeLessThan(Math.min(x("qf-father"),x("qf-mother"),x("qm-father"),x("qm-mother")));
+  });
 });

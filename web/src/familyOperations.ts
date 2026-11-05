@@ -22,6 +22,62 @@ const availablePartner = (individuals: WebIndividual[], sourceX: number, y: numb
   return sourceX+(individuals.length+1)*170;
 };
 
+const ANCESTRY_SLOT = 140;
+const COUPLE_GAP = 30;
+const GENERATION_GAP = 170;
+
+export function centerAncestralBranches(project: WebProject): WebProject {
+  const focus = project.individuals.find(individual => individual.proband) ?? project.individuals[0];
+  if (!focus) return project;
+  const parentages = project.parentages ?? [];
+  const relationships = project.relationships ?? [];
+  const parentsByChild = new Map<string,string[]>();
+  for (const edge of parentages) {
+    if (!edge.parent_id || !edge.child_id) continue;
+    parentsByChild.set(edge.child_id,[...(parentsByChild.get(edge.child_id) ?? []),edge.parent_id]);
+  }
+  const directPartners = relationships
+    .filter(edge => edge.member_a === focus.id || edge.member_b === focus.id)
+    .map(edge => edge.member_a === focus.id ? edge.member_b : edge.member_a)
+    .filter((id): id is string => Boolean(id));
+  const ancestrySize = new Map<string,number>();
+  const measure = (id: string, visiting = new Set<string>()): number => {
+    if (ancestrySize.has(id)) return ancestrySize.get(id)!;
+    if (visiting.has(id)) return ANCESTRY_SLOT;
+    const nextVisiting = new Set(visiting).add(id);
+    const parents = [...new Set(parentsByChild.get(id) ?? [])].slice(0,2);
+    if (!parents.length) { ancestrySize.set(id,ANCESTRY_SLOT); return ANCESTRY_SLOT; }
+    if (parents.length === 1) { const width = Math.max(ANCESTRY_SLOT,measure(parents[0],nextVisiting)); ancestrySize.set(id,width); return width; }
+    const leftWidth = measure(parents[0],nextVisiting); const rightWidth = measure(parents[1],nextVisiting);
+    const offset = (leftWidth + rightWidth) / 4 + COUPLE_GAP / 2;
+    const width = 2 * (offset + Math.max(leftWidth,rightWidth) / 2);
+    ancestrySize.set(id,width); return width;
+  };
+  const coordinates = new Map<string,{x:number;y:number}>();
+  const place = (id: string, x: number, generation: number, visiting = new Set<string>()) => {
+    if (visiting.has(id)) return;
+    coordinates.set(id,{x,y:300 + generation * GENERATION_GAP});
+    const parents = [...new Set(parentsByChild.get(id) ?? [])].slice(0,2);
+    if (!parents.length) return;
+    const nextVisiting = new Set(visiting).add(id);
+    if (parents.length === 1) { place(parents[0],x,generation-1,nextVisiting); return; }
+    const leftWidth = measure(parents[0]); const rightWidth = measure(parents[1]);
+    const offset = (leftWidth + rightWidth) / 4 + COUPLE_GAP / 2;
+    place(parents[0],x-offset,generation-1,nextVisiting);
+    place(parents[1],x+offset,generation-1,nextVisiting);
+  };
+  const primaryPartner = directPartners[0];
+  if (primaryPartner) {
+    const focusWidth = measure(focus.id); const partnerWidth = measure(primaryPartner);
+    const offset = (focusWidth + partnerWidth) / 4 + COUPLE_GAP / 2;
+    place(focus.id,480-offset,0);
+    place(primaryPartner,480+offset,0);
+  } else place(focus.id,480,0);
+  return { ...project, individuals: project.individuals.map(individual => coordinates.has(individual.id) ? { ...individual, layout: coordinates.get(individual.id) } : individual) };
+}
+
+const completed = (project: WebProject, createdId: string): FamilyResult => ({ project: centerAncestralBranches(project), createdId });
+
 export function applyFamilyAction(project: WebProject, sourceId: string, action: FamilyAction, idFactory: IdFactory = role => `${role}-${crypto.randomUUID()}`, preferredPartnerId?: string): FamilyResult {
   const source = project.individuals.find(item => item.id === sourceId);
   if (!source) return { project, createdId: sourceId };
@@ -37,7 +93,7 @@ export function applyFamilyAction(project: WebProject, sourceId: string, action:
     const partnerX = availablePartner(individuals,sourcePoint.x,sourcePoint.y);
     individuals.push(person({ ...project, individuals }, id, oppositeGender(source.gender_identity), partnerX, sourcePoint.y));
     relationships.push({ member_a: sourceId, member_b: id, kind: "partner" });
-    return { project: { ...project, individuals, relationships, parentages }, createdId: id };
+    return completed({ ...project, individuals, relationships, parentages },id);
   }
 
   if (action === "parents") {
@@ -47,7 +103,7 @@ export function applyFamilyAction(project: WebProject, sourceId: string, action:
     individuals.push(person({ ...project, individuals }, motherId, "woman", motherX, parentY));
     relationships.push({ member_a: fatherId, member_b: motherId, kind: "partner" });
     parentages.push({ parent_id: fatherId, child_id: sourceId, kind: "biological" }, { parent_id: motherId, child_id: sourceId, kind: "biological" });
-    return { project: { ...project, individuals, relationships, parentages }, createdId: fatherId };
+    return completed({ ...project, individuals, relationships, parentages },fatherId);
   }
 
   if (action === "child") {
@@ -63,7 +119,7 @@ export function applyFamilyAction(project: WebProject, sourceId: string, action:
     const childY = Math.max(sourcePoint.y, partnerPoint.y) + 175; const childX = availableSingle(individuals, (sourcePoint.x + partnerPoint.x) / 2, childY);
     individuals.push(person({ ...project, individuals }, childId, "unknown", childX, childY));
     parentages.push({ parent_id: sourceId, child_id: childId, kind: "biological" }, { parent_id: partnerId, child_id: childId, kind: "biological" });
-    return { project: { ...project, individuals, relationships, parentages }, createdId: childId };
+    return completed({ ...project, individuals, relationships, parentages },childId);
   }
 
   let siblingParents = parents;
@@ -76,5 +132,5 @@ export function applyFamilyAction(project: WebProject, sourceId: string, action:
   const siblingX = availableSingle(individuals, sourcePoint.x + 155, sourcePoint.y);
   individuals.push(person({ ...project, individuals }, siblingId, "unknown", siblingX, sourcePoint.y));
   for (const parentId of siblingParents) parentages.push({ parent_id: parentId, child_id: siblingId, kind: "biological" });
-  return { project: { ...project, individuals, relationships, parentages }, createdId: siblingId };
+  return completed({ ...project, individuals, relationships, parentages },siblingId);
 }
