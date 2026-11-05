@@ -4,7 +4,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { WebPedigree, type WebProject } from "./WebPedigree";
 import { NewProjectMission } from "./NewProjectMission";
 import { IndividualDrawer } from "./IndividualDrawer";
-import { applyFamilyAction, type FamilyAction } from "./familyOperations";
+import { applyFamilyAction, centerAncestralBranches, type FamilyAction } from "./familyOperations";
 import { prepareProjectDownload } from "./projectIO";
 
 const PedigreeScene = lazy(() => import("./PedigreeScene").then((module) => ({ default: module.PedigreeScene })));
@@ -98,7 +98,7 @@ export function App() {
       if (typeof data.schema_version !== "string" || !Array.isArray(data.individuals)) throw new Error("invalid");
       setProjectSummary({ fileName: file.name, title: typeof data.title === "string" ? data.title : file.name, schema: data.schema_version, individuals: data.individuals.length, relationships: Array.isArray(data.relationships) ? data.relationships.length : 0, updatedAt: typeof data.updated_at === "string" ? data.updated_at : undefined });
       setFileError(false);
-      setLoadedProject(data as unknown as WebProject);
+      setLoadedProject(centerAncestralBranches(data as unknown as WebProject));
     } catch { setProjectSummary(null); setLoadedProject(null); setFileError(true); }
   };
   const openLoadedProject = () => { if (!loadedProject) return; setUndoStack([]); setRedoStack([]); setSaveState("saved"); setArchiveOpen(false); setAvatarPose("celebrating"); setEntered(true); };
