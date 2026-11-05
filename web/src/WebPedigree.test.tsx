@@ -53,7 +53,13 @@ describe("WebPedigree", () => {
 
   it("marks a newly created relative for its arrival animation", () => {
     const project: WebProject = { schema_version: "0.4.0", individuals: [{ id: "child", label: "II-1", layout: { x: 0, y: 0 } }] };
-    render(<WebPedigree project={project} newlyAddedId="child" onSelect={() => undefined} />);
+    render(<WebPedigree project={project} newlyAddedIds={["child"]} onSelect={() => undefined} />);
     expect(screen.getByRole("button", { name: "Selecionar indivíduo II-1" })).toHaveClass("newly-added");
+  });
+
+  it("animates connections that belong to the arriving family nucleus", () => {
+    const project: WebProject = { schema_version: "0.4.0", individuals: [{ id: "a", layout: { x: 0, y: 0 } }, { id: "b", layout: { x: 100, y: 0 } }], relationships: [{ member_a: "a", member_b: "b", kind: "partner" }] };
+    const { container } = render(<WebPedigree project={project} newlyAddedIds={["b"]} />);
+    expect(container.querySelector(".loaded-connections path")).toHaveClass("new-connection");
   });
 });
