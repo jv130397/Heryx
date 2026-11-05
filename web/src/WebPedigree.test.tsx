@@ -44,4 +44,10 @@ describe("WebPedigree", () => {
     const transforms = [...container.querySelectorAll(".loaded-people>g")].map(node => node.getAttribute("transform"));
     expect(new Set(transforms).size).toBe(2);
   });
+
+  it("applies the requested canvas zoom without changing pedigree coordinates", () => {
+    const project: WebProject = { schema_version: "0.4.0", individuals: [{ id: "a", layout: { x: 0, y: 0 } }] };
+    render(<WebPedigree project={project} zoom={130}/>);
+    expect(screen.getByRole("img")).toHaveStyle({ transform: "translate(-50%,-50%) scale(1.3)" });
+  });
 });

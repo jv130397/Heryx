@@ -5,7 +5,7 @@ export type WebProject = { schema_version: string; title?: string; individuals: 
 
 type Point = { x: number; y: number };
 
-export function WebPedigree({ project, selectedId, onSelect }: { project: WebProject; selectedId?: string | null; onSelect?: (id: string) => void }) {
+export function WebPedigree({ project, selectedId, onSelect, zoom = 100 }: { project: WebProject; selectedId?: string | null; onSelect?: (id: string) => void; zoom?: number }) {
   const source = project.individuals;
   if (!source.length) return <div className="loaded-empty">Projeto válido, ainda sem indivíduos.</div>;
   const placed: Array<{x:number;y:number}> = [];
@@ -21,7 +21,7 @@ export function WebPedigree({ project, selectedId, onSelect }: { project: WebPro
   const children = new Map<string, string[]>();
   for (const edge of parentages) if (edge.parent_id && edge.child_id) children.set(edge.child_id, [...(children.get(edge.child_id) ?? []), edge.parent_id]);
 
-  return <svg className="loaded-pedigree" viewBox="0 0 960 600" role="img" aria-label={`Heredograma carregado: ${project.title ?? "sem título"}`}>
+  return <svg className="loaded-pedigree" style={{transform:`translate(-50%,-50%) scale(${zoom/100})`}} viewBox="0 0 960 600" role="img" aria-label={`Heredograma carregado: ${project.title ?? "sem título"}`}>
     <g className="loaded-connections">
       {(project.relationships ?? []).filter((edge) => edge.member_a && edge.member_b).map((edge, index) => { const a = points.get(edge.member_a!); const b = points.get(edge.member_b!); return a && b ? <path key={`r-${index}`} d={`M${a.x} ${a.y}H${b.x}`} /> : null; })}
       {[...children.entries()].map(([childId, parentIds]) => { const child = points.get(childId); const parents = parentIds.map((id) => points.get(id)).filter(Boolean) as Point[]; if (!child || !parents.length) return null; if (parents.length >= 2) { const left = parents[0]; const right = parents[1]; const middleX = (left.x + right.x) / 2; const branchY = child.y - Math.max(35, (child.y - Math.max(left.y, right.y)) / 2); return <path key={childId} d={`M${left.x} ${left.y}H${right.x} M${middleX} ${left.y}V${branchY}H${child.x}V${child.y}`} />; } const parent = parents[0]; const branchY = (parent.y + child.y) / 2; return <path key={childId} d={`M${parent.x} ${parent.y}V${branchY}H${child.x}V${child.y}`} />; })}

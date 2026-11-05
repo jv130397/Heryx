@@ -78,5 +78,9 @@ describe("RarePedigree Web welcome", () => {
     await waitFor(() => expect(screen.queryByText("P-2")).not.toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Refazer" }));
     await waitFor(() => expect(screen.getByText("P-2")).toBeVisible());
+    fireEvent.click(screen.getByRole("button", { name: "Aumentar zoom" }));
+    expect(screen.getByLabelText("Nível de zoom")).toHaveTextContent("110%");
+    fireEvent.click(screen.getByRole("button", { name: "Ajustar à tela" }));
+    expect(screen.getByLabelText("Nível de zoom")).toHaveTextContent("100%");
   });
 });
