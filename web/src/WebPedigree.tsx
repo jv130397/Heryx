@@ -4,6 +4,7 @@ export type WebParentage = { parent_id?: string; child_id?: string; kind?: strin
 export type WebProject = { schema_version: string; title?: string; individuals: WebIndividual[]; relationships?: WebRelationship[]; parentages?: WebParentage[]; study_code?: string; created_at?: string; updated_at?: string };
 
 type Point = { x: number; y: number };
+const romanGeneration = (value: number) => { const numerals: Array<[number,string]> = [[1000,"M"],[900,"CM"],[500,"D"],[400,"CD"],[100,"C"],[90,"XC"],[50,"L"],[40,"XL"],[10,"X"],[9,"IX"],[5,"V"],[4,"IV"],[1,"I"]]; let remaining = value; return numerals.map(([number,symbol]) => { const count = Math.floor(remaining / number); remaining %= number; return symbol.repeat(count); }).join(""); };
 
 export function WebPedigree({ project, selectedId, newlyAddedIds = [], onSelect, zoom = 100 }: { project: WebProject; selectedId?: string | null; newlyAddedIds?: string[]; onSelect?: (id: string) => void; zoom?: number }) {
   const source = project.individuals;
@@ -16,12 +17,14 @@ export function WebPedigree({ project, selectedId, newlyAddedIds = [], onSelect,
   const spanX = maxX - minX; const spanY = maxY - minY; const middleX = (minX + maxX) / 2; const middleY = (minY + maxY) / 2;
   const scaleX = (value: number) => spanX < 500 ? 480 + (value - middleX) * 1.45 : 100 + ((value - minX) / spanX) * 760;
   const scaleY = (value: number) => spanY < 340 ? 285 + (value - middleY) * 1.35 : 85 + ((value - minY) / spanY) * 430;
+  const generationRows = [...new Set(displaySource.map(item => item.y))].sort((a,b) => a-b);
   const points = new Map<string, Point>(displaySource.map(({person,x,y}) => [person.id, { x: scaleX(x), y: scaleY(y) }]));
   const parentages = project.parentages ?? [];
   const children = new Map<string, string[]>();
   for (const edge of parentages) if (edge.parent_id && edge.child_id) children.set(edge.child_id, [...(children.get(edge.child_id) ?? []), edge.parent_id]);
 
   return <svg className="loaded-pedigree" style={{transform:`translate(-50%,-50%) scale(${zoom/100})`}} viewBox="0 0 960 600" role="img" aria-label={`Heredograma carregado: ${project.title ?? "sem título"}`}>
+    <g className="loaded-generations" aria-label="Gerações">{generationRows.map((row,index) => <text key={row} x="52" y={scaleY(row)+5}>{romanGeneration(index+1)}</text>)}</g>
     <g className="loaded-connections">
       {(project.relationships ?? []).filter((edge) => edge.member_a && edge.member_b).map((edge, index) => { const a = points.get(edge.member_a!); const b = points.get(edge.member_b!); const arriving = newlyAddedIds.includes(edge.member_a!) || newlyAddedIds.includes(edge.member_b!); return a && b ? <path className={arriving ? "new-connection" : undefined} key={`r-${index}`} d={`M${a.x} ${a.y}H${b.x}`} /> : null; })}
       {[...children.entries()].map(([childId, parentIds]) => { const child = points.get(childId); const parents = parentIds.map((id) => points.get(id)).filter(Boolean) as Point[]; const arriving = newlyAddedIds.includes(childId) || parentIds.some(id => newlyAddedIds.includes(id)); if (!child || !parents.length) return null; if (parents.length >= 2) { const left = parents[0]; const right = parents[1]; const middleX = (left.x + right.x) / 2; const branchY = child.y - Math.max(35, (child.y - Math.max(left.y, right.y)) / 2); return <path className={arriving ? "new-connection" : undefined} key={childId} d={`M${left.x} ${left.y}H${right.x} M${middleX} ${left.y}V${branchY}H${child.x}V${child.y}`} />; } const parent = parents[0]; const branchY = (parent.y + child.y) / 2; return <path className={arriving ? "new-connection" : undefined} key={childId} d={`M${parent.x} ${parent.y}V${branchY}H${child.x}V${child.y}`} />; })}

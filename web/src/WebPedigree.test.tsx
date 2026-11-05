@@ -14,6 +14,8 @@ describe("WebPedigree", () => {
     render(<WebPedigree project={project} />);
     expect(screen.getByRole("img", { name: "Heredograma carregado: Família carregada" })).toBeVisible();
     expect(screen.getByText("II-1")).toBeVisible();
+    expect(screen.getByText("I", { selector: ".loaded-generations text" })).toBeVisible();
+    expect(screen.getByText("II", { selector: ".loaded-generations text" })).toBeVisible();
   });
 
   it("lets the editor select an individual from the diagram", () => {
@@ -61,5 +63,13 @@ describe("WebPedigree", () => {
     const project: WebProject = { schema_version: "0.4.0", individuals: [{ id: "a", layout: { x: 0, y: 0 } }, { id: "b", layout: { x: 100, y: 0 } }], relationships: [{ member_a: "a", member_b: "b", kind: "partner" }] };
     const { container } = render(<WebPedigree project={project} newlyAddedIds={["b"]} />);
     expect(container.querySelector(".loaded-connections path")).toHaveClass("new-connection");
+  });
+
+  it("keeps generation markers ordered at the left edge for extended pedigrees", () => {
+    const project: WebProject = { schema_version: "0.4.0", individuals: [0,1,2,3].map(index => ({ id: `p-${index}`, layout: { x: index * 100, y: index * 170 } })) };
+    const { container } = render(<WebPedigree project={project} />);
+    const markers = [...container.querySelectorAll(".loaded-generations text")];
+    expect(markers.map(marker => marker.textContent)).toEqual(["I","II","III","IV"]);
+    expect(markers.every(marker => marker.getAttribute("x") === "52")).toBe(true);
   });
 });
