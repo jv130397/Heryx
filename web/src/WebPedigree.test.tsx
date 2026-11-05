@@ -72,4 +72,20 @@ describe("WebPedigree", () => {
     expect(markers.map(marker => marker.textContent)).toEqual(["I","II","III","IV"]);
     expect(markers.every(marker => marker.getAttribute("x") === "52")).toBe(true);
   });
+
+  it("draws siblings from one shared parental nucleus without duplicating the union line", () => {
+    const project: WebProject = { schema_version: "0.4.0", individuals: [
+      { id: "father", layout: { x: 0, y: 0 } }, { id: "mother", layout: { x: 100, y: 0 } },
+      { id: "child-a", layout: { x: 0, y: 170 } }, { id: "child-b", layout: { x: 150, y: 170 } }
+    ], relationships: [{ member_a: "father", member_b: "mother", kind: "partner" }], parentages: [
+      { parent_id: "father", child_id: "child-a" }, { parent_id: "mother", child_id: "child-a" },
+      { parent_id: "father", child_id: "child-b" }, { parent_id: "mother", child_id: "child-b" }
+    ] };
+    const { container } = render(<WebPedigree project={project} />);
+    const paths = [...container.querySelectorAll(".loaded-connections path")];
+    expect(paths).toHaveLength(2);
+    const siblingPath = container.querySelector('[data-parental-nucleus="father|mother"]');
+    expect(siblingPath).toHaveAttribute("d", expect.stringContaining("M371.25 285H588.75"));
+    expect(siblingPath?.getAttribute("d")).not.toContain("M371.25 170.25H516.25");
+  });
 });
