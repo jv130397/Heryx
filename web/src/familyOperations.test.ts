@@ -91,4 +91,19 @@ describe("family operations", () => {
     expect(midpoint("qm-father","qm-mother")).toBe(x("partner-mother"));
     expect(Math.max(x("pf-father"),x("pf-mother"),x("pm-father"),x("pm-mother"))).toBeLessThan(Math.min(x("qf-father"),x("qf-mother"),x("qm-father"),x("qm-mother")));
   });
+
+  it("places siblings outside the proband-partner union and keeps their generation aligned", () => {
+    let family = applyFamilyAction(baseProject(),"proband","parents",ids("pf","pm")).project;
+    family = applyFamilyAction(family,"proband","partner",ids("partner")).project;
+    family = applyFamilyAction(family,"partner","parents",ids("qf","qm")).project;
+    family = applyFamilyAction(family,"proband","sibling",ids("proband-sibling")).project;
+    family = applyFamilyAction(family,"partner","sibling",ids("partner-sibling")).project;
+    const point = (id: string) => family.individuals.find(person=>person.id===id)!.layout!;
+
+    expect(Number(point("proband-sibling").x)).toBeLessThan(Number(point("proband").x));
+    expect(Number(point("partner-sibling").x)).toBeGreaterThan(Number(point("partner").x));
+    expect(point("proband-sibling").y).toBe(point("proband").y);
+    expect(point("partner-sibling").y).toBe(point("partner").y);
+    expect(new Set(["proband","partner","proband-sibling","partner-sibling"].map(id=>`${point(id).x}:${point(id).y}`)).size).toBe(4);
+  });
 });

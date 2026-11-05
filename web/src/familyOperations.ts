@@ -73,6 +73,40 @@ export function centerAncestralBranches(project: WebProject): WebProject {
     place(focus.id,480-offset,0);
     place(primaryPartner,480+offset,0);
   } else place(focus.id,480,0);
+  const childrenByParents = new Map<string,string[]>();
+  for (const [childId,parentIds] of parentsByChild) {
+    const key = [...new Set(parentIds)].sort().join("|");
+    if (!key) continue;
+    childrenByParents.set(key,[...(childrenByParents.get(key) ?? []),childId]);
+  }
+  const occupied = () => [...coordinates.values()];
+  const freeX = (preferred: number, y: number, direction: number) => {
+    let candidate = preferred;
+    while (occupied().some(point=>Math.abs(point.x-candidate)<ANCESTRY_SLOT*.75 && Math.abs(point.y-y)<70)) candidate += direction*ANCESTRY_SLOT;
+    return candidate;
+  };
+  for (const childIds of childrenByParents.values()) {
+    const anchors = childIds.filter(id=>coordinates.has(id));
+    const pending = childIds.filter(id=>!coordinates.has(id));
+    if (!pending.length) continue;
+    if (anchors.length) {
+      const anchorId = anchors[0]; const anchor = coordinates.get(anchorId)!;
+      const visiblePartner = relationships
+        .filter(edge=>edge.member_a===anchorId||edge.member_b===anchorId)
+        .map(edge=>edge.member_a===anchorId?edge.member_b:edge.member_a)
+        .find(id=>id&&coordinates.has(id));
+      const partnerX = visiblePartner ? coordinates.get(visiblePartner!)!.x : 480;
+      const direction = partnerX === anchor.x ? (anchor.x<=480?-1:1) : (partnerX>anchor.x?-1:1);
+      pending.forEach((id,index)=>coordinates.set(id,{x:freeX(anchor.x+direction*ANCESTRY_SLOT*(index+1),anchor.y,direction),y:anchor.y}));
+      continue;
+    }
+    const parentIds = [...new Set(parentsByChild.get(pending[0]) ?? [])];
+    const parentPoints = parentIds.map(id=>coordinates.get(id)).filter((point): point is {x:number;y:number}=>Boolean(point));
+    if (!parentPoints.length) continue;
+    const center = parentPoints.reduce((sum,point)=>sum+point.x,0)/parentPoints.length;
+    const y = Math.max(...parentPoints.map(point=>point.y))+GENERATION_GAP;
+    pending.forEach((id,index)=>coordinates.set(id,{x:center+(index-(pending.length-1)/2)*ANCESTRY_SLOT,y}));
+  }
   return { ...project, individuals: project.individuals.map(individual => coordinates.has(individual.id) ? { ...individual, layout: coordinates.get(individual.id) } : individual) };
 }
 
