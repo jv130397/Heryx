@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jv130397.github.io/RarePedigree-Studio/sitemap.xml

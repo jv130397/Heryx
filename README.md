@@ -32,5 +32,22 @@ ruff check .
 rarepedigree-studio
 ```
 
-**Estado:** Fase 4.7 validada. Consulte as limitações antes de usar; o software ainda não deve
-ser empregado como ferramenta diagnóstica ou em produção clínica.
+## Aplicação Web
+
+O novo produto web está em [`web/`](web/README.md) e reúne a experiência 3D de abertura, o
+assistente de criação de projetos e o editor SVG de heredogramas.
+
+```bash
+cd web
+pnpm install --frozen-lockfile
+pnpm check
+pnpm dev
+```
+
+O pipeline em `.github/workflows/deploy-pages.yml` valida e publica a branch `main` no GitHub
+Pages. Após habilitar **Settings → Pages → Source: GitHub Actions**, a URL será:
+
+<https://jv130397.github.io/RarePedigree-Studio/>
+
+**Estado:** migração Web em andamento. Consulte as limitações antes de usar; o software ainda
+não deve ser empregado como ferramenta diagnóstica ou em produção clínica.

@@ -1,6 +1,8 @@
 # RarePedigree Studio Web
 
-Primeira etapa da migração da interface para Web. Este pacote implementa a Welcome Screen com React, TypeScript e uma cena WebGL real construída com Three.js/React Three Fiber.
+Aplicação Web do RarePedigree Studio. O pacote combina a introdução 3D com um editor SVG
+interativo, criação inteligente de familiares, importação/exportação local e histórico de
+undo/redo.
 
 ## Executar
 
@@ -14,11 +16,21 @@ Abrir `http://127.0.0.1:5173/`.
 ## Validar
 
 ```bash
-pnpm test
-pnpm build
+pnpm check
 ```
 
-## Escopo atual
+## Estrutura
+
+- `src/App.tsx`: shell, navegação e estado do projeto.
+- `src/PedigreeScene.tsx`: experiência tridimensional de abertura.
+- `src/NewProjectMission.tsx`: assistente de criação.
+- `src/WebPedigree.tsx`: renderização científica SVG.
+- `src/IndividualDrawer.tsx`: edição deslizante e ações familiares.
+- `src/familyOperations.ts`: regras de criação e posicionamento.
+- `src/projectIO.ts`: persistência local do formato JSON.
+- `public/`: manifesto, favicon e arquivos públicos.
+
+## Recursos atuais
 
 - Navegação e shell responsivo.
 - Cena 3D com materiais físicos, câmera em perspectiva, iluminação e sombras.
@@ -28,9 +40,22 @@ pnpm build
 - PT-BR/EN.
 - Tema escuro/claro.
 - Preferência de movimento reduzido.
-- Lista demonstrativa de projetos recentes.
+- Criação e abertura de projetos locais.
+- Editor SVG responsivo com zoom e marcadores de geração.
+- Parceiros, pais, filhos e irmãos com proteção contra colisões.
+- Seleção explícita de ramo em famílias com múltiplos parceiros.
+- Painel deslizante de propriedades, undo/redo e salvamento.
 
-Os botões ainda são demonstrativos e não acessam arquivos reais. O motor científico Python e o aplicativo PySide6 permanecem inalterados nesta etapa.
+Os dados permanecem no dispositivo e o motor científico Python/PySide6 permanece preservado.
+O site ainda não deve ser usado para decisões diagnósticas.
+
+## Publicação
+
+Cada push na branch `main` executa testes e build e publica o diretório `web/dist` pelo GitHub
+Pages. É necessário selecionar **GitHub Actions** como origem do Pages nas configurações do
+repositório.
+
+URL prevista: <https://jv130397.github.io/RarePedigree-Studio/>
 
 ## Próxima integração
 

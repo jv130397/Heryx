@@ -27,7 +27,7 @@ function Hologram({ introPhase }: { introPhase: number }) {
 }
 
 function Avatar({ introPhase, pose }: { introPhase: number; pose: AvatarPose }) {
-  const source = useTexture("/assets/joao-vitor-game-avatar.png");
+  const source = useTexture(`${import.meta.env.BASE_URL}assets/joao-vitor-game-avatar.png`);
   const texture = useMemo(() => source.clone(), [source]);
   const avatar = useRef<THREE.Group>(null);
   useEffect(() => { const activePose = introPhase === 1 || introPhase === 2 ? "pointing" : pose; const frames: Record<AvatarPose,[number,number]> = { neutral:[0,.5], pointing:[1/3,.5], laptop:[2/3,.5], thinking:[0,0], celebrating:[1/3,0] }; texture.needsUpdate = true; texture.repeat.set(1 / 3,1 / 2); texture.offset.set(...frames[activePose]); texture.colorSpace = THREE.SRGBColorSpace; texture.magFilter = THREE.NearestFilter; }, [texture,introPhase,pose]);

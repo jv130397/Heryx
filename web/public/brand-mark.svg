@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="RarePedigree Studio">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7cf0ff"/><stop offset="1" stop-color="#19a7c2"/></linearGradient></defs>
+  <path d="M32 3 57 17v30L32 61 7 47V17Z" fill="#06131b" stroke="url(#g)" stroke-width="5"/>
+  <path d="m32 17 12 7v16l-12 7-12-7V24Z" fill="none" stroke="#50dff2" stroke-width="4"/>
+</svg>

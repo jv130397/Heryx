@@ -1,0 +1,12 @@
+{
+  "name": "RarePedigree Studio",
+  "short_name": "RarePedigree",
+  "description": "Editor científico de heredogramas clínicos.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#03090f",
+  "theme_color": "#03090f",
+  "icons": [{ "src": "brand-mark.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
