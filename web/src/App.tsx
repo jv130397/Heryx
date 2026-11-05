@@ -21,6 +21,7 @@ const copy = {
 function BrandMark() { return <span className="brand-mark" aria-hidden="true"><span /></span>; }
 
 export function App() {
+  const safeGraphics = new URLSearchParams(window.location.search).get("graphics") === "safe";
   const [language, setLanguage] = useState<keyof typeof copy>("pt");
   const [light, setLight] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -112,7 +113,7 @@ export function App() {
     </header>
 
     <section className="hero" id="inicio">
-      <div className="visual-stage"><Suspense fallback={<div className="scene-fallback">Carregando observatório…</div>}><PedigreeScene reducedMotion={reducedMotion} entered={entered} introPhase={introPhase} avatarPose={avatarPose} /></Suspense></div>
+      <div className="visual-stage">{safeGraphics ? <div className="safe-scene" aria-label="Observatório genômico em modo compatível"><span className="safe-orbit safe-orbit-one"/><span className="safe-orbit safe-orbit-two"/><span className="safe-core"/></div> : <Suspense fallback={<div className="scene-fallback">Carregando observatório…</div>}><PedigreeScene reducedMotion={reducedMotion} entered={entered} introPhase={introPhase} avatarPose={avatarPose} /></Suspense>}</div>
       <div className="screen-vignette" aria-hidden="true" /><div className="hud-corners" aria-hidden="true"><i /><i /><i /><i /></div>
       <motion.div className="system-status" initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }}><span className="status-dot" />{ready ? text.status : text.sequence[introPhase]}<b>RP–01</b></motion.div>
       {!ready && <button className="skip-intro" onClick={() => setIntroPhase(3)}>{text.skip}<span>››</span></button>}
