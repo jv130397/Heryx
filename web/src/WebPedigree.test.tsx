@@ -88,4 +88,20 @@ describe("WebPedigree", () => {
     expect(siblingPath).toHaveAttribute("d", expect.stringContaining("M371.25 285H588.75"));
     expect(siblingPath?.getAttribute("d")).not.toContain("M371.25 170.25H516.25");
   });
+
+  it("connects a displaced only child to the parental nucleus", () => {
+    const project: WebProject = { schema_version: "0.4.0", individuals: [
+      { id: "partner-father", layout: { x: 600, y: 0 } },
+      { id: "partner-mother", layout: { x: 700, y: 0 } },
+      { id: "partner", layout: { x: 200, y: 170 } }
+    ], relationships: [{ member_a: "partner-father", member_b: "partner-mother", kind: "partner" }], parentages: [
+      { parent_id: "partner-father", child_id: "partner" },
+      { parent_id: "partner-mother", child_id: "partner" }
+    ] };
+    const { container } = render(<WebPedigree project={project} />);
+    const nucleus = container.querySelector('[data-parental-nucleus="partner-father|partner-mother"]');
+    const path = nucleus?.getAttribute("d") ?? "";
+
+    expect(path).toMatch(/V[\d.]+ M[\d.]+ [\d.]+H[\d.]+ M[\d.]+ [\d.]+V/);
+  });
 });
