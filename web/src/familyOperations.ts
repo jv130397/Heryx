@@ -23,6 +23,7 @@ const availablePartner = (individuals: WebIndividual[], sourceX: number, y: numb
 };
 
 const ANCESTRY_SLOT = 140;
+const PARTNER_SLOT = 170;
 const COUPLE_GAP = 30;
 const GENERATION_GAP = 170;
 
@@ -106,6 +107,28 @@ export function centerAncestralBranches(project: WebProject): WebProject {
     const center = parentPoints.reduce((sum,point)=>sum+point.x,0)/parentPoints.length;
     const y = Math.max(...parentPoints.map(point=>point.y))+GENERATION_GAP;
     pending.forEach((id,index)=>coordinates.set(id,{x:center+(index-(pending.length-1)/2)*ANCESTRY_SLOT,y}));
+  }
+  let positionedPartner = true;
+  while (positionedPartner) {
+    positionedPartner = false;
+    for (const edge of relationships) {
+      if (!edge.member_a || !edge.member_b) continue;
+      const a = coordinates.get(edge.member_a); const b = coordinates.get(edge.member_b);
+      if (Boolean(a) === Boolean(b)) continue;
+      const anchorId = a ? edge.member_a : edge.member_b;
+      const partnerId = a ? edge.member_b : edge.member_a;
+      const anchor = coordinates.get(anchorId)!;
+      const direction = anchor.x < 480 ? -1 : anchor.x > 480 ? 1 : (anchorId===focus.id?-1:1);
+      const sameSidePartners = relationships
+        .filter(item=>item.member_a===anchorId||item.member_b===anchorId)
+        .map(item=>item.member_a===anchorId?item.member_b:item.member_a)
+        .map(id=>id?coordinates.get(id):undefined)
+        .filter((point): point is {x:number;y:number}=>Boolean(point))
+        .filter(point=>Math.sign(point.x-anchor.x)===direction).length;
+      const preferred = anchor.x+direction*PARTNER_SLOT*(sameSidePartners+1);
+      coordinates.set(partnerId,{x:freeX(preferred,anchor.y,direction),y:anchor.y});
+      positionedPartner = true;
+    }
   }
   return { ...project, individuals: project.individuals.map(individual => coordinates.has(individual.id) ? { ...individual, layout: coordinates.get(individual.id) } : individual) };
 }

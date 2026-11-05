@@ -106,4 +106,16 @@ describe("family operations", () => {
     expect(point("partner-sibling").y).toBe(point("partner").y);
     expect(new Set(["proband","partner","proband-sibling","partner-sibling"].map(id=>`${point(id).x}:${point(id).y}`)).size).toBe(4);
   });
+
+  it("places partners of siblings outward instead of extending the central union", () => {
+    let family = applyFamilyAction(baseProject(),"proband","parents",ids("pf","pm")).project;
+    family = applyFamilyAction(family,"proband","partner",ids("proband-partner")).project;
+    family = applyFamilyAction(family,"proband","sibling",ids("sibling")).project;
+    family = applyFamilyAction(family,"sibling","partner",ids("sibling-partner")).project;
+    const x = (id: string) => Number(family.individuals.find(person=>person.id===id)!.layout!.x);
+
+    expect(x("sibling-partner")).toBeLessThan(x("sibling"));
+    expect(x("sibling")).toBeLessThan(x("proband"));
+    expect(x("proband")).toBeLessThan(x("proband-partner"));
+  });
 });
