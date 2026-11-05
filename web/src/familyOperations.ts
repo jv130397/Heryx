@@ -17,6 +17,10 @@ const availableSingle = (individuals: WebIndividual[], preferredX: number, y: nu
   for (const offset of [0, -step, step, -step * 2, step * 2, -step * 3, step * 3]) if (!collides(individuals, preferredX + offset, y)) return preferredX + offset;
   return preferredX + individuals.length * step;
 };
+const availablePartner = (individuals: WebIndividual[], sourceX: number, y: number) => {
+  for (const offset of [170,-170,340,-340,510,-510]) if (!collides(individuals,sourceX+offset,y)) return sourceX+offset;
+  return sourceX+(individuals.length+1)*170;
+};
 
 export function applyFamilyAction(project: WebProject, sourceId: string, action: FamilyAction, idFactory: IdFactory = role => `${role}-${crypto.randomUUID()}`): FamilyResult {
   const source = project.individuals.find(item => item.id === sourceId);
@@ -30,7 +34,7 @@ export function applyFamilyAction(project: WebProject, sourceId: string, action:
 
   if (action === "partner") {
     const id = idFactory("partner");
-    const partnerX = availableSingle(individuals, sourcePoint.x + 170, sourcePoint.y, 170);
+    const partnerX = availablePartner(individuals,sourcePoint.x,sourcePoint.y);
     individuals.push(person({ ...project, individuals }, id, oppositeGender(source.gender_identity), partnerX, sourcePoint.y));
     relationships.push({ member_a: sourceId, member_b: id, kind: "partner" });
     return { project: { ...project, individuals, relationships, parentages }, createdId: id };
@@ -50,7 +54,7 @@ export function applyFamilyAction(project: WebProject, sourceId: string, action:
     let partnerId = partners[0];
     if (!partnerId) {
       partnerId = idFactory("partner");
-      const partnerX = availableSingle(individuals, sourcePoint.x + 170, sourcePoint.y, 170);
+      const partnerX = availablePartner(individuals,sourcePoint.x,sourcePoint.y);
       individuals.push(person({ ...project, individuals }, partnerId, oppositeGender(source.gender_identity), partnerX, sourcePoint.y));
       relationships.push({ member_a: sourceId, member_b: partnerId, kind: "partner" });
     }

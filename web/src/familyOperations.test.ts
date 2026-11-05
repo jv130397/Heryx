@@ -42,4 +42,14 @@ describe("family operations", () => {
     expect(siblingX).not.toBe(partnerX);
     expect(Math.abs(Number(siblingX) - Number(partnerX))).toBeGreaterThanOrEqual(70);
   });
+
+  it("alternates multiple partners around the source instead of placing lines through symbols", () => {
+    const first = applyFamilyAction(baseProject(), "proband", "partner", ids("partner-a")).project;
+    const second = applyFamilyAction(first, "proband", "partner", ids("partner-b")).project;
+    const sourceX = Number(second.individuals.find(person => person.id === "proband")?.layout?.x);
+    const firstX = Number(second.individuals.find(person => person.id === "partner-a")?.layout?.x);
+    const secondX = Number(second.individuals.find(person => person.id === "partner-b")?.layout?.x);
+    expect(firstX-sourceX).toBe(170);
+    expect(secondX-sourceX).toBe(-170);
+  });
 });
