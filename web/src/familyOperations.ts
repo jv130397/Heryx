@@ -1,7 +1,7 @@
 import type { WebIndividual, WebProject } from "./WebPedigree";
 
 export type FamilyAction = "partner" | "parents" | "child" | "sibling";
-export type FamilyResult = { project: WebProject; createdId: string };
+export type FamilyResult = { project: WebProject; createdId: string; blockedReason?: "partner-required" };
 type IdFactory = (role: string) => string;
 
 const oppositeGender = (gender?: string) => gender === "man" ? "woman" : gender === "woman" ? "man" : "unknown";
@@ -22,7 +22,7 @@ const availablePartner = (individuals: WebIndividual[], sourceX: number, y: numb
   return sourceX+(individuals.length+1)*170;
 };
 
-export function applyFamilyAction(project: WebProject, sourceId: string, action: FamilyAction, idFactory: IdFactory = role => `${role}-${crypto.randomUUID()}`): FamilyResult {
+export function applyFamilyAction(project: WebProject, sourceId: string, action: FamilyAction, idFactory: IdFactory = role => `${role}-${crypto.randomUUID()}`, preferredPartnerId?: string): FamilyResult {
   const source = project.individuals.find(item => item.id === sourceId);
   if (!source) return { project, createdId: sourceId };
   const relationships = [...(project.relationships ?? [])];
@@ -51,7 +51,8 @@ export function applyFamilyAction(project: WebProject, sourceId: string, action:
   }
 
   if (action === "child") {
-    let partnerId = partners[0];
+    if (partners.length > 1 && !preferredPartnerId) return { project, createdId: sourceId, blockedReason: "partner-required" };
+    let partnerId = preferredPartnerId && partners.includes(preferredPartnerId) ? preferredPartnerId : partners[0];
     if (!partnerId) {
       partnerId = idFactory("partner");
       const partnerX = availablePartner(individuals,sourcePoint.x,sourcePoint.y);

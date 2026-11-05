@@ -57,7 +57,7 @@ describe("RarePedigree Web welcome", () => {
   });
 
   it("creates a new project through the guided mission", async () => {
-    render(<App />);
+    const { container } = render(<App />);
     fireEvent.click(screen.getByRole("button", { name: /Entrar no laboratório/ }));
     await waitFor(() => expect(screen.getByRole("dialog", { name: /Inicie uma história familiar/ })).toBeVisible());
     fireEvent.change(screen.getByLabelText("Nome do projeto"), { target: { value: "Família Aurora" } });
@@ -83,5 +83,16 @@ describe("RarePedigree Web welcome", () => {
     expect(screen.getByLabelText("Nível de zoom")).toHaveTextContent("110%");
     fireEvent.click(screen.getByRole("button", { name: "Ajustar à tela" }));
     expect(screen.getByLabelText("Nível de zoom")).toHaveTextContent("100%");
+    fireEvent.keyDown(window,{key:"+",ctrlKey:true});
+    expect(screen.getByLabelText("Nível de zoom")).toHaveTextContent("110%");
+    fireEvent.keyDown(window,{key:"0",ctrlKey:true});
+    expect(screen.getByLabelText("Nível de zoom")).toHaveTextContent("100%");
+    fireEvent.click(screen.getByRole("button",{name:"Selecionar indivíduo P-3"}));
+    fireEvent.click(screen.getByLabelText("Probando"));
+    fireEvent.click(screen.getByRole("button",{name:/Aplicar alterações/}));
+    expect(container.querySelectorAll(".proband-arrow")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("button",{name:"Selecionar indivíduo P-3"}));
+    fireEvent.keyDown(window,{key:"Escape"});
+    await waitFor(()=>expect(screen.queryByRole("dialog",{name:/Editar indivíduo/})).not.toBeInTheDocument());
   });
 });

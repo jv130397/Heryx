@@ -60,4 +60,14 @@ describe("family operations", () => {
     expect(result.project.individuals.find(person => person.id === "new-partner")?.label).toBe("P-4");
     expect(new Set(result.project.individuals.map(person => person.label)).size).toBe(result.project.individuals.length);
   });
+
+  it("requires an explicit branch before adding a child to someone with multiple partners", () => {
+    const first = applyFamilyAction(baseProject(), "proband", "partner", ids("partner-a")).project;
+    const family = applyFamilyAction(first, "proband", "partner", ids("partner-b")).project;
+    const blocked = applyFamilyAction(family, "proband", "child", ids("child"));
+    expect(blocked.blockedReason).toBe("partner-required");
+    expect(blocked.project).toBe(family);
+    const created = applyFamilyAction(family, "proband", "child", ids("child"), "partner-b");
+    expect(created.project.parentages?.filter(edge=>edge.child_id==="child").map(edge=>edge.parent_id).sort()).toEqual(["partner-b","proband"]);
+  });
 });
