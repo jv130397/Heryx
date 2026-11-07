@@ -6,13 +6,13 @@
 
 **Heredogramas para genética clínica, documentação fenotípica e investigação familiar.**
 
-[![Acessar Heryx](https://img.shields.io/badge/Acessar_Heryx-27CAD5?style=for-the-badge&logo=googlechrome&logoColor=061A2D)](https://jv130397.github.io/Heryx/)
+[![Acessar Heryx](https://img.shields.io/badge/Acessar_Heryx-27CAD5?style=for-the-badge&logo=googlechrome&logoColor=061A2D)](https://jv130397.github.io/Heryx/?v=20261107.1)
 [![GitHub Pages](https://github.com/jv130397/Heryx/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/jv130397/Heryx/actions/workflows/deploy-pages.yml)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=061A2D)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Status](https://img.shields.io/badge/status-em_desenvolvimento-816BE2?style=flat-square)](#estado-do-projeto)
 
-[**Abrir aplicação**](https://jv130397.github.io/Heryx/) · [**Ver documentação**](specifications/) · [**Consultar literatura**](literature/) · [**Reportar problema**](https://github.com/jv130397/Heryx/issues)
+[**Abrir aplicação**](https://jv130397.github.io/Heryx/?v=20261107.1) · [**Ver documentação**](specifications/) · [**Consultar literatura**](literature/) · [**Reportar problema**](https://github.com/jv130397/Heryx/issues)
 
 </div>
 
@@ -50,7 +50,7 @@ O editor reorganiza os membros da família conforme novos vínculos são adicion
 
 ## Como utilizar
 
-1. Acesse o [Heryx](https://jv130397.github.io/Heryx/).
+1. Acesse o [Heryx](https://jv130397.github.io/Heryx/?v=20261107.1).
 2. Selecione **Iniciar análise** para criar uma família ou **Carregar projeto** para continuar um caso salvo.
 3. Informe um código anonimizado e defina o probando.
 4. Adicione os familiares a partir dos próprios símbolos do heredograma.
@@ -159,6 +159,6 @@ Contribuições, sugestões e relatos de problemas são bem-vindos nas [Issues](
 
 **Genética · Família · Evidência**
 
-[Acessar aplicação](https://jv130397.github.io/Heryx/) · [GitHub](https://github.com/jv130397/Heryx)
+[Acessar aplicação](https://jv130397.github.io/Heryx/?v=20261107.1) · [GitHub](https://github.com/jv130397/Heryx)
 
 </div>
