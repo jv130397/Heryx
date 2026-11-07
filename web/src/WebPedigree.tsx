@@ -1,4 +1,6 @@
-export type WebIndividual = { id: string; label?: string; gender_identity?: string; phenotype_status?: string; proband?: boolean; consultand?: boolean; deceased?: boolean; layout?: { x?: number; y?: number } };
+export type HpoTerm = { id: string; label?: string; presence?: "present" | "absent"; onset?: string; severity?: "mild" | "moderate" | "severe" | "unspecified"; evolution?: "stable" | "progressive" | "improving" | "unknown" };
+export type ClinicalNote = { id: string; text: string; created_at: string };
+export type WebIndividual = { id: string; label?: string; full_name?: string; medical_record?: string; birth_date?: string; gender_identity?: string; phenotype_status?: string; proband?: boolean; consultand?: boolean; deceased?: boolean; hpo_terms?: HpoTerm[]; clinical_observations?: string; notes?: ClinicalNote[]; layout?: { x?: number; y?: number } };
 export type WebRelationship = { member_a?: string; member_b?: string; kind?: string };
 export type WebParentage = { parent_id?: string; child_id?: string; kind?: string };
 export type WebProject = { schema_version: string; title?: string; individuals: WebIndividual[]; relationships?: WebRelationship[]; parentages?: WebParentage[]; study_code?: string; created_at?: string; updated_at?: string };

@@ -19,3 +19,4 @@ node_modules/
 *.db-shm
 *.tmp
 *.bak
+tmp/

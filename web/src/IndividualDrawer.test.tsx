@@ -42,4 +42,19 @@ describe("IndividualDrawer", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Informe um identificador");
     expect(onSave).not.toHaveBeenCalled();
   });
+
+  it("stores patient data, HPO terms, observations and dated notes", () => {
+    const onSave=vi.fn();
+    render(<IndividualDrawer person={{id:"p1",label:"I-1"}} onClose={vi.fn()} onSave={onSave} onAddRelative={vi.fn()}/>);
+    fireEvent.click(screen.getByRole("button",{name:"Fenótipos"}));
+    fireEvent.change(screen.getByLabelText("Pesquisar termo HPO"),{target:{value:"hp:0001250"}});
+    fireEvent.click(screen.getByRole("button",{name:"Adicionar código HPO manualmente"}));
+    fireEvent.click(screen.getByRole("button",{name:"Histórico"}));
+    fireEvent.change(screen.getByLabelText("Observações clínicas"),{target:{value:"Acompanhamento em genética clínica."}});
+    fireEvent.click(screen.getByRole("button",{name:"Notas"}));
+    fireEvent.change(screen.getByLabelText("Nova nota de acompanhamento"),{target:{value:"Reavaliar em seis meses."}});
+    fireEvent.click(screen.getByRole("button",{name:/Adicionar nota/}));
+    fireEvent.click(screen.getByRole("button",{name:/Aplicar alterações/}));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({hpo_terms:[expect.objectContaining({id:"HP:0001250",presence:"present"})],clinical_observations:"Acompanhamento em genética clínica.",notes:[expect.objectContaining({text:"Reavaliar em seis meses."})]}));
+  });
 });

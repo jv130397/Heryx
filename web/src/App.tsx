@@ -1,26 +1,62 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, ArrowRight, FileJson, FolderOpen, Github, Maximize2, Minus, Moon, Play, Plus, Redo2, Save, Sun, Undo2, Upload, X } from "lucide-react";
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Dna, Eye, EyeOff, FileDown, FileImage, FileJson, FolderOpen, Github, ImageDown, Maximize2, Minus, Moon, Play, Plus, Redo2, Save, ShieldCheck, Sun, Undo2, Upload, X } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState, type RefObject } from "react";
 import { WebPedigree, type WebProject } from "./WebPedigree";
 import { NewProjectMission } from "./NewProjectMission";
+import { GameIntroPrototype } from "./GameIntroPrototype";
 import { IndividualDrawer } from "./IndividualDrawer";
 import { applyFamilyAction, centerAncestralBranches, type FamilyAction } from "./familyOperations";
 import { prepareProjectDownload } from "./projectIO";
+import { exportPedigree, type PedigreeExportFormat } from "./pedigreeExport";
+import { validateClinicalProject, type ValidationIssue } from "./clinicalValidation";
+import { ClinicalReportPrototype } from "./ClinicalReportPrototype";
 
 const PedigreeScene = lazy(() => import("./PedigreeScene").then((module) => ({ default: module.PedigreeScene })));
-const repositoryUrl = "https://github.com/jv130397/RarePedigree-Studio";
+const repositoryUrl = "https://github.com/jv130397/Heryx";
 type AvatarPose = "neutral" | "pointing" | "laptop" | "thinking" | "celebrating";
 type ProjectSummary = { fileName: string; title: string; schema: string; individuals: number; relationships: number; updatedAt?: string };
 const readLocalFile = (file: File) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsText(file); });
 
 const copy = {
-  pt: { nav: ["O projeto", "Ciência", "Documentação"], chapter: "CAPÍTULO 01 · O OBSERVATÓRIO", title: "Toda família guarda uma história.", description: "Entre no laboratório de João Vitor e transforme vínculos, fenótipos e gerações em conhecimento clínico.", enter: "Entrar no laboratório", open: "Continuar projeto", github: "Ver no GitHub", guide: "JOÃO VITOR · GUIA DO OBSERVATÓRIO", hint: "Mova o cursor para explorar o ambiente", status: "SISTEMA ONLINE", mission: "MISSÃO ATUAL", missionText: "Criar um novo heredograma", skip: "Pular introdução", sequence: ["INICIALIZANDO OBSERVATÓRIO", "JOÃO VITOR CONECTADO", "RECONSTRUINDO HISTÓRIA FAMILIAR", "ACESSO LIBERADO"], workspace: "Editor de heredograma", back: "Voltar ao observatório", add: "Adicionar indivíduo", relationship: "Relacionamento", inspector: "Inspetor", archive: "Arquivo de famílias", chooseFile: "Selecionar projeto local", localOnly: "O arquivo permanece neste dispositivo.", invalidFile: "Este arquivo não parece ser um projeto RarePedigree válido.", reactions: { neutral: "Genética · Família · Descoberta", pointing: "Vamos construir uma história familiar?", laptop: "Pronto para retomar seu projeto.", thinking: "Código aberto, ciência compartilhada.", celebrating: "Acesso ao laboratório autorizado!" } },
-  en: { nav: ["The project", "Science", "Documentation"], chapter: "CHAPTER 01 · THE OBSERVATORY", title: "Every family holds a story.", description: "Enter João Vitor's laboratory and turn relationships, phenotypes and generations into clinical knowledge.", enter: "Enter the laboratory", open: "Continue project", github: "View on GitHub", guide: "JOÃO VITOR · OBSERVATORY GUIDE", hint: "Move the cursor to explore the environment", status: "SYSTEM ONLINE", mission: "CURRENT MISSION", missionText: "Create a new pedigree", skip: "Skip intro", sequence: ["INITIALIZING OBSERVATORY", "JOÃO VITOR CONNECTED", "REBUILDING FAMILY HISTORY", "ACCESS GRANTED"], workspace: "Pedigree editor", back: "Back to observatory", add: "Add individual", relationship: "Relationship", inspector: "Inspector", archive: "Family archive", chooseFile: "Select local project", localOnly: "The file remains on this device.", invalidFile: "This file does not appear to be a valid RarePedigree project.", reactions: { neutral: "Genetics · Family · Discovery", pointing: "Shall we build a family story?", laptop: "Ready to resume your project.", thinking: "Open code, shared science.", celebrating: "Laboratory access authorized!" } }
+  pt: { nav: ["O projeto", "Ciência", "Documentação"], chapter: "CAPÍTULO 01 · O OBSERVATÓRIO", title: "Toda família guarda uma história.", description: "Entre no laboratório de João Vitor e transforme vínculos, fenótipos e gerações em conhecimento clínico.", enter: "Entrar no laboratório", open: "Continuar projeto", github: "Ver no GitHub", guide: "JOÃO VITOR · GUIA DO OBSERVATÓRIO", hint: "Mova o cursor para explorar o ambiente", status: "SISTEMA ONLINE", mission: "MISSÃO ATUAL", missionText: "Criar um novo heredograma", skip: "Pular introdução", sequence: ["INICIALIZANDO OBSERVATÓRIO", "JOÃO VITOR CONECTADO", "RECONSTRUINDO HISTÓRIA FAMILIAR", "ACESSO LIBERADO"], workspace: "Editor de heredograma", back: "Voltar ao observatório", add: "Adicionar indivíduo", relationship: "Relacionamento", inspector: "Inspetor", archive: "Arquivo de famílias", chooseFile: "Selecionar projeto local", localOnly: "O arquivo permanece neste dispositivo.", invalidFile: "Este arquivo não parece ser um projeto Heryx válido.", reactions: { neutral: "Genética · Família · Descoberta", pointing: "Vamos construir uma história familiar?", laptop: "Pronto para retomar seu projeto.", thinking: "Código aberto, ciência compartilhada.", celebrating: "Acesso ao laboratório autorizado!" } },
+  en: { nav: ["The project", "Science", "Documentation"], chapter: "CHAPTER 01 · THE OBSERVATORY", title: "Every family holds a story.", description: "Enter João Vitor's laboratory and turn relationships, phenotypes and generations into clinical knowledge.", enter: "Enter the laboratory", open: "Continue project", github: "View on GitHub", guide: "JOÃO VITOR · OBSERVATORY GUIDE", hint: "Move the cursor to explore the environment", status: "SYSTEM ONLINE", mission: "CURRENT MISSION", missionText: "Create a new pedigree", skip: "Skip intro", sequence: ["INITIALIZING OBSERVATORY", "JOÃO VITOR CONNECTED", "REBUILDING FAMILY HISTORY", "ACCESS GRANTED"], workspace: "Pedigree editor", back: "Back to observatory", add: "Add individual", relationship: "Relationship", inspector: "Inspector", archive: "Family archive", chooseFile: "Select local project", localOnly: "The file remains on this device.", invalidFile: "This file does not appear to be a valid Heryx project.", reactions: { neutral: "Genetics · Family · Discovery", pointing: "Shall we build a family story?", laptop: "Ready to resume your project.", thinking: "Open code, shared science.", celebrating: "Laboratory access authorized!" } }
 };
 
 function BrandMark() { return <span className="brand-mark" aria-hidden="true"><span /></span>; }
 
+type LandingProjectLoaderProps = {
+  fileInput: RefObject<HTMLInputElement | null>;
+  fileError: boolean;
+  projectSummary: ProjectSummary | null;
+  onClose: () => void;
+  onFile: (file?: File) => void;
+  onOpen: () => void;
+};
+
+function LandingProjectLoader({ fileInput, fileError, projectSummary, onClose, onFile, onOpen }: LandingProjectLoaderProps) {
+  return <motion.div className="landing-loader-backdrop" role="presentation" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <motion.section className="landing-loader" role="dialog" aria-modal="true" aria-label="Carregar projeto Heryx" initial={{opacity:0,y:20,scale:.97}} animate={{opacity:1,y:0,scale:1}} exit={{opacity:0,y:12,scale:.98}}>
+      <header><span><Dna/><span><strong>Heryx</strong><small>ARQUIVO CLÍNICO LOCAL</small></span></span><button type="button" aria-label="Fechar" onClick={onClose}><X/></button></header>
+      <div className="landing-loader-body">
+        <span className="loader-kicker">Continuar análise</span>
+        <h2>Carregue um heredograma</h2>
+        <p>Selecione um projeto salvo anteriormente para retomar a edição com segurança. Os dados permanecem neste dispositivo.</p>
+        <input ref={fileInput} type="file" accept=".json,.rps.json,application/json" onChange={(event) => onFile(event.target.files?.[0])}/>
+        <button className="landing-file-picker" type="button" onClick={() => fileInput.current?.click()}><span><Upload/><i/></span><span><strong>Selecionar projeto local</strong><small>.rps.json ou .json</small></span><FolderOpen/></button>
+        {fileError && <p className="landing-file-error"><AlertTriangle/>Este arquivo não parece ser um projeto Heryx válido.</p>}
+        {projectSummary && <motion.section className="landing-project-summary" initial={{opacity:0,y:8}} animate={{opacity:1,y:0}}>
+          <div><small>PROJETO RECONHECIDO</small><h3>{projectSummary.title}</h3><p>{projectSummary.fileName}</p></div>
+          <dl><div><dt>Schema</dt><dd>{projectSummary.schema}</dd></div><div><dt>Indivíduos</dt><dd>{projectSummary.individuals}</dd></div><div><dt>Relações</dt><dd>{projectSummary.relationships}</dd></div></dl>
+          <button type="button" onClick={onOpen}>Abrir visualização no editor <ArrowRight/></button>
+        </motion.section>}
+        <div className="loader-privacy"><ShieldCheck/>Processamento local · nenhum dado é enviado</div>
+      </div>
+    </motion.section>
+  </motion.div>;
+}
+
 export function App() {
+  if (new URLSearchParams(window.location.search).get("prototype") === "clinical-report") return <ClinicalReportPrototype />;
   const safeGraphics = new URLSearchParams(window.location.search).get("graphics") === "safe";
   const [language, setLanguage] = useState<keyof typeof copy>("pt");
   const [light, setLight] = useState(false);
@@ -41,6 +77,9 @@ export function App() {
   const [newlyAddedIds, setNewlyAddedIds] = useState<string[]>([]);
   const [editorNotice, setEditorNotice] = useState("");
   const [fileError, setFileError] = useState(false);
+  const [anonymized,setAnonymized]=useState(false);
+  const [validationIssues,setValidationIssues]=useState<ValidationIssue[]|null>(null);
+  const [pendingExport,setPendingExport]=useState<PedigreeExportFormat|null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const text = copy[language];
   const safeAvatarFrames: Record<AvatarPose,string> = { neutral:"0% 100%", pointing:"50% 100%", laptop:"100% 100%", thinking:"0% 0%", celebrating:"50% 0%" };
@@ -60,7 +99,7 @@ export function App() {
 
   useEffect(() => {
     if (!entered) return;
-    const timer = window.setTimeout(() => setWorkspaceOpen(true), reducedMotion ? 50 : 1450);
+    const timer = window.setTimeout(() => setWorkspaceOpen(true), reducedMotion ? 40 : 160);
     return () => window.clearTimeout(timer);
   }, [entered, reducedMotion]);
 
@@ -83,7 +122,7 @@ export function App() {
 
   const leaveWorkspace = () => { setWorkspaceOpen(false); setEntered(false); setSelectedIndividualId(null); setNewlyAddedIds([]); setEditorNotice(""); setZoom(100); setAvatarPose("neutral"); };
   const beginNewProject = () => { setAvatarPose("pointing"); setNewProjectOpen(true); };
-  const createProject = (project: WebProject) => { setLoadedProject(project); setProjectSummary(null); setSelectedIndividualId(null); setUndoStack([]); setRedoStack([]); setSaveState("modified"); setNewProjectOpen(false); setAvatarPose("celebrating"); setEntered(true); };
+  const createProject = (project: WebProject) => { setLoadedProject(project); setProjectSummary(null); setSelectedIndividualId(null); setUndoStack([]); setRedoStack([]); setSaveState("modified"); setNewProjectOpen(false); setAvatarPose("celebrating"); setEntered(true); setWorkspaceOpen(true); };
   const selectedIndividual = loadedProject?.individuals.find(person => person.id === selectedIndividualId) ?? null;
   const selectedPartners = selectedIndividualId && loadedProject ? (loadedProject.relationships ?? []).filter(edge=>edge.member_a===selectedIndividualId||edge.member_b===selectedIndividualId).map(edge=>edge.member_a===selectedIndividualId?edge.member_b:edge.member_a).map(id=>loadedProject.individuals.find(person=>person.id===id)).filter((person): person is WebProject["individuals"][number]=>Boolean(person)) : [];
   const reservedLabels = loadedProject?.individuals.filter(person=>person.id!==selectedIndividualId).map(person=>person.label ?? "") ?? [];
@@ -93,6 +132,9 @@ export function App() {
   const undo = () => { const previous = undoStack.at(-1); if (!previous || !loadedProject) return; setUndoStack(stack => stack.slice(0,-1)); setRedoStack(stack => [...stack,loadedProject]); setLoadedProject(previous); setSelectedIndividualId(null); setNewlyAddedIds([]); setSaveState("modified"); };
   const redo = () => { const next = redoStack.at(-1); if (!next || !loadedProject) return; setRedoStack(stack => stack.slice(0,-1)); setUndoStack(stack => [...stack,loadedProject]); setLoadedProject(next); setSelectedIndividualId(null); setNewlyAddedIds([]); setSaveState("modified"); };
   const saveProject = () => { if (!loadedProject) return; const prepared = prepareProjectDownload(loadedProject); const url = URL.createObjectURL(new Blob([prepared.content],{type:"application/json"})); const anchor = document.createElement("a"); anchor.href=url; anchor.download=prepared.filename; anchor.click(); URL.revokeObjectURL(url); setLoadedProject(prepared.project); setSaveState("saved"); };
+  const performExport=async(format:PedigreeExportFormat)=>{const svg=document.querySelector<SVGSVGElement>(".loaded-pedigree");if(!loadedProject||!svg)return;try{await exportPedigree(svg,loadedProject,format,{anonymized,clinicalReport:format==="pdf"});setEditorNotice(`${format==="pdf"?"Relatório clínico":"Heredograma"} exportado em ${format.toUpperCase()}.`);}catch{setEditorNotice("Não foi possível gerar o arquivo de exportação.");}};
+  const exportCurrentPedigree=(format:PedigreeExportFormat)=>{if(!loadedProject){setEditorNotice("Adicione um indivíduo antes de exportar.");return;}const issues=validateClinicalProject(loadedProject);if(issues.length){setValidationIssues(issues);setPendingExport(format);return;}void performExport(format);};
+  const openValidation=()=>{if(loadedProject)setValidationIssues(validateClinicalProject(loadedProject));};
   const inspectProject = async (file?: File) => {
     if (!file) return;
     try {
@@ -106,15 +148,16 @@ export function App() {
   const openLoadedProject = () => { if (!loadedProject) return; setUndoStack([]); setRedoStack([]); setSaveState("saved"); setArchiveOpen(false); setAvatarPose("celebrating"); setEntered(true); };
 
   const ready = introPhase === 3;
-  return <main className={`${light ? "app light" : "app"}${entered ? " entered" : ""}${ready ? " intro-ready" : " intro-running"}`}>
+  if (!entered && !workspaceOpen) return <><GameIntroPrototype onStart={beginNewProject} onContinue={() => { setArchiveOpen(true); setAvatarPose("laptop"); }}/><AnimatePresence>{archiveOpen && <LandingProjectLoader fileInput={fileInput} fileError={fileError} projectSummary={projectSummary} onFile={inspectProject} onOpen={openLoadedProject} onClose={() => { setArchiveOpen(false); setAvatarPose("neutral"); }}/>}</AnimatePresence><AnimatePresence>{newProjectOpen && <NewProjectMission language={language} reducedMotion={reducedMotion} onCancel={() => { setNewProjectOpen(false); setAvatarPose("neutral"); }} onComplete={createProject}/>}</AnimatePresence></>;
+  return <main className={`${light ? "app light" : "app"}${entered ? " entered" : ""}${ready ? " intro-ready" : " intro-running"}${workspaceOpen ? " workspace-active" : ""}`}>
     <header className="topbar">
-      <a className="brand" href="#inicio" aria-label="RarePedigree Studio"><BrandMark /><span><strong>RarePedigree</strong><small>STUDIO</small></span></a>
+      <a className="brand" href="#inicio" aria-label="Heryx — Hereditary Analytics"><BrandMark /><span><strong>Heryx</strong><small>HEREDITARY ANALYTICS</small></span></a>
       <nav aria-label="Navegação principal">{text.nav.map((item, index) => <a className={index === 0 ? "active" : ""} href={`#section-${index}`} key={item}>{item}</a>)}</nav>
       <div className="utilities"><a className="github-compact" href={repositoryUrl} target="_blank" rel="noreferrer" aria-label={text.github} onMouseEnter={() => setAvatarPose("thinking")} onMouseLeave={() => setAvatarPose("neutral")}><Github size={17} /><span>GitHub</span></a><button className="language" onClick={() => setLanguage(language === "pt" ? "en" : "pt")} aria-label="Alternar idioma">{language.toUpperCase()}</button><button onClick={() => setLight(!light)} aria-label="Alternar aparência">{light ? <Moon size={17} /> : <Sun size={17} />}</button></div>
     </header>
 
     <section className="hero" id="inicio">
-      <div className="visual-stage">{safeGraphics ? <div className="safe-scene" aria-label="Observatório genômico em modo compatível"><span className="safe-orbit safe-orbit-one"/><span className="safe-orbit safe-orbit-two"/><span className="safe-core"/><span className="safe-avatar" role="img" aria-label="João Vitor, guia do observatório" style={{backgroundImage:`url(${import.meta.env.BASE_URL}assets/joao-vitor-game-avatar.png)`,backgroundPosition:safeAvatarFrames[avatarPose]}}/></div> : <Suspense fallback={<div className="scene-fallback">Carregando observatório…</div>}><PedigreeScene reducedMotion={reducedMotion} entered={entered} introPhase={introPhase} avatarPose={avatarPose} /></Suspense>}</div>
+      <div className="visual-stage">{safeGraphics || entered ? <div className="safe-scene" aria-label="Observatório genômico em modo compatível"><span className="safe-orbit safe-orbit-one"/><span className="safe-orbit safe-orbit-two"/><span className="safe-core"/><span className="safe-avatar" role="img" aria-label="João Vitor, guia do observatório" style={{backgroundImage:`url(${import.meta.env.BASE_URL}assets/joao-vitor-game-avatar.png)`,backgroundPosition:safeAvatarFrames[avatarPose]}}/></div> : <Suspense fallback={<div className="scene-fallback">Carregando observatório…</div>}><PedigreeScene reducedMotion={reducedMotion} entered={entered} introPhase={introPhase} avatarPose={avatarPose} /></Suspense>}</div>
       <div className="screen-vignette" aria-hidden="true" /><div className="hud-corners" aria-hidden="true"><i /><i /><i /><i /></div>
       <motion.div className="system-status" initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }}><span className="status-dot" />{ready ? text.status : text.sequence[introPhase]}<b>RP–01</b></motion.div>
       {!ready && <button className="skip-intro" onClick={() => setIntroPhase(3)}>{text.skip}<span>››</span></button>}
@@ -130,10 +173,11 @@ export function App() {
       <AnimatePresence>{archiveOpen && <motion.div className="archive-panel" role="dialog" aria-label={text.archive} initial={{opacity:0,x:40,scale:.97}} animate={{opacity:1,x:0,scale:1}} exit={{opacity:0,x:30}}><header><span><FileJson size={18}/>{text.archive}</span><button aria-label="Fechar arquivo" onClick={() => { setArchiveOpen(false); setAvatarPose("neutral"); }}><X size={17}/></button></header><div className="archive-body"><input ref={fileInput} type="file" accept=".json,.rps.json,application/json" onChange={(event) => inspectProject(event.target.files?.[0])}/><button className="file-picker" onClick={() => fileInput.current?.click()}><Upload size={20}/><span><strong>{text.chooseFile}</strong><small>.rps.json · .json</small></span></button><p className="privacy-note">⌁ {text.localOnly}</p>{fileError && <p className="file-error">{text.invalidFile}</p>}{projectSummary && <section className="project-summary"><small>PROJETO RECONHECIDO</small><h3>{projectSummary.title}</h3><p>{projectSummary.fileName}</p><dl><div><dt>Schema</dt><dd>{projectSummary.schema}</dd></div><div><dt>Indivíduos</dt><dd>{projectSummary.individuals}</dd></div><div><dt>Relações</dt><dd>{projectSummary.relationships}</dd></div></dl><button className="open-project" onClick={openLoadedProject}>Abrir visualização no editor <ArrowRight size={14}/></button></section>}</div></motion.div>}</AnimatePresence>
     </section>
     <AnimatePresence>{newProjectOpen && <NewProjectMission language={language} reducedMotion={reducedMotion} onCancel={() => { setNewProjectOpen(false); setAvatarPose("neutral"); }} onComplete={createProject}/>}</AnimatePresence>
-    <AnimatePresence>{workspaceOpen && <motion.section className="workspace" aria-label={text.workspace} initial={{ opacity: 0, scale: 1.06 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: .65, ease: [0.2,.7,.2,1] }}>
-      <header className="workspace-bar"><button className="workspace-back" onClick={leaveWorkspace}><ArrowLeft size={17} />{text.back}</button><span className="workspace-title"><BrandMark /><strong>{loadedProject?.title ?? "Família RP–001"}</strong><small>{saveState === "saved" ? "PROJETO SALVO" : "ALTERAÇÕES LOCAIS"}</small></span><div className="workspace-actions"><button aria-label="Desfazer" disabled={!undoStack.length} onClick={undo}><Undo2 size={17} /></button><button aria-label="Refazer" disabled={!redoStack.length} onClick={redo}><Redo2 size={17} /></button><button aria-label="Salvar projeto" onClick={saveProject}><Save size={17} /></button></div></header>
+    <AnimatePresence>{workspaceOpen && <motion.section className="workspace" aria-label={text.workspace} initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: reducedMotion ? 0 : .12, ease: "easeOut" }}>
+      <header className="workspace-bar"><button className="workspace-back" onClick={leaveWorkspace}><ArrowLeft size={17} />{text.back}</button><span className="workspace-title"><BrandMark /><strong>{loadedProject?.title ?? "Família RP–001"}</strong><small>{saveState === "saved" ? "PROJETO SALVO" : anonymized?"MODO ANONIMIZADO":"ALTERAÇÕES LOCAIS"}</small></span><div className="workspace-actions"><button aria-label="Desfazer" disabled={!undoStack.length} onClick={undo}><Undo2 size={17} /></button><button aria-label="Refazer" disabled={!redoStack.length} onClick={redo}><Redo2 size={17} /></button><button className={anonymized?"active-tool":""} aria-label={anonymized?"Desativar modo anonimizado":"Ativar modo anonimizado"} title="Anonimizar exportações" onClick={()=>setAnonymized(value=>!value)}>{anonymized?<EyeOff size={17}/>:<Eye size={17}/>}</button><button aria-label="Validar projeto" title="Validação clínica" onClick={openValidation}><ShieldCheck size={17}/></button><span className="export-divider"/><button aria-label="Exportar imagem PNG" title="Exportar PNG" onClick={()=>exportCurrentPedigree("png")}><ImageDown size={17}/></button><button aria-label="Exportar imagem SVG" title="Exportar SVG" onClick={()=>exportCurrentPedigree("svg")}><FileImage size={17}/></button><button aria-label="Exportar relatório PDF" title="Relatório clínico PDF" onClick={()=>exportCurrentPedigree("pdf")}><FileDown size={17}/></button><button aria-label="Salvar projeto editável" title="Salvar projeto editável" onClick={saveProject}><Save size={17}/></button></div></header>
       <div className="pedigree-canvas">{loadedProject ? <WebPedigree project={loadedProject} selectedId={selectedIndividualId} newlyAddedIds={newlyAddedIds} onSelect={setSelectedIndividualId} zoom={zoom}/> : <><div className="generation generation-i">I</div><div className="generation generation-ii">II</div><svg className="pedigree-preview" viewBox="0 0 760 430" role="img" aria-label="Heredograma de demonstração"><g className="pedigree-lines"><path d="M210 100H350M280 100V205M170 205H390M170 205V270M390 205V270M390 270H530M460 270V355" /></g><g className="pedigree-symbols"><rect x="180" y="70" width="60" height="60"/><circle cx="380" cy="100" r="30"/><circle cx="170" cy="300" r="30"/><rect className="affected" x="360" y="270" width="60" height="60"/><circle cx="560" cy="300" r="30"/><rect x="430" y="355" width="60" height="60"/></g><g className="pedigree-labels"><text x="210" y="153">I-1</text><text x="380" y="153">I-2</text><text x="170" y="350">II-1</text><text x="390" y="350">II-2</text><text x="560" y="350">II-3</text></g></svg></>}<div className="canvas-guide"><span>JV</span><p><strong>{loadedProject ? "Projeto carregado em modo de edição." : "Ambiente preparado."}</strong>{loadedProject ? ` ${loadedProject.individuals.length} ${loadedProject.individuals.length===1?"indivíduo disponível":"indivíduos disponíveis"}. Selecione um símbolo para editar.` : " Selecione um indivíduo para começar."}</p></div><AnimatePresence>{editorNotice&&<motion.div className="editor-notice" role="status" aria-live="polite" initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} exit={{opacity:0,y:8}}>{editorNotice}</motion.div>}</AnimatePresence><div className="zoom-control" aria-label="Controles de zoom"><button aria-label="Diminuir zoom" disabled={zoom<=50} onClick={()=>setZoom(value=>Math.max(50,value-10))}><Minus size={15}/></button><output aria-label="Nível de zoom">{zoom}%</output><button aria-label="Aumentar zoom" disabled={zoom>=200} onClick={()=>setZoom(value=>Math.min(200,value+10))}><Plus size={15}/></button><button aria-label="Ajustar à tela" onClick={()=>setZoom(100)}><Maximize2 size={14}/></button></div></div>
-      <AnimatePresence>{selectedIndividual && <IndividualDrawer person={selectedIndividual} partners={selectedPartners} reservedLabels={reservedLabels} onClose={()=>setSelectedIndividualId(null)} onSave={saveIndividual} onAddRelative={addRelative}/>}</AnimatePresence>
+      <AnimatePresence>{selectedIndividual && !anonymized && <IndividualDrawer person={selectedIndividual} partners={selectedPartners} reservedLabels={reservedLabels} onClose={()=>setSelectedIndividualId(null)} onSave={saveIndividual} onAddRelative={addRelative}/>}</AnimatePresence>
+      <AnimatePresence>{validationIssues&&<motion.div className="validation-overlay" role="dialog" aria-label="Validação clínica do projeto" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}><motion.section initial={{scale:.96,y:12}} animate={{scale:1,y:0}}><header><span><ShieldCheck size={18}/><b>Validação clínica</b></span><button aria-label="Fechar validação" onClick={()=>{setValidationIssues(null);setPendingExport(null);}}><X size={17}/></button></header><div className="validation-summary"><strong>{validationIssues.length?`${validationIssues.length} ponto${validationIssues.length>1?"s":""} para revisar`:"Projeto consistente"}</strong><small>{validationIssues.some(issue=>issue.severity==="error")?"Corrija os erros antes de exportar.":"Os avisos não impedem a exportação."}</small></div><ul>{validationIssues.map((issue,index)=><li className={issue.severity} key={`${issue.code}-${index}`}><AlertTriangle size={15}/><span><b>{issue.severity==="error"?"Erro":"Aviso"}</b>{issue.message}</span></li>)}</ul><footer><button onClick={()=>{setValidationIssues(null);setPendingExport(null);}}>Revisar projeto</button>{pendingExport&&!validationIssues.some(issue=>issue.severity==="error")&&<button className="validation-export" onClick={()=>{const format=pendingExport;setValidationIssues(null);setPendingExport(null);void performExport(format);}}>Exportar mesmo assim</button>}</footer></motion.section></motion.div>}</AnimatePresence>
     </motion.section>}</AnimatePresence>
   </main>;
 }

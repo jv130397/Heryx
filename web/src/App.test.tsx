@@ -17,37 +17,36 @@ Object.defineProperty(window, "matchMedia", {
 
 afterEach(cleanup);
 
-describe("RarePedigree Web welcome", () => {
-  it("renders the 3D scene and core project actions", async () => {
+describe("Heryx Web welcome", () => {
+  it("renders the professional clinical cover and core project actions", async () => {
     render(<App />);
-    expect(await screen.findByLabelText("Observatório genômico tridimensional interativo")).toBeVisible();
-    expect(screen.getByRole("button", { name: /Entrar no laboratório/ })).toBeEnabled();
-    expect(screen.getByRole("button", { name: /Continuar projeto/ })).toBeEnabled();
+    expect((await screen.findAllByLabelText(/Heryx — Hereditary Analytics/))[0]).toBeVisible();
+    expect(screen.getAllByRole("button", { name: /Iniciar análise/ })[0]).toBeEnabled();
+    expect(screen.getByRole("button", { name: /Carregar projeto/ })).toBeEnabled();
+    expect(screen.getAllByRole("link", { name: /GitHub/ })[0]).toHaveAttribute("href", "https://github.com/jv130397/Heryx");
   });
 
-  it("links the welcome experience to the public GitHub repository", async () => {
+  it("keeps the welcome chrome focused on brand and repository", async () => {
     render(<App />);
-    await waitFor(() => expect(screen.getAllByRole("link", { name: /Ver no GitHub/ })).toHaveLength(2));
-    for (const link of screen.getAllByRole("link", { name: /Ver no GitHub/ })) {
-      expect(link).toHaveAttribute("href", "https://github.com/jv130397/RarePedigree-Studio");
-    }
+    expect(await screen.findByRole("link", { name: /Heryx/ })).toBeVisible();
+    expect(screen.getByRole("link", { name: /GitHub/ })).toBeVisible();
   });
 
-  it("lets the user skip the cinematic sequence", () => {
+  it("builds the clinical scene with native vector elements", () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: /Pular introdução/ }));
-    expect(screen.queryByRole("button", { name: /Pular introdução/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Heredograma clínico vetorial/ })).toBeInTheDocument();
+    expect(document.querySelector(".clinical-cover__media")).not.toBeInTheDocument();
+    expect(document.querySelector(".joao-in-lab")).not.toBeInTheDocument();
   });
 
-  it("uses João Vitor as a contextual guide", async () => {
+  it("identifies the platform as hereditary analytics", async () => {
     render(<App />);
-    fireEvent.mouseEnter(screen.getByRole("button", { name: /Continuar projeto/ }));
-    await waitFor(() => expect(screen.getByText("Pronto para retomar seu projeto.")).toBeInTheDocument());
+    expect(await screen.findByText(/HEREDITARY ANALYTICS/)).toBeInTheDocument();
   });
 
   it("inspects a local RarePedigree project without uploading it", async () => {
     const { container } = render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: /Continuar projeto/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Carregar projeto/ }));
     const input = container.querySelector<HTMLInputElement>('input[type="file"]');
     const project = new File([JSON.stringify({ schema_version: "0.4.0", title: "Família teste", individuals: [{ id: "1" }], relationships: [] })], "family.rps.json", { type: "application/json" });
     fireEvent.change(input!, { target: { files: [project] } });
@@ -58,7 +57,7 @@ describe("RarePedigree Web welcome", () => {
 
   it("creates a new project through the guided mission", async () => {
     const { container } = render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: /Entrar no laboratório/ }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Iniciar análise/ })[0]);
     await waitFor(() => expect(screen.getByRole("dialog", { name: /Inicie uma história familiar/ })).toBeVisible());
     fireEvent.change(screen.getByLabelText("Nome do projeto"), { target: { value: "Família Aurora" } });
     fireEvent.click(screen.getByRole("button", { name: /^Continuar$/ }));

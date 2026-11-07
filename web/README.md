@@ -1,6 +1,6 @@
-# RarePedigree Studio Web
+# Heryx Web
 
-Aplicação Web do RarePedigree Studio. O pacote combina a introdução 3D com um editor SVG
+Aplicação web do Heryx — Hereditary Analytics. O pacote combina a experiência científica com um editor SVG
 interativo, criação inteligente de familiares, importação/exportação local e histórico de
 undo/redo.
 
@@ -55,7 +55,7 @@ Cada push na branch `main` executa testes e build e publica o diretório `web/di
 Pages. É necessário selecionar **GitHub Actions** como origem do Pages nas configurações do
 repositório.
 
-URL prevista: <https://jv130397.github.io/RarePedigree-Studio/>
+URL: <https://jv130397.github.io/Heryx/>
 
 ## Próxima integração
 
