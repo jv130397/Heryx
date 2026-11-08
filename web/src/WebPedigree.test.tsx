@@ -19,6 +19,23 @@ describe("WebPedigree", () => {
     expect(screen.getByText("II", { selector: ".loaded-generations text" })).toBeVisible();
   });
 
+  it("divides one symbol between multiple phenotype colors", () => {
+    const project: WebProject = { schema_version: "0.5.0", individuals: [{ id: "p1", gender_identity: "woman", phenotype_status: "affected", phenotype_markers: [{ id: "neurologic", label: "Neurológico", color: "#8b70e7" }, { id: "cardiac", label: "Cardíaco", color: "#ef705c" }], layout: { x: 0, y: 0 } }] };
+    const { container } = render(<WebPedigree project={project}/>);
+    expect(container.querySelectorAll("[data-phenotype-segment]")).toHaveLength(2);
+    expect(container.querySelector('[data-phenotype-segment="neurologic"]')).toHaveStyle({ fill: "#8b70e7" });
+    expect(container.querySelector('[data-phenotype-segment="cardiac"]')).toHaveStyle({ fill: "#ef705c" });
+  });
+
+  it("renders special clinical conventions and relationship states", () => {
+    const project: WebProject = { schema_version:"0.5.0", individuals:[{id:"a",clinical_symbol:"carrier",adopted:true,assigned_sex:"AFAB",layout:{x:0,y:0}},{id:"b",clinical_symbol:"pregnancy_loss",layout:{x:100,y:0}}], relationships:[{member_a:"a",member_b:"b",kind:"divorced"}] };
+    const {container}=render(<WebPedigree project={project}/>);
+    expect(container.querySelector(".carrier-dot")).toBeInTheDocument();
+    expect(container.querySelector(".adoption-brackets")).toBeInTheDocument();
+    expect(container.querySelector(".relationship-divorced")).toBeInTheDocument();
+    expect(container.querySelectorAll(".relationship-slash")).toHaveLength(2);
+  });
+
   it("lets the editor select an individual from the diagram", () => {
     const onSelect = vi.fn();
     const project: WebProject = { schema_version: "0.4.0", individuals: [{ id: "proband", label: "I-1", proband: true, layout: { x: 0, y: 0 } }] };
